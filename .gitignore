@@ -1,1 +1,15 @@
+# secrets and data never enter the repo (public deliverable)
+.env
+.key.p8
 data/
+*.pdf
+# python / dbt build output
+.venv/
+__pycache__/
+*.pyc
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+logs/
+fixtures/out/
+.DS_Store
