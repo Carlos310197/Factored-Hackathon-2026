@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 620" width="1240" height="620" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" color="#1f2933" role="img" aria-label="Agent core: customer UI and mock OIDC identity service → AgentCore Runtime hosting a LangGraph workflow (load_context, understand, route, dispute chain with confirm interrupt, clarify, handoff, reply) → Claude on Bedrock, Jev on TypeSafe, S3 serving parquet via DuckDB, DynamoDB, OpenTelemetry. Animated: a dispute filed after confirmation, then an unauthorized-charge report handed off to a human.">
+<rect width="1240" height="620" fill="#ffffff"/>
+<defs><marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 L8 4 L0 8 z" fill="currentColor"/></marker></defs>
+<circle cx="18" cy="22" r="6" style="fill:var(--accent,#1a7f9c)"/><text x="30" y="26" font-size="11" fill="currentColor">dispute, automated</text>
+<circle cx="18" cy="40" r="6" style="fill:var(--red,#d1493f)"/><text x="30" y="44" font-size="11" fill="currentColor">escalation → human</text>
+<rect x="12" y="52" width="12" height="12" rx="3" style="fill:var(--sf,#ffffff);stroke:var(--amber,#d9962b)" stroke-width="1.5"/><text x="30" y="62" font-size="11" fill="currentColor">⏸ interrupt()</text>
+<rect x="20" y="110" width="200" height="62" rx="8" style="fill:var(--sf,#ffffff)" stroke="currentColor" stroke-width="1.4"/>
+<text x="32" y="129" font-size="12.5" font-weight="700" fill="currentColor">Customer UI</text>
+<text x="32" y="145" font-size="10.5" style="fill:var(--mu,#5b6773)">spec 3 · session lang es|pt</text>
+<text x="32" y="159" font-size="10.5" style="fill:var(--mu,#5b6773)">chat · confirm · refs</text>
+<rect x="20" y="230" width="200" height="108" rx="8" style="fill:var(--sf,#ffffff)" stroke="currentColor" stroke-width="1.4"/>
+<text x="32" y="249" font-size="12.5" font-weight="700" fill="currentColor">identity/</text>
+<text x="32" y="265" font-size="10.5" style="fill:var(--mu,#5b6773)">mock OIDC IdP (labeled test)</text>
+<text x="32" y="279" font-size="10.5" style="fill:var(--mu,#5b6773)">login → OTP → RS256 JWT</text>
+<text x="32" y="293" font-size="10.5" style="fill:var(--mu,#5b6773)">15 min · sub=customer_id</text>
+<text x="32" y="307" font-size="10.5" style="fill:var(--mu,#5b6773)">sid · scopes · lang</text>
+<text x="32" y="321" font-size="10.5" style="fill:var(--mu,#5b6773)">/.well-known + /jwks.json</text>
+<rect x="20" y="420" width="200" height="62" rx="8" style="fill:var(--sf,#ffffff)" stroke="currentColor" stroke-width="1.4"/>
+<text x="32" y="439" font-size="12.5" font-weight="700" fill="currentColor">Human agent queue</text>
+<text x="32" y="455" font-size="10.5" style="fill:var(--mu,#5b6773)">spec 3 · reads handoff.v1</text>
+<text x="32" y="469" font-size="10.5" style="fill:var(--mu,#5b6773)">from DynamoDB handoffs</text>
+<line x1="120" y1="229" x2="120" y2="174" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<text x="128" y="206" font-size="9.5" fill="currentColor">login · OTP → JWT</text>
+<line x1="222" y1="128" x2="268" y2="111" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<text x="150" y="100" font-size="9.5" fill="currentColor">Bearer JWT →</text>
+<line x1="222" y1="320" x2="248" y2="320" style="stroke:currentColor" stroke-width="1.3" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+<text x="112" y="352" font-size="9" style="fill:var(--mu,#5b6773)">JWKS → authorizer</text>
+<rect x="250" y="60" width="640" height="532" rx="12" style="fill:var(--accent,#1a7f9c);fill-opacity:0.05;stroke:var(--accent,#1a7f9c)" stroke-width="1.2" stroke-dasharray="6 5"/>
+<text x="266" y="80" font-size="13" font-weight="700" fill="currentColor">Amazon Bedrock AgentCore Runtime</text>
+<text x="560" y="80" font-size="10" style="fill:var(--mu,#5b6773)">ARM64 · /invocations + /ping · JWT authorizer</text>
+<rect x="270" y="93" width="600" height="34" rx="7" style="fill:var(--sf,#ffffff)" stroke="currentColor" stroke-width="1.2"/>
+<text x="282" y="114" font-size="10.5" fill="currentColor">app.py · re-verify JWT → SessionContext (customer_id from token only) → graph.invoke</text>
+<rect x="270" y="140" width="600" height="440" rx="10" style="fill:var(--sf,#ffffff);fill-opacity:0.6" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4"/>
+<text x="282" y="158" font-size="11.5" font-weight="700" fill="currentColor">LangGraph StateGraph</text>
+<text x="450" y="158" font-size="10" style="fill:var(--mu,#5b6773)">DynamoDBSaver checkpointer · edges chosen by code, never by an LLM</text>
+<rect x="285.0" y="176.0" width="120" height="28" rx="6" style="fill:var(--sf,#ffffff);stroke:currentColor" stroke-width="1.2"/>
+<text x="345" y="193.5" text-anchor="middle" font-size="10" fill="currentColor">load_context</text>
+<rect x="435.0" y="176.0" width="120" height="28" rx="6" style="fill:var(--sf,#ffffff);stroke:currentColor" stroke-width="1.2"/>
+<text x="495" y="193.5" text-anchor="middle" font-size="10" fill="currentColor">understand</text>
+<rect x="705.0" y="176.0" width="120" height="28" rx="6" style="fill:var(--sf,#ffffff);stroke:currentColor" stroke-width="1.2"/>
+<text x="765" y="193.5" text-anchor="middle" font-size="10" fill="currentColor">route</text>
+<rect x="285.0" y="251.0" width="120" height="28" rx="6" style="fill:var(--sf,#ffffff);stroke:currentColor" stroke-width="1.2"/>
+<text x="345" y="268.5" text-anchor="middle" font-size="10" fill="currentColor">handoff</text>
+<rect x="435.0" y="251.0" width="120" height="28" rx="6" style="fill:var(--sf,#ffffff);stroke:var(--amber,#d9962b)" stroke-width="1.2"/>
+<text x="495" y="268.5" text-anchor="middle" font-size="10" fill="currentColor">⏸ clarify</text>
+<rect x="577.0" y="251.0" width="126" height="28" rx="6" style="fill:var(--sf,#ffffff);stroke:currentColor" stroke-width="1.2"/>
+<text x="640" y="268.5" text-anchor="middle" font-size="10" fill="currentColor">answer_inquiry</text>
+<rect x="700.0" y="240.0" width="130" height="28" rx="6" style="fill:var(--sf,#ffffff);stroke:currentColor" stroke-width="1.2"/>
+<text x="765" y="257.5" text-anchor="middle" font-size="9.5" fill="currentColor">resolve_transaction</text>
+<rect x="700.0" y="285.0" width="130" height="28" rx="6" style="fill:var(--sf,#ffffff);stroke:currentColor" stroke-width="1.2"/>
+<text x="765" y="302.5" text-anchor="middle" font-size="10" fill="currentColor">check_eligibility</text>
+<rect x="700.0" y="330.0" width="130" height="28" rx="6" style="fill:var(--sf,#ffffff);stroke:var(--amber,#d9962b)" stroke-width="1.2"/>
+<text x="765" y="347.5" text-anchor="middle" font-size="10" fill="currentColor">⏸ confirm</text>
+<rect x="700.0" y="375.0" width="130" height="28" rx="6" style="fill:var(--sf,#ffffff);stroke:currentColor" stroke-width="1.2"/>
+<text x="765" y="392.5" text-anchor="middle" font-size="10" fill="currentColor">file_dispute</text>
+<rect x="700.0" y="420.0" width="130" height="28" rx="6" style="fill:var(--sf,#ffffff);stroke:currentColor" stroke-width="1.2"/>
+<text x="765" y="437.5" text-anchor="middle" font-size="10" fill="currentColor">verify</text>
+<rect x="435.0" y="491.0" width="120" height="28" rx="6" style="fill:var(--sf,#ffffff);stroke:currentColor" stroke-width="1.2"/>
+<text x="495" y="508.5" text-anchor="middle" font-size="10" fill="currentColor">reply</text>
+<line x1="405" y1="190" x2="433" y2="190" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="555" y1="190" x2="703" y2="190" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<text x="629" y="182" text-anchor="middle" font-size="9" style="fill:var(--mu,#5b6773)">Jev + thresholds + policy</text>
+<line x1="765" y1="205" x2="765" y2="238" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="740" y1="205" x2="365" y2="249" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="740" y1="205" x2="515" y2="249" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="740" y1="205" x2="660" y2="249" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="765" y1="268" x2="765" y2="283" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="765" y1="313" x2="765" y2="328" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="765" y1="358" x2="765" y2="373" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="765" y1="403" x2="765" y2="418" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="765" y1="449" x2="557" y2="499" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="640" y1="280" x2="530" y2="489" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="495" y1="280" x2="495" y2="489" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="345" y1="280" x2="458" y2="489" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<text x="560" y="527" font-size="9.5" style="fill:var(--mu,#5b6773)">↺ next queued intent (multi_intent)</text>
+<text x="282" y="552" font-size="10" style="fill:var(--mu,#5b6773)">code gates on every path: token scope · ownership (not_found ≡ not owned) · dispute_policy.yaml</text>
+<text x="282" y="568" font-size="10" style="fill:var(--mu,#5b6773)">Claude has no tools · Jev can only pick among edges the graph already allows</text>
+<polyline points="433,505 244,505 244,150 224,150" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+<text x="282" y="522" font-size="9" style="fill:var(--mu,#5b6773)">reply · awaiting · refs · as_of</text>
+<polyline points="285,265 232,265 232,450 224,450" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+<rect x="920" y="62" width="300" height="78" rx="8" style="fill:var(--sf,#ffffff)" stroke="currentColor" stroke-width="1.4"/>
+<text x="932" y="81" font-size="12.5" font-weight="700" fill="currentColor">Claude · Amazon Bedrock</text>
+<text x="932" y="97" font-size="10.5" style="fill:var(--mu,#5b6773)">extract: Haiku 4.5 → JSON + english_gloss</text>
+<text x="932" y="111" font-size="10.5" style="fill:var(--mu,#5b6773)">compose: Sonnet 5.5 (effort low) → reply</text>
+<text x="932" y="125" font-size="10.5" style="fill:var(--mu,#5b6773)">structured outputs · per-role config</text>
+<rect x="920" y="152" width="300" height="92" rx="8" style="fill:var(--sf,#ffffff)" stroke="currentColor" stroke-width="1.4"/>
+<text x="932" y="171" font-size="12.5" font-weight="700" fill="currentColor">Jev · TypeSafe  jev-1.13.0</text>
+<text x="932" y="187" font-size="10.5" style="fill:var(--mu,#5b6773)">understand: intent · target_transaction</text>
+<text x="932" y="201" font-size="10.5" style="fill:var(--mu,#5b6773)">  dispute_reason · escalation nouls</text>
+<text x="932" y="215" font-size="10.5" style="fill:var(--mu,#5b6773)">  injection_attempt · confirmation</text>
+<text x="932" y="229" font-size="10.5" style="fill:var(--mu,#5b6773)">verify_reply: claims ⊆ receipts</text>
+<rect x="920" y="256" width="300" height="64" rx="8" style="fill:var(--sf,#ffffff)" stroke="currentColor" stroke-width="1.4"/>
+<text x="932" y="275" font-size="12.5" font-weight="700" fill="currentColor">S3 serving/  (pipeline output)</text>
+<text x="932" y="291" font-size="10.5" style="fill:var(--mu,#5b6773)">latest.json → run folder · parquet</text>
+<text x="932" y="305" font-size="10.5" style="fill:var(--mu,#5b6773)">DuckDB reads, sorted by customer_id</text>
+<rect x="920" y="332" width="300" height="92" rx="8" style="fill:var(--sf,#ffffff)" stroke="currentColor" stroke-width="1.4"/>
+<text x="932" y="351" font-size="12.5" font-weight="700" fill="currentColor">DynamoDB</text>
+<text x="932" y="367" font-size="10.5" style="fill:var(--mu,#5b6773)">checkpoints (TTL 30 d)</text>
+<text x="932" y="381" font-size="10.5" style="fill:var(--mu,#5b6773)">disputes  PK transaction_id (cond. put)</text>
+<text x="932" y="395" font-size="10.5" style="fill:var(--mu,#5b6773)">handoffs  GSI status+created_at</text>
+<text x="932" y="409" font-size="10.5" style="fill:var(--mu,#5b6773)">decision_records (TTL 90 d)</text>
+<rect x="920" y="436" width="300" height="50" rx="8" style="fill:var(--sf,#ffffff)" stroke="currentColor" stroke-width="1.4"/>
+<text x="932" y="455" font-size="12.5" font-weight="700" fill="currentColor">OpenTelemetry → CloudWatch</text>
+<text x="932" y="471" font-size="10.5" style="fill:var(--mu,#5b6773)">AgentCore Observability · turn_id</text>
+<text x="920" y="508" font-size="10" style="fill:var(--mu,#5b6773)">secret: JEV_API_KEY (Secrets Manager)</text>
+<text x="920" y="523" font-size="10" style="fill:var(--mu,#5b6773)">Bedrock · S3 · DynamoDB via IAM role</text>
+<line x1="890" y1="100" x2="918" y2="100" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="890" y1="198" x2="918" y2="198" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="890" y1="288" x2="918" y2="288" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="890" y1="378" x2="918" y2="378" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<line x1="890" y1="461" x2="918" y2="461" style="stroke:currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+<circle cx="0" cy="0" r="7" style="fill:var(--accent,#1a7f9c)" stroke="#ffffff" stroke-width="1.5" opacity="0"><animateMotion values="200,140;570,110;345,190;495,190;765,190;765,254;765,299;765,344;765,344;765,389;765,434;495,505;244,505;244,150;200,140;200,140" keyTimes="0;0.04;0.08;0.1333;0.1867;0.22;0.2667;0.3133;0.4;0.44;0.4867;0.5467;0.5733;0.6;0.62;1" dur="24s" repeatCount="indefinite" calcMode="linear"/><animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.6467;0.6507;1" dur="24s" repeatCount="indefinite"/></circle>
+<circle cx="0" cy="0" r="7" style="fill:var(--red,#d1493f)" stroke="#ffffff" stroke-width="1.5" opacity="0"><animateMotion values="200,140;200,140;570,110;345,190;495,190;765,190;345,265;232,265;232,450;120,450;120,450" keyTimes="0;0.667;0.7;0.73;0.78;0.82;0.87;0.9;0.93;0.95;1" dur="24s" repeatCount="indefinite" calcMode="linear"/><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.663;0.667;0.985;0.989;1" dur="24s" repeatCount="indefinite"/></circle>
+<line x1="890" y1="288" x2="918" y2="288" style="stroke:var(--accent,#1a7f9c)" stroke-width="4" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0;0" keyTimes="0;0.0493;0.0533;0.1067;0.1107;0.696;0.7;0.745;0.749;1" dur="24s" repeatCount="indefinite"/></line>
+<rect x="920" y="256" width="300" height="64" rx="8" style="fill:var(--accent,#1a7f9c);fill-opacity:0.16;stroke:var(--accent,#1a7f9c)" stroke-width="2" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0;0" keyTimes="0;0.0493;0.0533;0.1067;0.1107;0.696;0.7;0.745;0.749;1" dur="24s" repeatCount="indefinite"/></rect>
+<line x1="890" y1="100" x2="918" y2="100" style="stroke:var(--accent,#1a7f9c)" stroke-width="4" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0;0;1;1;0;0" keyTimes="0;0.0893;0.0933;0.1333;0.1373;0.4893;0.4933;0.5467;0.5507;0.741;0.745;0.78;0.784;1" dur="24s" repeatCount="indefinite"/></line>
+<rect x="920" y="62" width="300" height="78" rx="8" style="fill:var(--accent,#1a7f9c);fill-opacity:0.16;stroke:var(--accent,#1a7f9c)" stroke-width="2" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0;0;1;1;0;0" keyTimes="0;0.0893;0.0933;0.1333;0.1373;0.4893;0.4933;0.5467;0.5507;0.741;0.745;0.78;0.784;1" dur="24s" repeatCount="indefinite"/></rect>
+<line x1="890" y1="198" x2="918" y2="198" style="stroke:var(--amber,#d9962b)" stroke-width="4" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0;0;1;1;0;0;1;1;0;0" keyTimes="0;0.1293;0.1333;0.1867;0.1907;0.3427;0.3467;0.4;0.404;0.556;0.56;0.62;0.624;0.776;0.78;0.82;0.824;1" dur="24s" repeatCount="indefinite"/></line>
+<rect x="920" y="152" width="300" height="92" rx="8" style="fill:var(--amber,#d9962b);fill-opacity:0.16;stroke:var(--amber,#d9962b)" stroke-width="2" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0;0;1;1;0;0;1;1;0;0" keyTimes="0;0.1293;0.1333;0.1867;0.1907;0.3427;0.3467;0.4;0.404;0.556;0.56;0.62;0.624;0.776;0.78;0.82;0.824;1" dur="24s" repeatCount="indefinite"/></rect>
+<line x1="890" y1="378" x2="918" y2="378" style="stroke:var(--accent,#1a7f9c)" stroke-width="4" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0;0;1;1;0;0" keyTimes="0;0.3093;0.3133;0.3467;0.3507;0.396;0.4;0.5333;0.5373;0.866;0.87;0.95;0.954;1" dur="24s" repeatCount="indefinite"/></line>
+<rect x="920" y="332" width="300" height="92" rx="8" style="fill:var(--accent,#1a7f9c);fill-opacity:0.16;stroke:var(--accent,#1a7f9c)" stroke-width="2" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0;0;1;1;0;0" keyTimes="0;0.3093;0.3133;0.3467;0.3507;0.396;0.4;0.5333;0.5373;0.866;0.87;0.95;0.954;1" dur="24s" repeatCount="indefinite"/></rect>
+<text x="570" y="40" text-anchor="middle" font-size="11.5" fill="currentColor" opacity="0">① «Me cobraron dos veces Netflix, quiero disputarlo» → Bearer JWT → AgentCore → re-verified<animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.08;0.084;1" dur="24s" repeatCount="indefinite"/></text>
+<text x="570" y="40" text-anchor="middle" font-size="11.5" fill="currentColor" opacity="0">load_context: this customer's products + 60-day transactions (DuckDB over S3 parquet)<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.076;0.08;0.1333;0.1373;1" dur="24s" repeatCount="indefinite"/></text>
+<text x="570" y="40" text-anchor="middle" font-size="11.5" fill="currentColor" opacity="0">understand: Claude extract + gloss → one Jev call: intent=dispute_charge · target=c7 · reason=duplicate<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.1293;0.1333;0.1867;0.1907;1" dur="24s" repeatCount="indefinite"/></text>
+<text x="570" y="40" text-anchor="middle" font-size="11.5" fill="currentColor" opacity="0">route → resolve_transaction → check_eligibility: Approved · ≤ 60 d · ≤ USD 500 · not already disputed<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.1827;0.1867;0.3133;0.3173;1" dur="24s" repeatCount="indefinite"/></text>
+<text x="570" y="40" text-anchor="middle" font-size="11.5" fill="var(--amber,#d9962b)" opacity="0">⏸ confirm: fixed ES summary, graph pauses; next message → Jev confirmation = confirm ≥ 0.90<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.3093;0.3133;0.4;0.404;1" dur="24s" repeatCount="indefinite"/></text>
+<text x="570" y="40" text-anchor="middle" font-size="11.5" fill="currentColor" opacity="0">file_dispute: conditional put (PK transaction_id) → verify: consistent read-back = receipt<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.396;0.4;0.5333;0.5373;1" dur="24s" repeatCount="indefinite"/></text>
+<text x="570" y="40" text-anchor="middle" font-size="11.5" fill="currentColor" opacity="0">reply: Claude composes from receipts → Jev verify_reply → «Disputa DSP-… registrada»<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.5293;0.5333;0.6467;0.6507;1" dur="24s" repeatCount="indefinite"/></text>
+<text x="570" y="40" text-anchor="middle" font-size="11.5" fill="var(--red,#d1493f)" opacity="0">② «No reconozco este cargo, alguien usó mi tarjeta» → Jev reports_unauthorized_use ≥ 0.50<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.663;0.667;0.845;0.849;1" dur="24s" repeatCount="indefinite"/></text>
+<text x="570" y="40" text-anchor="middle" font-size="11.5" fill="var(--red,#d1493f)" opacity="0">handoff: code builds handoff.v1 (verified facts · actions · decisions · open questions) → human queue<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.841;0.845;0.985;0.989;1" dur="24s" repeatCount="indefinite"/></text>
+</svg>
