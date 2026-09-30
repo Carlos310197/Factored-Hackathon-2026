@@ -13,3 +13,5 @@ dbt/logs/
 logs/
 fixtures/out/
 .DS_Store
+# visual brainstorm mockups
+.superpowers/
