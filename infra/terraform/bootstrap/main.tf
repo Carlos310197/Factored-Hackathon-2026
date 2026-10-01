@@ -25,7 +25,7 @@ variable "organizer_secret" {
 }
 
 provider "aws" {
-  region = "us-east-2"
+  region = "us-east-1"
 }
 
 # Password comes from SNOWFLAKE_PASSWORD (apply.sh reads it from the snow CLI config).
@@ -45,7 +45,8 @@ locals {
 
 # --- Terraform state ---
 resource "aws_s3_bucket" "tfstate" {
-  bucket = "fh26-tfstate-${local.account_id}"
+  bucket        = "fh26-tfstate-${local.account_id}-use1" # -use1: S3 kept the old name pinned to us-east-2 after deletion
+  force_destroy = true                                    # region move 2026-10-01; state is backed up and re-uploaded by hand-off steps
 }
 
 resource "aws_s3_bucket_versioning" "tfstate" {

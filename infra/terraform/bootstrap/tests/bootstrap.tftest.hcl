@@ -35,7 +35,7 @@ run "state_bucket_named_and_private" {
   command = apply
 
   assert {
-    condition     = aws_s3_bucket.tfstate.bucket == "fh26-tfstate-762197749808"
+    condition     = aws_s3_bucket.tfstate.bucket == "fh26-tfstate-762197749808-use1"
     error_message = "state bucket name"
   }
 
