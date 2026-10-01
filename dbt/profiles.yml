@@ -1,0 +1,34 @@
+# Committed; no secrets. dev/fixture: your user + SNOWFLAKE_PASSWORD (bin/dbt exports it from the snow CLI config).
+# ci/ci_fixture: PIPELINE_SVC via AWS workload identity (role pipeline-runner, ambient AWS credentials).
+latam_bank:
+  target: dev
+  outputs:
+    dev: &dev
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: PIPELINE_ROLE
+      warehouse: WH_PIPELINE
+      database: LATAM_BANK
+      schema: STAGING
+      threads: 4
+      client_session_keep_alive: false
+    fixture:
+      <<: *dev
+      database: LATAM_FIXTURE
+    ci: &ci
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: PIPELINE_SVC
+      authenticator: workload_identity
+      workload_identity_provider: AWS
+      role: PIPELINE_ROLE
+      warehouse: WH_PIPELINE
+      database: LATAM_BANK
+      schema: STAGING
+      threads: 4
+      client_session_keep_alive: false
+    ci_fixture:
+      <<: *ci
+      database: LATAM_FIXTURE

@@ -1,0 +1,9 @@
+version: 2
+seeds:
+  - name: seed_decline_reason
+    description: "TEAM-AUTHORED SYNTHETIC POLICY DATA modeled on ISO 8583 response codes. Not from the organizer dataset."
+    config:
+      column_types: {response_code: varchar(2), reason_key: varchar, customer_text_es: varchar, customer_text_pt: varchar, next_step: varchar}
+    columns:
+      - name: response_code
+        tests: [unique, not_null]

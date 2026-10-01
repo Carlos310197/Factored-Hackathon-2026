@@ -1,0 +1,88 @@
+version: 2
+models:
+  - name: stg_customers
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]
+      - name: country
+        tests: [not_null]
+      - name: customer_detected_accent
+  - name: stg_products
+    columns:
+      - name: product_id
+        tests: [unique, not_null]
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships: {to: ref('stg_customers'), field: customer_id}
+      - name: product_type
+        tests:
+          - accepted_values: {values: ['Cuenta Ahorro','Cuenta Corriente','Tarjeta Crédito','Tarjeta Débito','Préstamo Personal','Préstamo Hipotecario','Inversión','Seguro']}
+      - name: product_status
+        tests:
+          - accepted_values: {values: ['Active','Blocked','Closed','Suspended']}
+  - name: stg_transactions
+    columns:
+      - name: transaction_id
+        tests: [unique, not_null]
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships: {to: ref('stg_customers'), field: customer_id}
+      - name: product_id
+        tests:
+          - not_null
+          - relationships: {to: ref('stg_products'), field: product_id}
+      - name: transaction_status
+        tests:
+          - accepted_values: {values: ['Approved','Declined','Pending','Reversed']}
+      - name: transaction_type
+        tests:
+          - accepted_values: {values: ['Deposit','Withdrawal','Transfer','Payment','Purchase','Adjustment']}
+      - name: channel
+        tests:
+          - accepted_values: {values: ['ATM','Branch','Web','App','POS','Transfer']}
+  - name: stg_complaints
+    columns:
+      - name: complaint_id
+        tests: [unique, not_null]
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships: {to: ref('stg_customers'), field: customer_id}
+      - name: affected_product_id
+        tests:
+          - relationships: {to: ref('stg_products'), field: product_id}
+      - name: case_type
+        tests:
+          - accepted_values: {values: ['Complaint','Claim','Request','Suggestion']}
+      - name: status
+        tests:
+          - accepted_values: {values: ['Open','In Process','Escalated','Resolved','Closed','Rejected']}
+      - name: priority
+        tests:
+          - accepted_values: {values: ['Low','Medium','High','Critical']}
+      - name: claimed_amount
+        tests:
+          - not_null: {config: {severity: warn}}
+  - name: stg_interactions
+    columns:
+      - name: interaction_id
+        tests: [unique, not_null]
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships: {to: ref('stg_customers'), field: customer_id}
+      - name: reason_category
+        tests:
+          - accepted_values: {values: ['Transaccional','Producto','Queja','Técnico','Comercial','Retención']}
+      - name: duration_seconds
+        tests:
+          - not_null: {config: {severity: warn}}
+      - name: customer_detected_accent
+        tests:
+          - not_null: {config: {severity: warn}}
+  - name: quarantine
+    columns:
+      - name: reason
+        tests: [not_null]

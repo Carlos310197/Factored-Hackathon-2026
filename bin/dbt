@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Local dbt: password from the snow CLI connection (SNOWFLAKE_CONNECTION_NAME, default sbx), never stored in .env.
+set -euo pipefail
+cd "$(dirname "$0")/../dbt"
+CONN="${SNOWFLAKE_CONNECTION_NAME:-sbx}"
+eval "$(python3 - "$CONN" <<'PY'
+import pathlib, shlex, sys, tomllib
+c = tomllib.loads((pathlib.Path.home() / "Library/Application Support/snowflake/config.toml").read_text())["connections"][sys.argv[1]]
+for k in ("account", "user", "password"):
+    print(f"export SNOWFLAKE_{k.upper()}={shlex.quote(c[k])}")
+PY
+)"
+export DBT_PROFILES_DIR=.
+exec uv run dbt "$@"

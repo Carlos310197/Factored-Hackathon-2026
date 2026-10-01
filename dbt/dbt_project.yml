@@ -1,0 +1,23 @@
+name: latam_bank
+version: "1.0.0"
+profile: latam_bank
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+models:
+  latam_bank:
+    staging:
+      +schema: STAGING
+      +materialized: table
+    curated:
+      +schema: CURATED
+      +materialized: table
+seeds:
+  latam_bank:
+    +schema: CURATED
+tests:
+  +store_failures: true
+  +schema: META

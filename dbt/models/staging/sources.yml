@@ -1,0 +1,140 @@
+version: 2
+sources:
+  - name: raw
+    database: "{{ target.database }}"
+    schema: RAW
+    loaded_at_field: _loaded_at
+    freshness:
+      warn_after: {count: 2, period: day}
+      error_after: {count: 7, period: day}
+    tables:
+      - name: customers
+        columns:
+          - {name: customer_id}
+          - {name: document_number}
+          - {name: document_type}
+          - {name: first_name}
+          - {name: last_name}
+          - {name: date_of_birth}
+          - {name: gender}
+          - {name: email}
+          - {name: mobile_phone}
+          - {name: landline_phone}
+          - {name: address}
+          - {name: city}
+          - {name: state}
+          - {name: country}
+          - {name: postal_code}
+          - {name: detected_accent}
+          - {name: segment}
+          - {name: credit_score}
+          - {name: estimated_monthly_income}
+          - {name: occupation}
+          - {name: marital_status}
+          - {name: education_level}
+          - {name: registration_date}
+          - {name: registration_branch_id}
+          - {name: customer_status}
+          - {name: last_updated}
+          - {name: accepts_marketing}
+      - name: products
+        columns:
+          - {name: product_id}
+          - {name: customer_id}
+          - {name: product_type}
+          - {name: product_number}
+          - {name: currency}
+          - {name: current_balance}
+          - {name: credit_limit}
+          - {name: interest_rate}
+          - {name: opening_date}
+          - {name: expiration_date}
+          - {name: opening_branch_id}
+          - {name: product_status}
+          - {name: opening_channel}
+          - {name: has_linked_app}
+          - {name: days_past_due}
+          - {name: last_transaction_date}
+          - {name: last_updated}
+      - name: transactions
+        columns:
+          - {name: transaction_id}
+          - {name: transaction_date}
+          - {name: process_date}
+          - {name: product_id}
+          - {name: customer_id}
+          - {name: transaction_type}
+          - {name: transaction_category}
+          - {name: amount}
+          - {name: currency}
+          - {name: amount_usd}
+          - {name: channel}
+          - {name: branch_id}
+          - {name: merchant_name}
+          - {name: merchant_category}
+          - {name: transaction_country}
+          - {name: transaction_city}
+          - {name: transaction_status}
+          - {name: response_code}
+          - {name: is_fraud}
+          - {name: fraud_score}
+          - {name: latitude}
+          - {name: longitude}
+      - name: complaints
+        columns:
+          - {name: complaint_id}
+          - {name: creation_date}
+          - {name: process_date}
+          - {name: customer_id}
+          - {name: case_type}
+          - {name: category}
+          - {name: subcategory}
+          - {name: reception_channel}
+          - {name: affected_product_id}
+          - {name: related_branch_id}
+          - {name: origin_interaction_id}
+          - {name: description}
+          - {name: claimed_amount}
+          - {name: currency}
+          - {name: priority}
+          - {name: status}
+          - {name: assigned_agent_id}
+          - {name: assignment_date}
+          - {name: first_response_date}
+          - {name: resolution_date}
+          - {name: closing_date}
+          - {name: sla_breached}
+          - {name: resolution_days}
+          - {name: resolution}
+          - {name: compensation_granted}
+          - {name: resolution_satisfaction}
+          - {name: is_repeat_complainer}
+      - name: interactions
+        columns:
+          - {name: interaction_id}
+          - {name: interaction_date}
+          - {name: process_date}
+          - {name: customer_id}
+          - {name: agent_id}
+          - {name: interaction_type}
+          - {name: channel}
+          - {name: contact_reason}
+          - {name: reason_category}
+          - {name: duration_seconds}
+          - {name: wait_time_seconds}
+          - {name: was_resolved}
+          - {name: requires_followup}
+          - {name: detected_sentiment}
+          - {name: sentiment_score}
+          - {name: customer_detected_accent}
+          - {name: agent_used_accent}
+          - {name: was_escalated}
+          - {name: mentioned_products}
+          - {name: has_transcript}
+          - {name: has_recording}
+  - name: meta
+    database: "{{ target.database }}"
+    schema: META
+    tables:
+      - name: run_manifest
+      - name: dq_results
