@@ -17,4 +17,8 @@ fixtures/out/
 .superpowers/
 .claude/
 .agents/
-analysis/
+analysis/# terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
