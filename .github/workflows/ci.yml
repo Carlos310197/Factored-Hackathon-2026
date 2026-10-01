@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+      - run: uv sync
+      - run: uv run pytest -m "not snowflake" -q
+
+  # Live proof against LATAM_FIXTURE. main only: pipeline-runner (PIPELINE_ROLE) never reaches PR code.
+  fixture:
+    needs: unit
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: fixture
+      cancel-in-progress: false
+    env:
+      SNOWFLAKE_ACCOUNT: RLQHFPF-AXC97788
+      SNOWFLAKE_USER: PIPELINE_SVC
+      SNOWFLAKE_ROLE: PIPELINE_ROLE
+      SNOWFLAKE_WAREHOUSE: WH_PIPELINE
+      SNOWFLAKE_DATABASE: LATAM_FIXTURE
+      SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER: AWS
+      DBT_FIXTURE_TARGET: ci_fixture
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: arn:aws:iam::762197749808:role/pipeline-runner
+          aws-region: us-east-2
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+      - run: uv sync
+      - run: SETUP_DATABASE=LATAM_FIXTURE uv run python -m pipeline.setup 02_raw_tables.sql
+      - run: uv run pytest tests/test_fixture_drop.py -m snowflake -q

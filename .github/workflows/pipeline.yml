@@ -1,0 +1,55 @@
+name: pipeline
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # daily 06:00 UTC
+  push:
+    branches: [main]
+    paths: ["pipeline/**", "dbt/**", "infra/snowflake/**", ".github/workflows/pipeline.yml"]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+# PIPELINE_SVC via AWS workload identity (role pipeline-runner); no stored secret anywhere.
+env:
+  SNOWFLAKE_ACCOUNT: RLQHFPF-AXC97788
+  SNOWFLAKE_USER: PIPELINE_SVC
+  SNOWFLAKE_ROLE: PIPELINE_ROLE
+  SNOWFLAKE_WAREHOUSE: WH_PIPELINE
+  SNOWFLAKE_DATABASE: LATAM_BANK
+  SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER: AWS
+  DBT_PROFILES_DIR: dbt
+  ORGANIZER_STAGE_URL: s3://factored-datathon-2026-s3-157725502942-us-east-2-an/data/
+  RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+
+jobs:
+  # ponytail: one job (load -> build -> export) to pay setup once; split jobs if steps need different runners
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: arn:aws:iam::762197749808:role/pipeline-runner
+          aws-region: us-east-2
+          role-duration-seconds: 3600
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+      - run: uv sync
+      - run: uv run python -m pipeline.setup 02_raw_tables.sql
+      - run: uv run python -m pipeline.load --run-id "$RUN_ID" --stage-url-prefix "$ORGANIZER_STAGE_URL"
+      - run: uv run dbt source freshness --project-dir dbt --target ci || true # warn/error recorded in the log; dbt build gates
+      - run: uv run dbt build --project-dir dbt --target ci
+      - if: always()
+        run: uv run python -m pipeline.dq_results --run-id "$RUN_ID"
+      - run: uv run python -m pipeline.export --run-id "$RUN_ID"
