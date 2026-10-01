@@ -37,7 +37,7 @@ data "aws_caller_identity" "me" {}
 
 locals {
   account_id          = data.aws_caller_identity.me.account_id
-  github_repo         = "Carlos310197/Factored-Hackathon-2026"
+  github_sub_prefix   = "repo:Carlos310197@66190532/Factored-Hackathon-2026@1389485180" # immutable OIDC subject, see bootstrap
   serving_bucket      = "latam-bank-serving-${local.account_id}"
   serving_url         = "s3://${local.serving_bucket}/serving/"
   snowflake_role_name = "snowflake-serving"
