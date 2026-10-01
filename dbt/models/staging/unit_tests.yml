@@ -1,0 +1,49 @@
+unit_tests:
+  - name: typed_transactions_dedup_cast_enum
+    model: typed_transactions
+    given:
+      - input: source('raw', 'transactions')
+        rows:
+          # T1 loaded twice: the newer load (Reversed) must win
+          - {transaction_id: T1, transaction_date: "2026-06-17 10:00:00", process_date: "2026-06-17", product_id: P1, customer_id: C1, transaction_type: Purchase, amount: "10.00", currency: MXN, channel: POS, transaction_country: Mexico, transaction_status: Approved, is_fraud: "False", _loaded_at: "2026-06-18 00:00:00", _file_row: 1}
+          - {transaction_id: T1, transaction_date: "2026-06-17 10:00:00", process_date: "2026-06-17", product_id: P1, customer_id: C1, transaction_type: Purchase, amount: "10.00", currency: MXN, channel: POS, transaction_country: Mexico, transaction_status: Reversed, is_fraud: "False", _loaded_at: "2026-06-19 00:00:00", _file_row: 1}
+          # T2: bad amount
+          - {transaction_id: T2, transaction_date: "2026-06-17 11:00:00", process_date: "2026-06-17", product_id: P1, customer_id: C1, transaction_type: Purchase, amount: "N/A", currency: MXN, channel: POS, transaction_country: Mexico, transaction_status: Approved, is_fraud: "False", _loaded_at: "2026-06-18 00:00:00", _file_row: 2}
+          # T3 duplicated inside one file: highest _file_row wins
+          - {transaction_id: T3, transaction_date: "2026-06-17 12:00:00", process_date: "2026-06-17", product_id: P1, customer_id: C1, transaction_type: Deposit, amount: "5.00", currency: MXN, channel: ATM, transaction_country: Mexico, transaction_status: Pending, is_fraud: "False", _loaded_at: "2026-06-18 00:00:00", _file_row: 3}
+          - {transaction_id: T3, transaction_date: "2026-06-17 12:00:00", process_date: "2026-06-17", product_id: P1, customer_id: C1, transaction_type: Deposit, amount: "5.00", currency: MXN, channel: ATM, transaction_country: Mexico, transaction_status: Approved, is_fraud: "False", _loaded_at: "2026-06-18 00:00:00", _file_row: 4}
+          # T4: ISO timestamp with T separator must be a cast failure, not a silent null
+          - {transaction_id: T4, transaction_date: "2026-06-17T13:00:00", process_date: "2026-06-17", product_id: P1, customer_id: C1, transaction_type: Purchase, amount: "1.00", currency: MXN, channel: POS, transaction_country: Mexico, transaction_status: Approved, is_fraud: "False", _loaded_at: "2026-06-18 00:00:00", _file_row: 5}
+          # T5: unknown status
+          - {transaction_id: T5, transaction_date: "2026-06-17 14:00:00", process_date: "2026-06-17", product_id: P1, customer_id: C1, transaction_type: Purchase, amount: "1.00", currency: MXN, channel: POS, transaction_country: Mexico, transaction_status: Bogus, is_fraud: "False", _loaded_at: "2026-06-18 00:00:00", _file_row: 6}
+    expect:
+      rows:
+        - {transaction_id: T1, transaction_status: Reversed, _quarantine_reason: null}
+        - {transaction_id: T2, transaction_status: Approved, _quarantine_reason: "cast_failed:amount"}
+        - {transaction_id: T3, transaction_status: Approved, _quarantine_reason: null}
+        - {transaction_id: T4, transaction_status: Approved, _quarantine_reason: "cast_failed:transaction_date"}
+        - {transaction_id: T5, transaction_status: Bogus, _quarantine_reason: "enum:transaction_status"}
+
+  - name: typed_customers_registration_timestamp_to_date
+    model: typed_customers
+    given:
+      - input: source('raw', 'customers')
+        rows:
+          # real files carry a full timestamp; the contract type is date
+          - {customer_id: C1, country: Mexico, customer_status: Active, registration_date: "2021-07-30 05:39:39", last_updated: "2021-08-15 05:39:39", _loaded_at: "2026-06-18 00:00:00", _file_row: 1}
+          - {customer_id: C2, country: Mexico, customer_status: Active, registration_date: "30/07/2021", _loaded_at: "2026-06-18 00:00:00", _file_row: 2}
+    expect:
+      rows:
+        - {customer_id: C1, registration_date: "2021-07-30", _quarantine_reason: null}
+        - {customer_id: C2, registration_date: null, _quarantine_reason: "cast_failed:registration_date"}
+
+  - name: typed_complaints_float_text_to_integer
+    model: typed_complaints
+    given:
+      - input: source('raw', 'complaints')
+        rows:
+          # integers arrive as "9.0"
+          - {complaint_id: K1, creation_date: "2026-06-17 10:00:00", process_date: "2026-06-17", customer_id: C1, case_type: Complaint, status: Open, priority: Low, resolution_days: "9.0", resolution_satisfaction: "4.0", _loaded_at: "2026-06-18 00:00:00", _file_row: 1}
+    expect:
+      rows:
+        - {complaint_id: K1, resolution_days: 9, resolution_satisfaction: 4, _quarantine_reason: null}
