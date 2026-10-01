@@ -1,0 +1,98 @@
+version: 2
+models:
+  - name: dim_customer
+    config: {contract: {enforced: true}}
+    columns:
+      - {name: customer_id, data_type: varchar, constraints: [{type: not_null}], tests: [unique, not_null]}
+      - {name: country, data_type: varchar}
+      - {name: city, data_type: varchar}
+      - {name: state, data_type: varchar}
+      - {name: segment, data_type: varchar}
+      - {name: detected_accent, data_type: varchar}
+      - {name: customer_status, data_type: varchar}
+      - {name: registration_date, data_type: date}
+      - {name: accepts_marketing, data_type: boolean}
+      - {name: last_updated, data_type: timestamp_ntz}
+  - name: dim_product
+    config: {contract: {enforced: true}}
+    columns:
+      - {name: product_id, data_type: varchar, constraints: [{type: not_null}], tests: [unique, not_null]}
+      - {name: customer_id, data_type: varchar, tests: [not_null]}
+      - {name: product_type, data_type: varchar}
+      - {name: product_last4, data_type: varchar}
+      - {name: currency, data_type: varchar}
+      - {name: current_balance, data_type: "number(15,2)"}
+      - {name: credit_limit, data_type: "number(15,2)"}
+      - {name: interest_rate, data_type: "number(5,2)"}
+      - {name: opening_date, data_type: date}
+      - {name: expiration_date, data_type: date}
+      - {name: product_status, data_type: varchar}
+      - {name: has_linked_app, data_type: boolean}
+      - {name: days_past_due, data_type: number}
+      - {name: last_transaction_date, data_type: timestamp_ntz}
+      - {name: last_updated, data_type: timestamp_ntz}
+  - name: fct_transaction
+    config: {contract: {enforced: true}}
+    columns:
+      - {name: transaction_id, data_type: varchar, constraints: [{type: not_null}], tests: [unique, not_null]}
+      - {name: transaction_ts, data_type: timestamp_ntz, tests: [not_null]}
+      - {name: process_date, data_type: date, tests: [not_null]}
+      - {name: product_id, data_type: varchar, tests: [not_null]}
+      - {name: customer_id, data_type: varchar, tests: [not_null]}
+      - {name: transaction_type, data_type: varchar}
+      - {name: transaction_category, data_type: varchar}
+      - {name: amount, data_type: "number(15,2)", tests: [not_null]}
+      - {name: currency, data_type: varchar}
+      - {name: amount_usd, data_type: "number(15,2)"}
+      - {name: channel, data_type: varchar}
+      - {name: merchant_name, data_type: varchar}
+      - {name: merchant_category, data_type: varchar}
+      - {name: transaction_country, data_type: varchar}
+      - {name: transaction_city, data_type: varchar}
+      - {name: transaction_status, data_type: varchar}
+      - {name: response_code, data_type: varchar}
+      - {name: decline_reason_key, data_type: varchar}
+      - {name: is_fraud, data_type: boolean}
+      - {name: fraud_score, data_type: "number(5,2)"}
+  - name: fct_complaint
+    config: {contract: {enforced: true}}
+    columns:
+      - {name: complaint_id, data_type: varchar, constraints: [{type: not_null}], tests: [unique, not_null]}
+      - {name: creation_ts, data_type: timestamp_ntz}
+      - {name: process_date, data_type: date}
+      - {name: customer_id, data_type: varchar, tests: [not_null]}
+      - {name: case_type, data_type: varchar}
+      - {name: category, data_type: varchar}
+      - {name: subcategory, data_type: varchar}
+      - {name: reception_channel, data_type: varchar}
+      - {name: affected_product_id, data_type: varchar}
+      - {name: claimed_amount, data_type: "number(15,2)"}
+      - {name: currency, data_type: varchar}
+      - {name: priority, data_type: varchar}
+      - {name: status, data_type: varchar}
+      - {name: sla_breached, data_type: boolean}
+      - {name: resolution_days, data_type: number}
+      - {name: resolution_satisfaction, data_type: number}
+      - {name: is_repeat_complainer, data_type: boolean}
+      - {name: first_response_ts, data_type: timestamp_ntz}
+      - {name: resolution_ts, data_type: timestamp_ntz}
+      - {name: closing_ts, data_type: timestamp_ntz}
+  - name: fct_interaction
+    config: {contract: {enforced: true}}
+    columns:
+      - {name: interaction_id, data_type: varchar, constraints: [{type: not_null}], tests: [unique, not_null]}
+      - {name: interaction_ts, data_type: timestamp_ntz}
+      - {name: process_date, data_type: date}
+      - {name: customer_id, data_type: varchar, tests: [not_null]}
+      - {name: channel, data_type: varchar}
+      - {name: interaction_type, data_type: varchar}
+      - {name: reason_category, data_type: varchar}
+      - {name: duration_seconds, data_type: number}
+      - {name: wait_time_seconds, data_type: number}
+      - {name: was_resolved, data_type: boolean}
+      - {name: requires_followup, data_type: boolean}
+      - {name: was_escalated, data_type: boolean}
+      - {name: detected_sentiment, data_type: varchar}
+      - {name: sentiment_score, data_type: "number(3,2)"}
+      - {name: customer_detected_accent, data_type: varchar}
+      - {name: has_transcript, data_type: boolean}

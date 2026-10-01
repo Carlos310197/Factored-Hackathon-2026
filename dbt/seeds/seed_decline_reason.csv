@@ -1,0 +1,6 @@
+response_code,reason_key,customer_text_es,customer_text_pt,next_step
+00,approved,Operación aprobada,Operação aprovada,none
+05,do_not_honor,El banco emisor rechazó la operación,O banco emissor recusou a operação,contact_issuer
+14,invalid_card,El número de tarjeta no es válido,O número do cartão não é válido,verify_card
+51,insufficient_funds,Fondos insuficientes,Saldo insuficiente,add_funds
+54,expired_card,La tarjeta está vencida,O cartão está vencido,request_replacement
