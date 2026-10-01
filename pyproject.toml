@@ -1,0 +1,17 @@
+[project]
+name = "latam-bank-pipeline"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "snowflake-connector-python>=3.15",
+  "dbt-core>=1.9",
+  "dbt-snowflake>=1.9",
+  "python-dotenv>=1.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8", "pyarrow>=17"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["snowflake: needs a live Snowflake connection (env vars)"]
