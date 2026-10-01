@@ -2,10 +2,10 @@ name: infra
 
 on:
   pull_request:
-    paths: ["infra/terraform/platform/**", ".github/workflows/infra.yml"]
+    paths: ["infra/terraform/platform/**", "infra/terraform/app/**", ".github/workflows/infra.yml"]
   push:
     branches: [main]
-    paths: ["infra/terraform/platform/**", ".github/workflows/infra.yml"]
+    paths: ["infra/terraform/platform/**", "infra/terraform/app/**", ".github/workflows/infra.yml"]
 
 permissions:
   id-token: write
@@ -25,12 +25,18 @@ env:
 defaults:
   run:
     shell: bash
-    working-directory: infra/terraform/platform
 
 jobs:
   check:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: [platform, app]
+    defaults:
+      run:
+        working-directory: infra/terraform/${{ matrix.stack }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
@@ -45,6 +51,13 @@ jobs:
   apply:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: [platform, app]
+    defaults:
+      run:
+        working-directory: infra/terraform/${{ matrix.stack }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
@@ -60,12 +73,15 @@ jobs:
       - run: terraform test
       # ponytail: no saved plan file (it would carry the organizer secret in plaintext); main re-plans at apply
       - run: terraform apply -input=false -auto-approve -lock-timeout=5m
-      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+      - if: matrix.stack == 'platform'
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
         with:
           role-to-assume: ${{ env.PIPELINE_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+      - if: matrix.stack == 'platform'
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
       - name: Smoke test
+        if: matrix.stack == 'platform'
         working-directory: .
         env:
           SNOWFLAKE_ACCOUNT: RLQHFPF-AXC97788

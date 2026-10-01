@@ -70,3 +70,13 @@ def test_actions_pinned_to_commit_sha():
     import re
     uses = re.findall(r"uses:\s*(\S+)", Path(".github/workflows/infra.yml").read_text())
     assert uses and all(re.fullmatch(r"[\w.-]+/[\w.-]+@[0-9a-f]{40}", u) for u in uses), uses
+
+
+def test_every_stack_is_checked_and_applied():
+    for job in ("check", "apply"):
+        assert WF["jobs"][job]["strategy"]["matrix"]["stack"] == ["platform", "app"]
+        assert WF["jobs"][job]["defaults"]["run"]["working-directory"] == "infra/terraform/${{ matrix.stack }}"
+    for event in ("pull_request", "push"):
+        assert "infra/terraform/app/**" in ON[event]["paths"]
+    smoke = next(s for s in WF["jobs"]["apply"]["steps"] if s.get("name") == "Smoke test")
+    assert smoke["if"] == "matrix.stack == 'platform'"
