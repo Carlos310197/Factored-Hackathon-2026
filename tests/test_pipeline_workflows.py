@@ -44,5 +44,6 @@ def test_pipeline_order_schedule_and_concurrency():
 def test_dq_results_and_failed_steps_are_not_masked():
     steps = PL["jobs"]["run"]["steps"]
     dq = next(s for s in steps if "pipeline.dq_results" in s.get("run", ""))
-    assert dq.get("if") == "always()"  # DQ evidence is written even when dbt build fails
+    # DQ evidence is written even when dbt build fails, but not when dbt never ran (the load error stays the visible failure)
+    assert dq.get("if") == "always() && hashFiles('dbt/target/run_results.json') != ''"
     assert PL["defaults"]["run"]["shell"] == "bash"  # -eo pipefail

@@ -82,3 +82,15 @@ def test_copy_tolerates_zero_files_processed_row():
             self._last = [("Copy executed with 0 files processed.",)]
             return self
     assert copy_files(Cur(), "TRANSACTIONS", "RAW.ORGANIZER_STAGE", ["transactions/t0.csv"], force=False) == {"transactions/t0.csv": 0}
+
+
+def test_copy_escapes_quotes_in_file_names():
+    from pipeline.load import copy_files
+    class Cur(FakeCur):
+        def execute(self, sql, params=None):
+            self.sql = sql
+            self._last = []
+            return self
+    cur = Cur()
+    copy_files(cur, "TRANSACTIONS", "RAW.ORGANIZER_STAGE", ["transactions/o'brien.csv"], force=False)
+    assert "files = ('transactions/o''brien.csv')" in cur.sql
