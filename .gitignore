@@ -18,3 +18,8 @@ fixtures/out/
 .claude/
 .agents/
 analysis/
+# terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan

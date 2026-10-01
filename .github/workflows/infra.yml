@@ -1,0 +1,77 @@
+name: infra
+
+on:
+  pull_request:
+    paths: ["infra/terraform/platform/**", ".github/workflows/infra.yml"]
+  push:
+    branches: [main]
+    paths: ["infra/terraform/platform/**", ".github/workflows/infra.yml"]
+
+permissions:
+  id-token: write
+  contents: read
+
+# Serialize runs per ref; with apply re-planning from HEAD, a cancelled pending run loses nothing.
+concurrency:
+  group: infra-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-2
+  AWS_ROLE_ARN: arn:aws:iam::762197749808:role/gha-deploy
+  PIPELINE_ROLE_ARN: arn:aws:iam::762197749808:role/pipeline-runner
+  TF_IN_AUTOMATION: "true"
+
+defaults:
+  run:
+    shell: bash
+    working-directory: infra/terraform/platform
+
+jobs:
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: 1.15.2
+          terraform_wrapper: false
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
+      - run: terraform test
+
+  apply:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: 1.15.2
+          terraform_wrapper: false
+      - run: terraform init -input=false
+      - run: terraform validate
+      - run: terraform test
+      # ponytail: no saved plan file (it would carry the organizer secret in plaintext); main re-plans at apply
+      - run: terraform apply -input=false -auto-approve -lock-timeout=5m
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ env.PIPELINE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+      - name: Smoke test
+        working-directory: .
+        env:
+          SNOWFLAKE_ACCOUNT: RLQHFPF-AXC97788
+          SNOWFLAKE_USER: PIPELINE_SVC
+          SNOWFLAKE_ROLE: PIPELINE_ROLE
+          SNOWFLAKE_WAREHOUSE: WH_PIPELINE
+          SNOWFLAKE_DATABASE: LATAM_BANK
+          SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER: AWS
+        run: uv run pytest -m snowflake tests/test_infra_smoke.py -q

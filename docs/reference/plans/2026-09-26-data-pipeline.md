@@ -6,9 +6,9 @@
 
 **Architecture:** A Python loader issues `COPY INTO` per new or changed file (detected by ETag against a manifest) into all-text RAW tables. dbt-snowflake types, deduplicates and tests the data into STAGING (with a QUARANTINE table) and contract-enforced CURATED marts. A Python export step unloads the curated tables as parquet to a run folder in our bucket and flips `latest.json`. GitHub Actions runs load → dbt build → export daily and on push.
 
-**Tech Stack:** Python 3.12 managed by `uv`; `snowflake-connector-python`; `dbt-core` + `dbt-snowflake` (dbt ≥ 1.8 for unit tests); `pytest`; GitHub Actions; Snowflake trial on AWS us-east-2.
+**Tech Stack:** Python 3.12 managed by `uv`; `snowflake-connector-python`; `dbt-core` + `dbt-snowflake` (dbt ≥ 1.8 for unit tests); `pytest`; GitHub Actions; Snowflake trial on AWS us-east-1.
 
-**Spec:** `docs/superpowers/specs/2026-09-26-data-pipeline-design.md`
+**Spec:** `docs/design/2026-09-26-data-pipeline-design.md`
 
 ## Global Constraints
 
@@ -19,7 +19,7 @@
 - Dedup rule everywhere: newest `_loaded_at`, then highest `_file_row`, per primary key.
 - Curated marts have `contract: enforced: true`; column names and types exactly as in spec §5.3. PII columns listed in §5.3 never leave RAW.
 - Export column names are lowercase (quoted aliases); the agent reads `latest.json` then the run folder.
-- Snowflake objects: warehouse `WH_PIPELINE` (X-Small, auto-suspend 60), databases `LATAM_BANK` and `LATAM_FIXTURE`, schemas `RAW`, `STAGING`, `CURATED`, `META`, role `PIPELINE_ROLE`.
+- Snowflake objects: warehouse `WH_PIPELINE` (X-Small, auto-suspend 60), databases `LATAM_BANK` and `LATAM_FIXTURE`, schemas `RAW`, `STAGING`, `CURATED`, `META`, role `PIPELINE_ROLE`. Created by Terraform (`infra/terraform/platform`, see `docs/reference/plans/2026-10-01-infra-iac.md`); this plan creates only RAW/META tables.
 - Test severities: error on keys, FKs, enums, contracts, quarantine rate > 1%; warn on known nulls, freshness, unexpected columns, event/process date drift.
 - Every task ends with a commit on `main` (single-developer repo; branch if Carlos is pushing to the same repo).
 
@@ -35,22 +35,13 @@
 
 ## Prerequisites (manual, one time, before Task 2)
 
-1. Create a Snowflake trial: cloud AWS, region `us-east-2 (Ohio)`, Standard edition. Note the account identifier (`<org>-<account>`).
-2. Generate a key pair for your own admin user and for the pipeline service user (used until GitHub OIDC is confirmed for dbt):
-   ```bash
-   openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out ~/.snowflake/admin_rsa_key.p8 -nocrypt
-   openssl rsa -in ~/.snowflake/admin_rsa_key.p8 -pubout -out ~/.snowflake/admin_rsa_key.pub
-   openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out ~/.snowflake/pipeline_rsa_key.p8 -nocrypt
-   openssl rsa -in ~/.snowflake/pipeline_rsa_key.p8 -pubout -out ~/.snowflake/pipeline_rsa_key.pub
-   ```
-   In Snowsight, as ACCOUNTADMIN: `ALTER USER <your_user> SET RSA_PUBLIC_KEY = '<contents of admin_rsa_key.pub without header/footer lines>';`
+1. Snowflake trial already exists (updated 2026-10-01): account `RLQHFPF-AXC97788`, AWS **us-east-1** (organizer bucket is us-east-2, so COPY reads cross-region; accepted). Carlos's earlier inferred-schema `LATAM_BANK` was dropped; this plan recreates it.
+2. Local auth: snow CLI connection `sbx` (password) via `SNOWFLAKE_CONNECTION_NAME=sbx`; no admin key pair. CI uses GitHub OIDC; a pipeline key pair is generated only if dbt-snowflake cannot use OIDC (Task 10).
 3. Create our S3 bucket `latam-bank-serving-<suffix>` in `us-east-2` (private, versioning off).
 4. The team repo already exists: `Carlos310197/Factored-Hackathon-2026` (private for now; rename to `factored-hackathon-2026-<team>` and make public before submission). `<org>/<repo>` is `Carlos310197/Factored-Hackathon-2026`. Use the `andrezc98` GitHub account (`gh auth switch --user andrezc98`); it is the one with access.
 5. Add to `.env` (gitignored) alongside the organizer keys:
    ```
-   SNOWFLAKE_ACCOUNT=<org>-<account>
-   SNOWFLAKE_USER=<your_user>
-   SNOWFLAKE_PRIVATE_KEY_PATH=/Users/<you>/.snowflake/admin_rsa_key.p8
+   SNOWFLAKE_CONNECTION_NAME=sbx
    SNOWFLAKE_ROLE=ACCOUNTADMIN
    SNOWFLAKE_WAREHOUSE=WH_PIPELINE
    SNOWFLAKE_DATABASE=LATAM_BANK
@@ -196,6 +187,8 @@ git commit -m "chore: scaffold pipeline project with Snowflake connection helper
 ---
 
 ### Task 2: Snowflake account objects, stages, and RAW tables
+
+> **Superseded in part (2026-10-01, infra-iac plan):** warehouse, role, databases, schemas, file formats, stages, storage integration, the IAM role and `PIPELINE_SVC` are Terraform-managed. Skip `00_account.sql`, `01_integrations.sql` and `infra/aws/snowflake-serving-role.md` (Steps 5–6 for those files) and the integration placeholder ARN. Keep `pipeline/setup.py`, `tests/test_setup.py` and `02_raw_tables.sql`; in `setup.py`'s `__main__`, `params` keeps only `DATABASE`. `PIPELINE_ROLE` has ALL on the schemas (not ownership of the databases).
 
 **Files:**
 - Create: `infra/snowflake/00_account.sql`, `infra/snowflake/01_integrations.sql`, `infra/snowflake/02_raw_tables.sql`, `infra/aws/snowflake-serving-role.md`, `pipeline/setup.py`, `tests/test_setup.py`
@@ -2115,6 +2108,8 @@ git commit -m "feat: synthetic fixture drop and end-to-end update-correctness pr
 
 ### Task 10: GitHub Actions: CI on pull requests, scheduled pipeline on main
 
+> **Auth changed (2026-10-01, infra-iac plan):** CI assumes `arn:aws:iam::762197749808:role/pipeline-runner` (not `gha-deploy`, which is Terraform's identity) via `aws-actions/configure-aws-credentials@v4` (region `us-east-2`) and sets `SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER=AWS`, `SNOWFLAKE_ACCOUNT=RLQHFPF-AXC97788`, `SNOWFLAKE_USER=PIPELINE_SVC`; no `SNOWFLAKE_OIDC_TOKEN`. The `pipeline-runner` trust allows only `main` pushes and it has no AWS permissions (S3 writes go through `SERVING_STAGE`); PR runs of the fixture test need their own identity, decided in this task. If dbt-snowflake rejects WIF: Terraform `tls_private_key` for `PIPELINE_SVC`, public key set via `snowflake_execute`, private key in SSM.
+
 **Files:**
 - Create: `.github/workflows/ci.yml`, `.github/workflows/pipeline.yml`
 
@@ -2261,7 +2256,7 @@ Expected: `ci` green (unit + fixture), `pipeline` green on the push; `LIST @LATA
 # Factored Hackathon 2026 — LATAM Bank customer-service system
 
 ## Data pipeline
-Diagram: `docs/diagrams/pipeline.svg`. Spec: `docs/superpowers/specs/2026-09-26-data-pipeline-design.md`.
+Diagram: `docs/diagrams/pipeline.svg`. Spec: `docs/design/2026-09-26-data-pipeline-design.md`.
 
 ### Sources and contracts
 Five tables from the organizer bucket (`customers`, `products`, `transactions`, `complaints`, `call_center_interactions`).
@@ -2303,7 +2298,7 @@ through a storage integration (IAM role). The agent reads with its task role.
 - No duplicates or schema changes exist in the current drop; the fixture proves the handling.
 
 ### Reproduce
-1. Prerequisites in `docs/superpowers/plans/2026-09-26-data-pipeline.md` (Snowflake trial, key pairs, bucket, `.env`).
+1. Prerequisites in `docs/reference/plans/2026-09-26-data-pipeline.md` (Snowflake trial, key pairs, bucket, `.env`).
 2. `uv sync && uv run python -m pipeline.setup 00_account.sql 01_integrations.sql 02_raw_tables.sql`
 3. `uv run python -m pipeline.load --run-id initial && (cd dbt && uv run dbt build) && uv run python -m pipeline.export --run-id initial`
 4. `uv run pytest -m "not snowflake"`; `uv run pytest -m snowflake` with `.env` loaded.
