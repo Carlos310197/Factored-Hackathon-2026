@@ -62,11 +62,13 @@ resource "aws_iam_role_policy" "snowflake_serving" {
 }
 
 data "aws_ssm_parameter" "organizer_key_id" {
-  name = "/fh26/organizer/aws_key_id"
+  region = "us-east-1" # bootstrap keeps the organizer keys in us-east-1
+  name   = "/fh26/organizer/aws_key_id"
 }
 
 data "aws_ssm_parameter" "organizer_secret" {
-  name = "/fh26/organizer/aws_secret"
+  region = "us-east-1" # bootstrap keeps the organizer keys in us-east-1
+  name   = "/fh26/organizer/aws_secret"
 }
 
 # --- pipeline-runner: CI identity for PIPELINE_SVC. Separate from gha-deploy so each Snowflake user maps to one AWS identity.
