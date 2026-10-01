@@ -52,3 +52,45 @@ data "aws_ssm_parameter" "organizer_key_id" {
 data "aws_ssm_parameter" "organizer_secret" {
   name = "/fh26/organizer/aws_secret"
 }
+
+# --- pipeline-runner: CI identity for PIPELINE_SVC. Separate from gha-deploy so each Snowflake user maps to one AWS identity. ---
+data "aws_iam_openid_connect_provider" "github" {
+  url = "https://token.actions.githubusercontent.com"
+}
+
+resource "aws_iam_role" "pipeline_runner" {
+  name = "pipeline-runner"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Principal = { Federated = data.aws_iam_openid_connect_provider.github.arn }
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:sub" = ["repo:${local.github_repo}:ref:refs/heads/main", "repo:${local.github_repo}:pull_request"]
+        }
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "pipeline_runner" {
+  role = aws_iam_role.pipeline_runner.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"]
+        Resource = [aws_s3_bucket.serving.arn, "${aws_s3_bucket.serving.arn}/*"]
+      },
+      {
+        Effect   = "Allow"
+        Action   = "ssm:GetParameter"
+        Resource = [data.aws_ssm_parameter.organizer_key_id.arn, data.aws_ssm_parameter.organizer_secret.arn]
+      },
+    ]
+  })
+}

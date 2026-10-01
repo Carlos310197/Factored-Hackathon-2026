@@ -12,9 +12,15 @@ permissions:
   contents: read
   pull-requests: write
 
+# Serialize runs per ref; with apply re-planning from HEAD, a cancelled pending run loses nothing.
+concurrency:
+  group: infra-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   AWS_REGION: us-east-2
   AWS_ROLE_ARN: arn:aws:iam::762197749808:role/gha-deploy
+  PIPELINE_ROLE_ARN: arn:aws:iam::762197749808:role/pipeline-runner
   TF_IN_AUTOMATION: "true"
 
 defaults:
@@ -24,6 +30,7 @@ defaults:
 
 jobs:
   plan:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,7 +46,7 @@ jobs:
       - run: terraform init -input=false
       - run: terraform validate
       - run: terraform test
-      - run: terraform plan -input=false -no-color -out=tfplan | tee plan.txt
+      - run: terraform plan -input=false -no-color -lock-timeout=5m | tee plan.txt
       - name: Comment plan on PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
@@ -52,18 +59,10 @@ jobs:
             const old = comments.find(c => c.body.startsWith('<!-- infra-plan -->'));
             if (old) await github.rest.issues.updateComment({ ...context.repo, comment_id: old.id, body });
             else await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
-      - uses: actions/upload-artifact@v4
-        with:
-          name: tfplan
-          path: infra/terraform/platform/tfplan
 
   apply:
-    needs: plan
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    concurrency:
-      group: infra-apply
-      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: aws-actions/configure-aws-credentials@v4
@@ -74,12 +73,15 @@ jobs:
         with:
           terraform_version: 1.15.2
           terraform_wrapper: false
-      - uses: actions/download-artifact@v4
-        with:
-          name: tfplan
-          path: infra/terraform/platform
       - run: terraform init -input=false
-      - run: terraform apply -input=false tfplan
+      - run: terraform validate
+      - run: terraform test
+      # ponytail: no saved plan file (it would carry the organizer secret in plaintext); main re-plans at apply
+      - run: terraform apply -input=false -auto-approve -lock-timeout=5m
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.PIPELINE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
       - uses: astral-sh/setup-uv@v6
       - name: Smoke test
         working-directory: .

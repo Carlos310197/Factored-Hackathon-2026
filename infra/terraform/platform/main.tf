@@ -37,7 +37,7 @@ data "aws_caller_identity" "me" {}
 
 locals {
   account_id          = data.aws_caller_identity.me.account_id
-  gha_deploy_arn      = "arn:aws:iam::${local.account_id}:role/gha-deploy"
+  github_repo         = "Carlos310197/Factored-Hackathon-2026"
   serving_bucket      = "latam-bank-serving-${local.account_id}"
   serving_url         = "s3://${local.serving_bucket}/serving/"
   snowflake_role_name = "snowflake-serving"
@@ -50,4 +50,8 @@ output "serving_bucket" {
 
 output "serving_role_arn" {
   value = aws_iam_role.snowflake_serving.arn
+}
+
+output "pipeline_runner_role_arn" {
+  value = aws_iam_role.pipeline_runner.arn
 }

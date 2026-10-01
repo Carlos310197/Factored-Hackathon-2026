@@ -5,6 +5,12 @@ mock_provider "aws" {
   mock_data "aws_ssm_parameter" {
     defaults = { value = "mock-organizer-value" }
   }
+  mock_data "aws_iam_openid_connect_provider" {
+    defaults = { arn = "arn:aws:iam::762197749808:oidc-provider/token.actions.githubusercontent.com" }
+  }
+  mock_resource "aws_iam_role" {
+    defaults = { arn = "arn:aws:iam::762197749808:role/pipeline-runner" }
+  }
 }
 
 mock_provider "snowflake" {
@@ -69,7 +75,20 @@ run "pipeline_user_uses_aws_workload_identity" {
   command = apply
 
   assert {
-    condition     = strcontains(snowflake_execute.pipeline_user.execute, "WORKLOAD_IDENTITY = (TYPE = AWS ARN = 'arn:aws:iam::762197749808:role/gha-deploy')")
-    error_message = "PIPELINE_SVC must trust gha-deploy"
+    condition     = strcontains(snowflake_execute.pipeline_user.execute, "WORKLOAD_IDENTITY = (TYPE = AWS ARN = 'arn:aws:iam::762197749808:role/pipeline-runner')")
+    error_message = "PIPELINE_SVC must trust its own role, not gha-deploy (one AWS identity per Snowflake user)"
+  }
+
+  assert {
+    condition     = !strcontains(snowflake_execute.pipeline_user.execute, "gha-deploy")
+    error_message = "gha-deploy is TF_DEPLOY's identity"
+  }
+
+  assert {
+    condition = jsondecode(aws_iam_role.pipeline_runner.assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == [
+      "repo:Carlos310197/Factored-Hackathon-2026:ref:refs/heads/main",
+      "repo:Carlos310197/Factored-Hackathon-2026:pull_request",
+    ]
+    error_message = "pipeline-runner trusts only main pushes and PRs of the team repo"
   }
 }

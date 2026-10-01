@@ -27,7 +27,8 @@ Every piece of infrastructure the data pipeline needs is code, applied by GitHub
 
 ```
 GitHub Actions job ──OIDC token──▶ AWS STS ──AssumeRoleWithWebIdentity──▶ role gha-deploy
-role gha-deploy ──signed GetCallerIdentity──▶ Snowflake users TF_DEPLOY / PIPELINE_SVC
+role gha-deploy ──signed GetCallerIdentity──▶ Snowflake user TF_DEPLOY
+role pipeline-runner ──signed GetCallerIdentity──▶ Snowflake user PIPELINE_SVC
 Snowflake storage integration ──AssumeRole (external id)──▶ role snowflake-serving ──▶ serving bucket
 ```
 
@@ -71,7 +72,7 @@ Providers: `aws` (ambient OIDC credentials), `snowflake` (`WORKLOAD_IDENTITY`/`A
 | Storage integration `SERVING_INT` + role `snowflake-serving` | Role trust references the integration's `STORAGE_AWS_IAM_USER_ARN` and `STORAGE_AWS_EXTERNAL_ID`; role name fixed up front so the integration can name it before the role exists. Policy: read/write/list on the serving bucket only. |
 | File format `RAW.CSV_HEADER` | the pipeline plan's options (PARSE_HEADER, BOM skip, column-count mismatch off) |
 | Stages | `RAW.ORGANIZER_STAGE` on `s3://<organizer>/data/` with keys from SSM data sources; `RAW.SERVING_STAGE` via `SERVING_INT`; `LATAM_FIXTURE.RAW.FIXTURE_STAGE` internal |
-| User `PIPELINE_SVC` | `TYPE = SERVICE`, `WORKLOAD_IDENTITY = (TYPE = AWS, ARN = gha-deploy)`, default role `PIPELINE_ROLE`, warehouse `WH_PIPELINE` |
+| Role `pipeline-runner` + user `PIPELINE_SVC` | Separate AWS role (same GitHub trust: main + PRs; S3 rw on the serving bucket, SSM read of organizer keys) so each Snowflake user maps to exactly one AWS identity. `PIPELINE_SVC`: `TYPE = SERVICE`, `WORKLOAD_IDENTITY = (TYPE = AWS, ARN = pipeline-runner)`, default role `PIPELINE_ROLE`, warehouse `WH_PIPELINE` |
 
 Organizer keys reach Terraform state through the stage resource. The state bucket is private and encrypted; that is the accepted exposure.
 
@@ -83,9 +84,9 @@ RAW and META tables stay in the pipeline's SQL scripts (`infra/snowflake/02_raw_
 
 - Triggers: `pull_request` and `push` to `main`, both filtered to `infra/terraform/platform/**` and the workflow file.
 - `permissions: id-token: write, contents: read, pull-requests: write`.
-- Steps: checkout → `aws-actions/configure-aws-credentials` (role from `vars.AWS_ROLE_ARN`) → `hashicorp/setup-terraform` → `fmt -check` → `init` → `validate` → `plan -out`.
+- Steps: checkout → `aws-actions/configure-aws-credentials` (role ARN written in the workflow) → `hashicorp/setup-terraform` → `fmt -check` → `init` → `validate` → `test` → `plan -lock-timeout=5m`.
 - PR: post the plan as a comment (update one comment, not one per push).
-- `main`: `apply` the saved plan. `concurrency: infra-apply`, no cancel in progress.
+- `main`: re-plan and `apply -auto-approve -lock-timeout=5m` in one job; no saved plan file (it would hold the organizer secret in plaintext). Workflow-level `concurrency: infra-${{ github.ref }}`, no cancel in progress.
 - Failure: the job fails; nothing retries automatically (state lock released by Terraform; a stale lock file is removed with `terraform force-unlock`, documented).
 
 ## 7. Changes to the data pipeline plan
@@ -109,3 +110,4 @@ RAW and META tables stay in the pipeline's SQL scripts (`infra/snowflake/02_raw_
 ## Changelog
 
 - 2026-10-01: GitHub provider dropped (no repo admin); IDs live in the workflow file.
+- 2026-10-01: final review fixes: `PIPELINE_SVC` gets its own role `pipeline-runner` (one AWS identity per Snowflake user); no plan artifact (secret in plaintext); workflow-level concurrency; state lock timeout.

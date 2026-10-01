@@ -2108,7 +2108,7 @@ git commit -m "feat: synthetic fixture drop and end-to-end update-correctness pr
 
 ### Task 10: GitHub Actions: CI on pull requests, scheduled pipeline on main
 
-> **Auth changed (2026-10-01, infra-iac plan):** CI assumes `arn:aws:iam::762197749808:role/gha-deploy` via `aws-actions/configure-aws-credentials@v4` (region `us-east-2`) and sets `SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER=AWS`, `SNOWFLAKE_ACCOUNT=RLQHFPF-AXC97788`, `SNOWFLAKE_USER=PIPELINE_SVC`; no `SNOWFLAKE_OIDC_TOKEN`. The `gha-deploy` trust allows only `main` pushes and pull requests. If dbt-snowflake rejects WIF: Terraform `tls_private_key` for `PIPELINE_SVC`, public key set via `snowflake_execute`, private key in SSM.
+> **Auth changed (2026-10-01, infra-iac plan):** CI assumes `arn:aws:iam::762197749808:role/pipeline-runner` (not `gha-deploy`, which is Terraform's identity) via `aws-actions/configure-aws-credentials@v4` (region `us-east-2`) and sets `SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER=AWS`, `SNOWFLAKE_ACCOUNT=RLQHFPF-AXC97788`, `SNOWFLAKE_USER=PIPELINE_SVC`; no `SNOWFLAKE_OIDC_TOKEN`. The `pipeline-runner` trust allows only `main` pushes and pull requests. If dbt-snowflake rejects WIF: Terraform `tls_private_key` for `PIPELINE_SVC`, public key set via `snowflake_execute`, private key in SSM.
 
 **Files:**
 - Create: `.github/workflows/ci.yml`, `.github/workflows/pipeline.yml`
