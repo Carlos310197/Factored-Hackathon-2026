@@ -6,9 +6,9 @@ terraform {
     snowflake = { source = "snowflakedb/snowflake", version = "~> 2.21" }
   }
   backend "s3" {
-    bucket       = "fh26-tfstate-762197749808"
+    bucket       = "fh26-tfstate-762197749808-use1"
     key          = "platform/terraform.tfstate"
-    region       = "us-east-2"
+    region       = "us-east-1"
     use_lockfile = true
   }
 }
