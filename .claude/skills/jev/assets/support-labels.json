@@ -1,6 +1,0 @@
-{
-  "billing": "Charges, invoices, payment problems or refunds.",
-  "bug": "Broken software behavior unrelated to billing.",
-  "account": "Login, account access or permissions.",
-  "other": "Insufficient information or none of the listed categories."
-}

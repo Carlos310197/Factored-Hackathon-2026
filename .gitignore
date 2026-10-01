@@ -15,3 +15,4 @@ fixtures/out/
 .DS_Store
 # visual brainstorm mockups
 .superpowers/
+.claude/
