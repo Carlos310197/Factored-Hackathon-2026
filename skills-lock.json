@@ -67,18 +67,6 @@
       "skillPath": "assistant-ui/skills/assistant-ui/SKILL.md",
       "computedHash": "144e75cd53ddb08860ad1650714c1378aecfe1f89614428a92275ad1c7e3ba2e"
     },
-    "aws-amplify": {
-      "source": "aws/agent-toolkit-for-aws",
-      "sourceType": "github",
-      "skillPath": "skills/specialized-skills/web-and-mobile-development/aws-amplify/SKILL.md",
-      "computedHash": "360202fbd7b4d6d13b0f8dbabdbc0502b606b6d7b727c65191d4f774811d2416"
-    },
-    "aws-auth": {
-      "source": "aws/agent-toolkit-for-aws",
-      "sourceType": "github",
-      "skillPath": "skills/core-skills/aws-auth/SKILL.md",
-      "computedHash": "00c682191927f4d13fa26cff9feee40b2e3feb894bac102329ba6bda00139992"
-    },
     "aws-billing-and-cost-management": {
       "source": "aws/agent-toolkit-for-aws",
       "sourceType": "github",
@@ -108,12 +96,6 @@
       "sourceType": "github",
       "skillPath": "skills/core-skills/aws-iam/SKILL.md",
       "computedHash": "b2823e620706ccd7286ec37c68c7fb954db11e0d7154915ea640f81ee1cd6eaa"
-    },
-    "aws-networking": {
-      "source": "aws/agent-toolkit-for-aws",
-      "sourceType": "github",
-      "skillPath": "skills/core-skills/aws-networking/SKILL.md",
-      "computedHash": "3604b9bda23780a03dac19801c4954782c0f849e7e220949301e1ed3beec9860"
     },
     "aws-observability": {
       "source": "aws/agent-toolkit-for-aws",
@@ -157,12 +139,6 @@
       "skillPath": "skills/core-skills/aws-storage/SKILL.md",
       "computedHash": "66616c2ed7cbabccb21bf03a87783278c84b852bf1dc5aa151270e556dc4be52"
     },
-    "cloudfront": {
-      "source": "aws/agent-toolkit-for-aws",
-      "sourceType": "github",
-      "skillPath": "skills/specialized-skills/networking-and-content-delivery-skills/cloudfront/SKILL.md",
-      "computedHash": "95a70bc89b87a73f489bac9dd2bbe3bc567851226e7311dd76021e3e6b95d4ef"
-    },
     "connecting-lambda-to-dynamodb": {
       "source": "aws/agent-toolkit-for-aws",
       "sourceType": "github",
@@ -193,6 +169,18 @@
       "skillPath": ".agents/skills/impeccable/SKILL.md",
       "computedHash": "ab2e93b86777949d56ca8bb19530e6332e64e86d969127f7d1ab0a3ee7306702"
     },
+    "langgraph-fundamentals": {
+      "source": "langchain-ai/langchain-skills",
+      "sourceType": "github",
+      "skillPath": "config/skills/langgraph-fundamentals/SKILL.md",
+      "computedHash": "71a81a229a520f2a887e12d9114684243eae6d910e951a316c4c8f81b3444dd8"
+    },
+    "langgraph-persistence": {
+      "source": "langchain-ai/langchain-skills",
+      "sourceType": "github",
+      "skillPath": "config/skills/langgraph-persistence/SKILL.md",
+      "computedHash": "0e14611b0310a7a30e9977ba99b00a11b7ea63ebdd7b0c490d03040349ead0ed"
+    },
     "llm-to-bedrock": {
       "source": "aws/agent-toolkit-for-aws",
       "sourceType": "github",
@@ -211,17 +199,11 @@
       "skillPath": "skills/specialized-skills/system-table-skills/querying-aws-s3/SKILL.md",
       "computedHash": "a14869f4430aa17131a4749ade8a1fda4b7abbb924b624b4096f3a61770523be"
     },
-    "route53": {
-      "source": "aws/agent-toolkit-for-aws",
+    "runtime": {
+      "source": "assistant-ui/skills",
       "sourceType": "github",
-      "skillPath": "skills/specialized-skills/networking-and-content-delivery-skills/route53/SKILL.md",
-      "computedHash": "f9a1d13ff3d87f36c50841221ecedbaf1a51a94fb0e536bfe90dbc2c17f1e1d0"
-    },
-    "routing-traffic-with-route53-and-cloudfront": {
-      "source": "aws/agent-toolkit-for-aws",
-      "sourceType": "github",
-      "skillPath": "skills/specialized-skills/networking-and-content-delivery-skills/routing-traffic-with-route53-and-cloudfront/SKILL.md",
-      "computedHash": "b66d1b18cfda2c05279891b7c78f46e952569b6317047f5f99c586beeea2692e"
+      "skillPath": "assistant-ui/skills/runtime/SKILL.md",
+      "computedHash": "797a4e18c3c1589e1f672e920fade1e1b9373d2277b535a526cc73b0b15a9819"
     },
     "securing-s3-buckets": {
       "source": "aws/agent-toolkit-for-aws",
@@ -246,6 +228,30 @@
       "sourceType": "github",
       "skillPath": "skills/specialized-skills/operations-skills/troubleshooting-application-failures/SKILL.md",
       "computedHash": "114e400bfb7843a6278348b7ebbb5bded968dd4a32236995febd75adf73b074f"
+    },
+    "using-dbt-for-analytics-engineering": {
+      "source": "dbt-labs/dbt-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/dbt/skills/using-dbt-for-analytics-engineering/SKILL.md",
+      "computedHash": "59a854e12cce06d476279f3664e1913564666c3187842b3f7a99fabd987e14fa"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-best-practices/SKILL.md",
+      "computedHash": "ca7b0c0c6e5f2750043f7f0cd72d16ac4e2abc48f9b5500d047a4b77a2506212"
+    },
+    "vitest": {
+      "source": "antfu/skills",
+      "sourceType": "github",
+      "skillPath": "skills/vitest/SKILL.md",
+      "computedHash": "21af2b13d47d31f3094b61c0f41abc8d6a7eed0df3c9a4029ea671f6978b7209"
+    },
+    "webapp-testing": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/webapp-testing/SKILL.md",
+      "computedHash": "ad5b1fc52807e9afa4635e59218a026b164dc58b6c3f41b0f7c644dcd6ccf572"
     }
   }
 }

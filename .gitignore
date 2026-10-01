@@ -16,4 +16,5 @@ fixtures/out/
 # visual brainstorm mockups
 .superpowers/
 .claude/
+.agents/
 analysis/
