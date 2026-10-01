@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.12 managed by `uv`; `snowflake-connector-python`; `dbt-core` + `dbt-snowflake` (dbt ≥ 1.8 for unit tests); `pytest`; GitHub Actions; Snowflake trial on AWS us-east-1.
 
-**Spec:** `docs/superpowers/specs/2026-09-26-data-pipeline-design.md`
+**Spec:** `docs/design/2026-09-26-data-pipeline-design.md`
 
 ## Global Constraints
 
@@ -19,7 +19,7 @@
 - Dedup rule everywhere: newest `_loaded_at`, then highest `_file_row`, per primary key.
 - Curated marts have `contract: enforced: true`; column names and types exactly as in spec §5.3. PII columns listed in §5.3 never leave RAW.
 - Export column names are lowercase (quoted aliases); the agent reads `latest.json` then the run folder.
-- Snowflake objects: warehouse `WH_PIPELINE` (X-Small, auto-suspend 60), databases `LATAM_BANK` and `LATAM_FIXTURE`, schemas `RAW`, `STAGING`, `CURATED`, `META`, role `PIPELINE_ROLE`. Created by Terraform (`infra/terraform/platform`, see `docs/superpowers/plans/2026-10-01-infra-iac.md`); this plan creates only RAW/META tables.
+- Snowflake objects: warehouse `WH_PIPELINE` (X-Small, auto-suspend 60), databases `LATAM_BANK` and `LATAM_FIXTURE`, schemas `RAW`, `STAGING`, `CURATED`, `META`, role `PIPELINE_ROLE`. Created by Terraform (`infra/terraform/platform`, see `docs/reference/plans/2026-10-01-infra-iac.md`); this plan creates only RAW/META tables.
 - Test severities: error on keys, FKs, enums, contracts, quarantine rate > 1%; warn on known nulls, freshness, unexpected columns, event/process date drift.
 - Every task ends with a commit on `main` (single-developer repo; branch if Carlos is pushing to the same repo).
 
@@ -2256,7 +2256,7 @@ Expected: `ci` green (unit + fixture), `pipeline` green on the push; `LIST @LATA
 # Factored Hackathon 2026 — LATAM Bank customer-service system
 
 ## Data pipeline
-Diagram: `docs/diagrams/pipeline.svg`. Spec: `docs/superpowers/specs/2026-09-26-data-pipeline-design.md`.
+Diagram: `docs/diagrams/pipeline.svg`. Spec: `docs/design/2026-09-26-data-pipeline-design.md`.
 
 ### Sources and contracts
 Five tables from the organizer bucket (`customers`, `products`, `transactions`, `complaints`, `call_center_interactions`).
@@ -2298,7 +2298,7 @@ through a storage integration (IAM role). The agent reads with its task role.
 - No duplicates or schema changes exist in the current drop; the fixture proves the handling.
 
 ### Reproduce
-1. Prerequisites in `docs/superpowers/plans/2026-09-26-data-pipeline.md` (Snowflake trial, key pairs, bucket, `.env`).
+1. Prerequisites in `docs/reference/plans/2026-09-26-data-pipeline.md` (Snowflake trial, key pairs, bucket, `.env`).
 2. `uv sync && uv run python -m pipeline.setup 00_account.sql 01_integrations.sql 02_raw_tables.sql`
 3. `uv run python -m pipeline.load --run-id initial && (cd dbt && uv run dbt build) && uv run python -m pipeline.export --run-id initial`
 4. `uv run pytest -m "not snowflake"`; `uv run pytest -m snowflake` with `.env` loaded.

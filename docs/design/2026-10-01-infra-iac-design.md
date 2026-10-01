@@ -1,7 +1,7 @@
 # Infrastructure as code: AWS + Snowflake via Terraform and GitHub Actions
 
 Date: 2026-10-01 · Status: approved design, pending spec review · Owner: Andrés
-Related: `docs/superpowers/specs/2026-09-26-data-pipeline-design.md` (§ Snowflake objects, serving contract), `docs/superpowers/plans/2026-09-26-data-pipeline.md` (Tasks 2 and 10 change, §7)
+Related: `docs/design/2026-09-26-data-pipeline-design.md` (§ Snowflake objects, serving contract), `docs/reference/plans/2026-09-26-data-pipeline.md` (Tasks 2 and 10 change, §7)
 
 ## 1. Goal
 
