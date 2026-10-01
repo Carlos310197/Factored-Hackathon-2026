@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest>=8", "pyarrow>=17"]
+dev = ["pytest>=8", "pyarrow>=17", "pyyaml>=6"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

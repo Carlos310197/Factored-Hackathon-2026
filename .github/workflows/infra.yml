@@ -1,0 +1,93 @@
+name: infra
+
+on:
+  pull_request:
+    paths: ["infra/terraform/platform/**", ".github/workflows/infra.yml"]
+  push:
+    branches: [main]
+    paths: ["infra/terraform/platform/**", ".github/workflows/infra.yml"]
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  AWS_REGION: us-east-2
+  AWS_ROLE_ARN: arn:aws:iam::762197749808:role/gha-deploy
+  TF_IN_AUTOMATION: "true"
+
+defaults:
+  run:
+    shell: bash
+    working-directory: infra/terraform/platform
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.15.2
+          terraform_wrapper: false
+      - run: terraform fmt -check -recursive
+      - run: terraform init -input=false
+      - run: terraform validate
+      - run: terraform test
+      - run: terraform plan -input=false -no-color -out=tfplan | tee plan.txt
+      - name: Comment plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('infra/terraform/platform/plan.txt', 'utf8');
+            const body = '<!-- infra-plan -->\n```\n' + plan.slice(-60000) + '\n```';
+            const { data: comments } = await github.rest.issues.listComments({ ...context.repo, issue_number: context.issue.number });
+            const old = comments.find(c => c.body.startsWith('<!-- infra-plan -->'));
+            if (old) await github.rest.issues.updateComment({ ...context.repo, comment_id: old.id, body });
+            else await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: infra/terraform/platform/tfplan
+
+  apply:
+    needs: plan
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: infra-apply
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.15.2
+          terraform_wrapper: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+          path: infra/terraform/platform
+      - run: terraform init -input=false
+      - run: terraform apply -input=false tfplan
+      - uses: astral-sh/setup-uv@v6
+      - name: Smoke test
+        working-directory: .
+        env:
+          SNOWFLAKE_ACCOUNT: RLQHFPF-AXC97788
+          SNOWFLAKE_USER: PIPELINE_SVC
+          SNOWFLAKE_ROLE: PIPELINE_ROLE
+          SNOWFLAKE_WAREHOUSE: WH_PIPELINE
+          SNOWFLAKE_DATABASE: LATAM_BANK
+          SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER: AWS
+        run: uv run pytest -m snowflake tests/test_infra_smoke.py -q
