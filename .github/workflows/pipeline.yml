@@ -50,6 +50,6 @@ jobs:
       - run: uv run python -m pipeline.load --run-id "$RUN_ID" --stage-url-prefix "$ORGANIZER_STAGE_URL"
       - run: uv run dbt source freshness --project-dir dbt --target ci || true # warn/error recorded in the log; dbt build gates
       - run: uv run dbt build --project-dir dbt --target ci
-      - if: always()
+      - if: always() && hashFiles('dbt/target/run_results.json') != ''
         run: uv run python -m pipeline.dq_results --run-id "$RUN_ID"
       - run: uv run python -m pipeline.export --run-id "$RUN_ID"
