@@ -85,7 +85,7 @@ resource "aws_iam_role" "pipeline_runner" {
       Condition = {
         StringEquals = {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          "token.actions.githubusercontent.com:sub" = ["repo:${local.github_repo}:ref:refs/heads/main"]
+          "token.actions.githubusercontent.com:sub" = ["${local.github_sub_prefix}:ref:refs/heads/main"]
         }
       }
     }]
