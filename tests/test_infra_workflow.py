@@ -59,3 +59,10 @@ def test_smoke_test_runs_as_pipeline_runner():
     creds = [s for s in steps[:smoke] if "configure-aws-credentials" in str(s.get("uses", ""))]
     role = creds[-1]["with"]["role-to-assume"].removeprefix("${{ env.").removesuffix(" }}")
     assert WF["env"][role].endswith(":role/pipeline-runner")
+
+
+def test_actions_pinned_to_commit_sha():
+    # jobs hold admin OIDC credentials; a moved tag must not change the code that runs
+    import re
+    uses = re.findall(r"uses:\s*(\S+)", Path(".github/workflows/infra.yml").read_text())
+    assert uses and all(re.fullmatch(r"[\w.-]+/[\w.-]+@[0-9a-f]{40}", u) for u in uses), uses
