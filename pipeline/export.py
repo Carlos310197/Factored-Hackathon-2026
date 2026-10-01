@@ -1,5 +1,6 @@
 """Unload curated tables as parquet to <stage>/<run_id>/<table>/ and flip <stage>/latest.json. Usage: uv run python -m pipeline.export --run-id <id>"""
 import argparse
+from email.utils import parsedate_to_datetime
 import json
 import sys
 from datetime import datetime, timezone
@@ -40,23 +41,27 @@ def write_pointer(cur, pointer: dict, stage: str) -> None:
         "file_format = (type = json compression = none) single = true overwrite = true")
 
 
-def list_runs(cur, stage: str) -> list[str]:
-    rows = cur.execute(f"list @{stage}/").fetchall()
-    runs = set()
+def list_runs(cur, stage: str) -> dict[str, datetime]:
+    """run_id -> newest file write time (LIST last_modified); names are not assumed to sort."""
+    rows = cur.execute(f"list @{stage}/").fetchall()  # name, size, md5, last_modified
+    runs: dict[str, datetime] = {}
     for r in rows:
         rel = r[0].split("/serving/", 1)[-1] if "/serving/" in r[0] else r[0].split("/", 1)[-1]
         parts = rel.split("/")
         if len(parts) >= 3:
-            runs.add(parts[0])
-    return sorted(runs)
+            ts = parsedate_to_datetime(r[3])
+            runs[parts[0]] = max(ts, runs.get(parts[0], ts))
+    return runs
 
 
-def runs_to_prune(runs: list[str], keep: int = 3) -> list[str]:
-    return sorted(runs)[:-keep] if len(runs) > keep else []
+def runs_to_prune(runs: dict[str, datetime], keep: int = 3, live: str | None = None) -> list[str]:
+    newest_first = sorted(runs, key=runs.get, reverse=True)
+    kept = ({live} if live else set()) | set(newest_first[:keep])
+    return [r for r in reversed(newest_first) if r not in kept]
 
 
-def prune_runs(cur, stage: str, keep: int = 3) -> list[str]:
-    old = runs_to_prune(list_runs(cur, stage), keep)
+def prune_runs(cur, stage: str, keep: int = 3, live: str | None = None) -> list[str]:
+    old = runs_to_prune(list_runs(cur, stage), keep, live)
     for r in old:
         cur.execute(f"remove @{stage}/{r}/")
     return old
@@ -72,7 +77,7 @@ def run_export(conn, run_id: str, stage: str = "RAW.SERVING_STAGE") -> dict:
     pointer = build_pointer(run_id, datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), max_pd, counts)
     write_pointer(cur, pointer, stage)
     conn.commit()
-    prune_runs(cur, stage, keep=3)
+    prune_runs(cur, stage, keep=3, live=run_id)  # the run latest.json points at is never removed
     return pointer
 
 

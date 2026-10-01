@@ -21,11 +21,13 @@ its source file, row number, file timestamp and load time. `META.DQ_RESULTS` rec
 
 ### Quarantine policy
 Rows that fail a cast, a not-null contract column or an enum go to `STAGING.QUARANTINE`, with a reason (`cast_failed:<col>`,
-`null:<col>`, `enum:<col>`) and the raw row. A run that quarantines more than 1% of loaded rows fails the build. A broken foreign key
-also fails the build.
+`null:<col>`, `enum:<col>`) and the raw row. If the latest load run quarantined more than 1% of the rows it loaded, the build fails.
+The rate is per run, so one bad daily partition trips the gate. A broken foreign key also fails the build.
 
 ### Update correctness (fixture drop)
-`fixtures/` holds a labeled synthetic drop: a restated partition, duplicate keys, a new column, a bad type and a header-only file.
+`fixtures/` holds a labeled synthetic drop: a restated partition (with changed rows and one removed row), duplicate keys, a new column,
+a bad type and a header-only file. A restated file replaces its whole partition: staging keeps only each file's latest load, then
+deduplicates by key (newest load, then highest row number).
 `tests/test_fixture_drop.py` runs it end to end against `LATAM_FIXTURE` on every push to `main` (`ci.yml`). Pull requests run the
 offline tests only, so code from a pull request never gets Snowflake credentials.
 
@@ -54,6 +56,9 @@ the storage integration `SI_SERVING` (IAM role `snowflake-serving`).
 1. One-time bootstrap (AWS SSO profile `hackathon-sso`, snow CLI connection `sbx`): `infra/terraform/bootstrap/apply.sh`, then merge to `main` and let `infra.yml` apply `infra/terraform/platform`.
 2. `uv sync && uv run python -m pipeline.setup 02_raw_tables.sql && SETUP_DATABASE=LATAM_FIXTURE uv run python -m pipeline.setup 02_raw_tables.sql`
 3. `set -a; source .env; set +a; uv run python -m pipeline.load --run-id initial && bin/dbt build && uv run python -m pipeline.export --run-id initial`
-4. `uv run pytest -m "not snowflake"`. The live tests (`-m snowflake`) need `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER` and `SNOWFLAKE_PASSWORD` exported, as `bin/dbt` does.
+4. `uv run pytest -m "not snowflake"`. For the live tests (`-m snowflake`), the Python steps log in through `SNOWFLAKE_CONNECTION_NAME` from `.env`.
+   The fixture proof also shells out to dbt, which needs `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER` and `SNOWFLAKE_PASSWORD` exported.
+   `bin/dbt` exports them from the snow CLI config, using the macOS path `~/Library/Application Support/snowflake/config.toml` (local only).
 
-In production, `.github/workflows/pipeline.yml` runs steps 2–3 daily and on every push to `main`.
+In production, `.github/workflows/pipeline.yml` runs the `LATAM_BANK` part of step 2 and all of step 3, daily and on every push to `main`.
+`ci.yml` prepares `LATAM_FIXTURE` and runs the fixture proof on every push to `main`.

@@ -1,6 +1,7 @@
 {{ config(materialized='table') }}
 with latest as (
-    select * from {{ source('raw', 'interactions') }}
+    select * -- a restated file replaces its whole partition: keep only each file's latest load, then dedup by key
+    from (select * from {{ source('raw', 'interactions') }} qualify _loaded_at = max(_loaded_at) over (partition by _source_file))
     qualify row_number() over (partition by interaction_id order by _loaded_at desc, _file_row desc) = 1
 ), typed as (
     select

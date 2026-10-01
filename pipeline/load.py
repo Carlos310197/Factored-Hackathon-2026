@@ -83,6 +83,8 @@ def copy_files(cur, table: str, stage: str, paths: list[str], force: bool) -> di
             f"match_by_column_name = case_insensitive {INCLUDE_METADATA} "
             f"on_error = abort_statement force = {'true' if force else 'false'}").fetchall()
         for r in res:  # file, status, rows_parsed, rows_loaded, ...
+            if len(r) < 4:  # "Copy executed with 0 files processed." (files already loaded, e.g. after a partial failure)
+                continue
             listed = r[0]
             key = next((p for p in batch if listed.endswith(p)), listed)
             loaded[key] = int(r[3] or 0)
@@ -107,16 +109,15 @@ def run_load(conn, run_id: str, stage: str = "RAW.ORGANIZER_STAGE", stage_url_pr
         actions = plan_loads(files, manifest)
         md5 = {f.path: f.md5 for f in files}
         counts = {"new": 0, "restated": 0, "skipped": 0}
-        rows: list[tuple[str, str, str, int]] = []
         for mode, force in (("new", False), ("restated", True)):
             paths = [a.path for a in actions if a.mode == mode]
-            if paths:
-                loaded = copy_files(cur, table, stage, paths, force=force)
-                rows += [(p, md5[p], mode, loaded[p]) for p in paths]
-                counts[mode] = len(paths)
+            # each COPY autocommits, so its files go to the manifest right away: a later failed batch can't orphan them
+            for batch in chunks(paths, FILES_PER_COPY):
+                loaded = copy_files(cur, table, stage, batch, force=force)
+                record_manifest(cur, run_id, table, [(p, md5[p], mode, loaded[p]) for p in batch])
+                conn.commit()
+            counts[mode] = len(paths)
         counts["skipped"] = sum(1 for a in actions if a.mode == "skipped")
-        record_manifest(cur, run_id, table, rows)
-        conn.commit()
         summary[table] = counts
         print(f"{table}: {counts}", file=sys.stderr)
     return summary

@@ -33,3 +33,52 @@ def test_chunks():
 def test_tables_registry():
     assert TABLES["INTERACTIONS"] == "call_center_interactions/"
     assert TABLES["CUSTOMERS"] == "customers.csv"
+
+
+class FakeCur:
+    """COPY returns one row per file; the 2nd COPY fails; INSERTs into the manifest are captured."""
+    def __init__(self, fail_on_copy=2, listing=()):
+        self.copies, self.fail_on_copy, self.manifest, self.listing = 0, fail_on_copy, [], list(listing)
+        self._last = []
+    def execute(self, sql, params=None):
+        low = sql.lower()
+        if low.startswith("list"):
+            self._last = self.listing
+        elif low.startswith("select file_path"):
+            self._last = []
+        elif low.startswith("copy into"):
+            self.copies += 1
+            if self.copies == self.fail_on_copy:
+                raise RuntimeError("batch failed")
+            files = sql.split("files = (", 1)[1].split(")", 1)[0]
+            self._last = [(f.strip(" '"), "LOADED", 1, 1) for f in files.split(",")]
+        return self
+    def fetchall(self): return self._last
+    def executemany(self, sql, rows): self.manifest += rows
+
+
+class FakeConn:
+    def __init__(self, cur): self.cur, self.commits = cur, 0
+    def cursor(self): return self.cur
+    def commit(self): self.commits += 1
+
+
+def test_partial_failure_records_completed_batches(monkeypatch):
+    import pipeline.load as L
+    monkeypatch.setattr(L, "FILES_PER_COPY", 2)
+    listing = [(f"s3://b/data/transactions/t{i}.csv", 10, f"e{i}", "x") for i in range(4)]
+    cur = FakeCur(fail_on_copy=2, listing=listing)
+    import pytest
+    with pytest.raises(RuntimeError):
+        L.run_load(FakeConn(cur), "r1", "RAW.ORGANIZER_STAGE", "s3://b/data/", {"TRANSACTIONS": "transactions/"})
+    # batch 1 (t0, t1) is in RAW (COPY autocommits), so it must be in the manifest too
+    assert sorted(r[2] for r in cur.manifest) == ["transactions/t0.csv", "transactions/t1.csv"]
+
+
+def test_copy_tolerates_zero_files_processed_row():
+    from pipeline.load import copy_files
+    class Cur(FakeCur):
+        def execute(self, sql, params=None):
+            self._last = [("Copy executed with 0 files processed.",)]
+            return self
+    assert copy_files(Cur(), "TRANSACTIONS", "RAW.ORGANIZER_STAGE", ["transactions/t0.csv"], force=False) == {"transactions/t0.csv": 0}

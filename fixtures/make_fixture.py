@@ -39,7 +39,8 @@ def _path(out: Path, day: int) -> Path:
 def write_phase(out: Path, phase: int) -> list[Path]:
     if phase == 1:
         return [_write(_path(out, 17), [row(i, 17) for i in range(20)], COLUMNS)]
-    d17 = [row(i, 17, status="Reversed" if i < 3 else "Approved") for i in range(20)]
+    # restated day 17: 3 rows changed, key 19 removed (the restated file is the truth for its partition)
+    d17 = [row(i, 17, status="Reversed" if i < 3 else "Approved") for i in range(19)]
     d17 += d17[:5]  # 5 exact duplicates of already-present keys (same file), incl. the restated ones
     files = [
         _write(_path(out, 17), d17, COLUMNS),

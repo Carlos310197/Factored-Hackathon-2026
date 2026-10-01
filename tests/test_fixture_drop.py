@@ -64,12 +64,17 @@ def test_fixture_drop_end_to_end(conn, tmp_path):
     rc, out = dbt("build", "--select", "staging", "curated", "seed_decline_reason", "warn_unexpected_columns", "assert_quarantine_rate", "--exclude", "test_name:relationships")
     assert rc == 0, out
     subprocess.run(["uv", "run", "python", "-m", "pipeline.dq_results", "--run-id", "fix-2", "--database", DB], check=True)
+    # quarantine gate is per run: 1 bad row of 44 loaded in fix-2 is 2.3% (> 2%), though only 1.5% of everything ever loaded
+    env = {**os.environ, "DBT_PROFILES_DIR": "dbt"}
+    gate = subprocess.run(["uv", "run", "dbt", "test", "--select", "assert_quarantine_rate", "--target", os.environ.get("DBT_FIXTURE_TARGET", "fixture"),
+                           "--project-dir", "dbt", "--vars", "{quarantine_max_ratio: 0.02}"], env=env, capture_output=True, text=True)
+    assert gate.returncode != 0, gate.stdout
 
     q = lambda sql: cur.execute(sql).fetchall()
     # new partition loaded
     assert q("select count(*) from STAGING.STG_TRANSACTIONS where process_date = '2026-06-18'")[0][0] == 10
-    # duplicates collapsed: 20 unique keys for day 17
-    assert q("select count(*), count(distinct transaction_id) from STAGING.STG_TRANSACTIONS where process_date = '2026-06-17'")[0] == (20, 20)
+    # duplicates collapsed, and the key the restated file dropped is gone: 19 unique keys for day 17
+    assert q("select count(*), count(distinct transaction_id) from STAGING.STG_TRANSACTIONS where process_date = '2026-06-17'")[0] == (19, 19)
     # restated rows updated
     assert q("select count(*) from STAGING.STG_TRANSACTIONS where process_date = '2026-06-17' and transaction_status = 'Reversed'")[0][0] == 3
     # extra column landed in RAW, absent from staging, recorded as warn
@@ -84,7 +89,7 @@ def test_fixture_drop_end_to_end(conn, tmp_path):
     assert q("select rows_loaded from META.RUN_MANIFEST where run_id='fix-2' and file_path like '%20260621%'")[0][0] == 0
     # pointer advanced and parquet columns are lowercase
     p2 = run_export(conn, "fix-2", SERVING)
-    assert p2["run_id"] == "fix-2" and p2["tables"]["fct_transaction"] == 20 + 10 + 5 + 4
+    assert p2["run_id"] == "fix-2" and p2["tables"]["fct_transaction"] == 19 + 10 + 5 + 4
     local = tmp_path / "dl"; local.mkdir()
     cur.execute(f"get @{SERVING}/fix-2/fct_transaction/ file://{local}/")
     import pyarrow.parquet as pq

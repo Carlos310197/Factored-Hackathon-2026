@@ -16,8 +16,31 @@ def test_build_pointer_shape():
     p = build_pointer("r1", "2026-09-27T06:00:00Z", "2026-06-17", {"dim_customer": 150000})
     assert p == {"run_id": "r1", "exported_at": "2026-09-27T06:00:00Z", "max_process_date": "2026-06-17", "tables": {"dim_customer": 150000}}
 
-def test_runs_to_prune_keeps_newest_three():
-    assert runs_to_prune(["20260925-a", "20260926-b", "20260927-c", "20260928-d"], keep=3) == ["20260925-a"]
+def test_runs_to_prune_keeps_newest_three_by_write_time():
+    from datetime import datetime
+    t = lambda h: datetime(2026, 10, 1, h)
+    assert runs_to_prune({"a": t(1), "b": t(2), "c": t(3), "d": t(4)}) == ["a"]
+
+
+def test_runs_to_prune_never_removes_the_live_run():
+    # names sort in any order (CI ids "18…-1", "readme-check", attempt "-10" < "-9"); write time decides, live run always stays
+    from datetime import datetime
+    t = lambda h: datetime(2026, 10, 1, h)
+    runs = {"zzz-old": t(1), "readme-check": t(2), "20261001-initial": t(3), "18000000000-1": t(4), "18000000000-10": t(5)}
+    assert runs_to_prune(runs, keep=3, live="18000000000-10") == ["zzz-old", "readme-check"]
+    assert "18000000000-1" not in runs_to_prune(runs, keep=1, live="18000000000-1")
+
+
+def test_list_runs_uses_last_modified():
+    from pipeline.export import list_runs
+    class Cur:
+        def execute(self, sql): return self
+        def fetchall(self):
+            return [("s3://b/serving/r1/fct_transaction/data_0.parquet", 1, "x", "Wed, 1 Oct 2026 10:00:00 GMT"),
+                    ("s3://b/serving/r1/dim_customer/data_0.parquet", 1, "x", "Wed, 1 Oct 2026 10:05:00 GMT"),
+                    ("s3://b/serving/latest.json", 1, "x", "Wed, 1 Oct 2026 10:06:00 GMT")]
+    runs = list_runs(Cur(), "RAW.SERVING_STAGE")
+    assert list(runs) == ["r1"] and runs["r1"].minute == 5
 
 class FailingCursor:
     def __init__(self): self.executed = []

@@ -11,7 +11,7 @@ def test_phase1_and_phase2_shapes(tmp_path):
     p2 = write_phase(tmp_path / "p2", 2)
     by = {p.name: p for p in p2}
     r17b = rows(by["transactions_20260617.csv"])
-    assert len(r17b) == 25 and len({r["transaction_id"] for r in r17b if r["transaction_status"] == "Reversed"}) == 3
+    assert len(r17b) == 24 and len({r["transaction_id"] for r in r17b if r["transaction_status"] == "Reversed"}) == 3
     ids = [r["transaction_id"] for r in r17b]; assert len(ids) - len(set(ids)) == 5
     assert len(rows(by["transactions_20260618.csv"])) == 10
     assert "merchant_country" in rows(by["transactions_20260619.csv"])[0]
