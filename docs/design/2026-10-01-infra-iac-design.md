@@ -46,7 +46,7 @@ Region: AWS resources in **us-east-2** (next to the organizer bucket and the age
 
 ### 4.1 `bootstrap/` (local, one time)
 
-Providers: `aws` (profile `hackathon-sso`), `snowflake` (local password login from the `sbx` connection, role ACCOUNTADMIN), `github` (token from `gh auth token`, account `andrezc98`).
+Providers: `aws` (profile `hackathon-sso`), `snowflake` (local password login from the `sbx` connection, role ACCOUNTADMIN).
 
 | Resource | Detail |
 |---|---|
@@ -55,7 +55,8 @@ Providers: `aws` (profile `hackathon-sso`), `snowflake` (local password login fr
 | Role `gha-deploy` | Trust: `sub` in `repo:Carlos310197/Factored-Hackathon-2026:ref:refs/heads/main` or `repo:Carlos310197/Factored-Hackathon-2026:pull_request`. Policy: `AdministratorAccess` (ponytail: one role for plan and apply; split a read-only plan role once the repo is public). |
 | Snowflake user `TF_DEPLOY` | `TYPE = SERVICE`, `WORKLOAD_IDENTITY = (TYPE = AWS, ARN = gha-deploy)`, granted `SYSADMIN` and `SECURITYADMIN` (integration creation needs `ACCOUNTADMIN`: granted too, documented). |
 | SSM `/fh26/organizer/aws_key_id`, `/fh26/organizer/aws_secret` | SecureString, values read from local `.env` at apply time; `lifecycle { ignore_changes = [value] }` so CI never needs `.env`. |
-| GitHub repo variables | `AWS_ROLE_ARN`, `AWS_REGION`, `SNOWFLAKE_ORGANIZATION`, `SNOWFLAKE_ACCOUNT`, `TF_STATE_BUCKET`. Variables, not secrets: none is sensitive. |
+
+Non-secret IDs (role ARN, region, account) are written in the workflow file: `andrezc98` lacks admin on Carlos's personal repo, so Actions variables cannot be set from code.
 
 After the first apply, `terraform init -migrate-state` moves bootstrap state into the state bucket under `bootstrap/terraform.tfstate`. Re-running bootstrap is only needed to change the trust chain itself.
 
@@ -104,3 +105,7 @@ RAW and META tables stay in the pipeline's SQL scripts (`infra/snowflake/02_raw_
 - **Bootstrap needs ACCOUNTADMIN password login** from Terraform; if the provider cannot use the `sbx` password connection, pass `SNOWFLAKE_PASSWORD` from the environment for that one run.
 - **Trial expiry** (~2026-10-26) is after submission; no impact.
 - **Repo rename** before submission changes the OIDC `sub` claim; the rename is a bootstrap re-apply with the new repo name.
+
+## Changelog
+
+- 2026-10-01: GitHub provider dropped (no repo admin); IDs live in the workflow file.

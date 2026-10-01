@@ -19,7 +19,7 @@
 - Dedup rule everywhere: newest `_loaded_at`, then highest `_file_row`, per primary key.
 - Curated marts have `contract: enforced: true`; column names and types exactly as in spec §5.3. PII columns listed in §5.3 never leave RAW.
 - Export column names are lowercase (quoted aliases); the agent reads `latest.json` then the run folder.
-- Snowflake objects: warehouse `WH_PIPELINE` (X-Small, auto-suspend 60), databases `LATAM_BANK` and `LATAM_FIXTURE`, schemas `RAW`, `STAGING`, `CURATED`, `META`, role `PIPELINE_ROLE`.
+- Snowflake objects: warehouse `WH_PIPELINE` (X-Small, auto-suspend 60), databases `LATAM_BANK` and `LATAM_FIXTURE`, schemas `RAW`, `STAGING`, `CURATED`, `META`, role `PIPELINE_ROLE`. Created by Terraform (`infra/terraform/platform`, see `docs/superpowers/plans/2026-10-01-infra-iac.md`); this plan creates only RAW/META tables.
 - Test severities: error on keys, FKs, enums, contracts, quarantine rate > 1%; warn on known nulls, freshness, unexpected columns, event/process date drift.
 - Every task ends with a commit on `main` (single-developer repo; branch if Carlos is pushing to the same repo).
 
@@ -187,6 +187,8 @@ git commit -m "chore: scaffold pipeline project with Snowflake connection helper
 ---
 
 ### Task 2: Snowflake account objects, stages, and RAW tables
+
+> **Superseded in part (2026-10-01, infra-iac plan):** warehouse, role, databases, schemas, file formats, stages, storage integration, the IAM role and `PIPELINE_SVC` are Terraform-managed. Skip `00_account.sql`, `01_integrations.sql` and `infra/aws/snowflake-serving-role.md` (Steps 5–6 for those files) and the integration placeholder ARN. Keep `pipeline/setup.py`, `tests/test_setup.py` and `02_raw_tables.sql`; in `setup.py`'s `__main__`, `params` keeps only `DATABASE`. `PIPELINE_ROLE` has ALL on the schemas (not ownership of the databases).
 
 **Files:**
 - Create: `infra/snowflake/00_account.sql`, `infra/snowflake/01_integrations.sql`, `infra/snowflake/02_raw_tables.sql`, `infra/aws/snowflake-serving-role.md`, `pipeline/setup.py`, `tests/test_setup.py`
@@ -2105,6 +2107,8 @@ git commit -m "feat: synthetic fixture drop and end-to-end update-correctness pr
 ---
 
 ### Task 10: GitHub Actions: CI on pull requests, scheduled pipeline on main
+
+> **Auth changed (2026-10-01, infra-iac plan):** CI assumes `arn:aws:iam::762197749808:role/gha-deploy` via `aws-actions/configure-aws-credentials@v4` (region `us-east-2`) and sets `SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER=AWS`, `SNOWFLAKE_ACCOUNT=RLQHFPF-AXC97788`, `SNOWFLAKE_USER=PIPELINE_SVC`; no `SNOWFLAKE_OIDC_TOKEN`. The `gha-deploy` trust allows only `main` pushes and pull requests. If dbt-snowflake rejects WIF: Terraform `tls_private_key` for `PIPELINE_SVC`, public key set via `snowflake_execute`, private key in SSM.
 
 **Files:**
 - Create: `.github/workflows/ci.yml`, `.github/workflows/pipeline.yml`
