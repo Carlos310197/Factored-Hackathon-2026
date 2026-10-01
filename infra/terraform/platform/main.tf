@@ -14,7 +14,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-east-2"
+  region = "us-east-1"
 }
 
 # Logs in as TF_DEPLOY using the ambient gha-deploy credentials (no secret).
@@ -38,7 +38,7 @@ data "aws_caller_identity" "me" {}
 locals {
   account_id          = data.aws_caller_identity.me.account_id
   github_sub_prefix   = "repo:Carlos310197@66190532/Factored-Hackathon-2026@1389485180" # immutable OIDC subject, see bootstrap
-  serving_bucket      = "latam-bank-serving-${local.account_id}"
+  serving_bucket      = "latam-bank-serving-${local.account_id}-use1"                   # -use1: the old name stays pinned to us-east-2 for a while after deletion
   serving_url         = "s3://${local.serving_bucket}/serving/"
   snowflake_role_name = "snowflake-serving"
   organizer_bucket    = "factored-datathon-2026-s3-157725502942-us-east-2-an"

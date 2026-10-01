@@ -47,12 +47,12 @@ run "serving_bucket_scoped" {
   command = apply
 
   assert {
-    condition     = aws_s3_bucket.serving.bucket == "latam-bank-serving-762197749808"
+    condition     = aws_s3_bucket.serving.bucket == "latam-bank-serving-762197749808-use1"
     error_message = "serving bucket name"
   }
 
   assert {
-    condition     = toset(snowflake_storage_integration_aws.serving.storage_allowed_locations) == toset(["s3://latam-bank-serving-762197749808/serving/"])
+    condition     = toset(snowflake_storage_integration_aws.serving.storage_allowed_locations) == toset(["s3://latam-bank-serving-762197749808-use1/serving/"])
     error_message = "integration limited to the serving/ prefix"
   }
 }

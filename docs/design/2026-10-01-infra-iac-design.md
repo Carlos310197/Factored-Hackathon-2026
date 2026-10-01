@@ -17,7 +17,7 @@ Every piece of infrastructure the data pipeline needs is code, applied by GitHub
 |---|---|
 | AWS account `762197749808`, admin via SSO profile `hackathon-sso` (Okta → IAM Identity Center) | `aws sts get-caller-identity`, 2026-10-01 |
 | Snowflake account `RLQHFPF-AXC97788`, AWS **us-east-1**; local login = snow CLI connection `sbx` (password) | `snow connection test`, 2026-10-01 |
-| Organizer bucket and Carlos's Bedrock/AgentCore are in **us-east-2** | dataset findings; agent-core spec §6 |
+| Organizer bucket is in **us-east-2** (fixed, theirs). Agent (Bedrock/AgentCore) runs in **us-east-1** with everything else | dataset findings; team decision 2026-10-01 |
 | Terraform 1.15.2 installed locally | `terraform version` |
 | Snowflake provider (`snowflakedb/snowflake` ≥ 2.11) supports `authenticator = "WORKLOAD_IDENTITY"`, `workload_identity_provider = "AWS"`, reading ambient AWS credentials; stages need `preview_features_enabled` | provider docs; Classmethod WIF write-up |
 | Snowflake user `WORKLOAD_IDENTITY = (TYPE = AWS, ARN = '<role arn>')` trusts an AWS role | Snowflake WIF docs |
@@ -43,7 +43,7 @@ infra/terraform/
 .github/workflows/infra.yml
 ```
 
-Region: AWS resources in **us-east-2** (next to the organizer bucket and the agent runtime, which reads the serving bucket on every request). IAM is global. Snowflake stays in us-east-1; its daily export to the serving bucket crosses regions, accepted.
+Region: all our AWS resources in **us-east-1**, the same region as the Snowflake account, so Snowflake's daily export and the agent's reads stay in one region. Only the daily load from the organizer bucket (us-east-2) crosses regions. IAM is global.
 
 ### 4.1 `bootstrap/` (local, one time)
 
@@ -51,7 +51,7 @@ Providers: `aws` (profile `hackathon-sso`), `snowflake` (local password login fr
 
 | Resource | Detail |
 |---|---|
-| State bucket `fh26-tfstate-762197749808` | us-east-2, versioning on, SSE-S3, public access blocked. Backend uses `use_lockfile = true` (no DynamoDB). |
+| State bucket `fh26-tfstate-762197749808-use1` | us-east-1, versioning on, SSE-S3, public access blocked. Backend uses `use_lockfile = true` (no DynamoDB). |
 | `aws_iam_openid_connect_provider` | `token.actions.githubusercontent.com`, audience `sts.amazonaws.com` |
 | Role `gha-deploy` | Trust: `sub` in `repo:Carlos310197/Factored-Hackathon-2026:ref:refs/heads/main` or `repo:Carlos310197/Factored-Hackathon-2026:pull_request`. Policy: `AdministratorAccess` (ponytail: one role for plan and apply; split a read-only plan role once the repo is public). |
 | Snowflake user `TF_DEPLOY` | `TYPE = SERVICE`, `WORKLOAD_IDENTITY = (TYPE = AWS, ARN = gha-deploy)`, granted `SYSADMIN` and `SECURITYADMIN` (integration creation needs `ACCOUNTADMIN`: granted too, documented). |
@@ -67,7 +67,7 @@ Providers: `aws` (ambient OIDC credentials), `snowflake` (`WORKLOAD_IDENTITY`/`A
 
 | Resource | Detail |
 |---|---|
-| Serving bucket `latam-bank-serving-762197749808` | us-east-2, private, versioning off, SSE-S3 |
+| Serving bucket `latam-bank-serving-762197749808-use1` | us-east-1, private, versioning off, SSE-S3 |
 | Snowflake objects | warehouse `WH_PIPELINE` (X-Small, auto-suspend 60); role `PIPELINE_ROLE`; databases `LATAM_BANK`, `LATAM_FIXTURE`, each with schemas `RAW`, `STAGING`, `CURATED`, `META`; grants to `PIPELINE_ROLE` |
 | Storage integration `SERVING_INT` + role `snowflake-serving` | Role trust references the integration's `STORAGE_AWS_IAM_USER_ARN` and `STORAGE_AWS_EXTERNAL_ID`; role name fixed up front so the integration can name it before the role exists. Policy: read/write/list on the serving bucket only. |
 | File format `RAW.CSV_HEADER` | the pipeline plan's options (PARSE_HEADER, BOM skip, column-count mismatch off) |
@@ -113,3 +113,4 @@ RAW and META tables stay in the pipeline's SQL scripts (`infra/snowflake/02_raw_
 - 2026-10-01: final review fixes: `PIPELINE_SVC` gets its own role `pipeline-runner` (one AWS identity per Snowflake user); no plan artifact (secret in plaintext); workflow-level concurrency; state lock timeout.
 - 2026-10-01: all AWS infra is Terraform (Carlos's CDK design to be ported). `gha-deploy` and `pipeline-runner` trust `main` only; PR jobs run fmt/validate/mocked tests with no cloud credentials; `pipeline-runner` has no AWS permissions; serving bucket denies non-TLS.
 - 2026-10-01: the repo uses GitHub's immutable OIDC subject (`repo:Carlos310197@66190532/Factored-Hackathon-2026@1389485180:...`); trust policies match that prefix. A repo rename changes the name part, so it still needs a bootstrap re-apply.
+- 2026-10-01: moved all AWS resources to us-east-1 to sit with Snowflake (team decision). Lessons: Terraform does not replace resources when only the provider region changes (use `-replace` or a rename); a replace destroys using the `force_destroy` value recorded in state; after deletion S3 keeps a bucket name pinned to its old region for a while, so both buckets got a `-use1` suffix (which also allows create-before-destroy for the serving bucket).
