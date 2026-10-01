@@ -10,7 +10,6 @@ on:
 permissions:
   id-token: write
   contents: read
-  pull-requests: write
 
 # Serialize runs per ref; with apply re-planning from HEAD, a cancelled pending run loses nothing.
 concurrency:
@@ -29,36 +28,19 @@ defaults:
     working-directory: infra/terraform/platform
 
 jobs:
-  plan:
+  check:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
-        with:
-          role-to-assume: ${{ env.AWS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
         with:
           terraform_version: 1.15.2
           terraform_wrapper: false
       - run: terraform fmt -check -recursive
-      - run: terraform init -input=false
+      - run: terraform init -backend=false -input=false
       - run: terraform validate
       - run: terraform test
-      - run: terraform plan -input=false -no-color -lock-timeout=5m | tee plan.txt
-      - name: Comment plan on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
-        with:
-          script: |
-            const fs = require('fs');
-            const plan = fs.readFileSync('infra/terraform/platform/plan.txt', 'utf8');
-            const body = '<!-- infra-plan -->\n```\n' + plan.slice(-60000) + '\n```';
-            const { data: comments } = await github.rest.issues.listComments({ ...context.repo, issue_number: context.issue.number });
-            const old = comments.find(c => c.body.startsWith('<!-- infra-plan -->'));
-            if (old) await github.rest.issues.updateComment({ ...context.repo, comment_id: old.id, body });
-            else await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
 
   apply:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

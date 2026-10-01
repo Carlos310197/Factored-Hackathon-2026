@@ -15,8 +15,7 @@ def test_triggers_are_scoped_to_platform():
 def test_workflow_apply_only_on_main():
     apply = WF["jobs"]["apply"]
     assert apply["if"] == "github.event_name == 'push' && github.ref == 'refs/heads/main'"
-    plan_steps = " ".join(str(s.get("run", "")) for s in WF["jobs"]["plan"]["steps"])
-    assert "apply" not in plan_steps
+    assert "apply" not in " ".join(_runs("check"))
 
 
 def test_oidc_permissions_and_no_secrets():
@@ -39,12 +38,17 @@ def test_no_plan_artifact_with_organizer_secret():
     assert "upload-artifact" not in text and "download-artifact" not in text
 
 
-def test_plan_only_on_pull_requests():
-    assert WF["jobs"]["plan"]["if"] == "github.event_name == 'pull_request'"
+def test_pull_requests_get_no_cloud_credentials():
+    # gha-deploy trusts main only; PR checks are fmt/validate/mocked tests
+    job = WF["jobs"]["check"]
+    assert job["if"] == "github.event_name == 'pull_request'"
+    assert not any("configure-aws-credentials" in str(s.get("uses", "")) for s in job["steps"])
+    assert "terraform test" in _runs("check") and "terraform init -backend=false -input=false" in _runs("check")
+    assert "pull-requests" not in WF["permissions"]
 
 
 def test_state_lock_waits_instead_of_failing():
-    for job, verb in (("plan", "terraform plan"), ("apply", "terraform apply")):
+    for job, verb in (("apply", "terraform apply"),):
         cmd = next(r for r in _runs(job) if r.startswith(verb))
         assert "-lock-timeout=5m" in cmd
 

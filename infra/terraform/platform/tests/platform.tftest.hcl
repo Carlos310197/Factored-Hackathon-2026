@@ -57,6 +57,18 @@ run "serving_bucket_scoped" {
   }
 }
 
+run "serving_bucket_denies_plain_http" {
+  command = apply
+
+  assert {
+    condition = anytrue([
+      for st in jsondecode(aws_s3_bucket_policy.serving.policy).Statement :
+      st.Effect == "Deny" && st.Condition.Bool["aws:SecureTransport"] == "false"
+    ])
+    error_message = "serving bucket must deny non-TLS requests"
+  }
+}
+
 run "all_schemas_in_both_databases" {
   command = apply
 
@@ -85,10 +97,7 @@ run "pipeline_user_uses_aws_workload_identity" {
   }
 
   assert {
-    condition = jsondecode(aws_iam_role.pipeline_runner.assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == [
-      "repo:Carlos310197/Factored-Hackathon-2026:ref:refs/heads/main",
-      "repo:Carlos310197/Factored-Hackathon-2026:pull_request",
-    ]
-    error_message = "pipeline-runner trusts only main pushes and PRs of the team repo"
+    condition     = jsondecode(aws_iam_role.pipeline_runner.assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == ["repo:Carlos310197/Factored-Hackathon-2026:ref:refs/heads/main"]
+    error_message = "pipeline-runner (PIPELINE_ROLE writes prod schemas) trusts only main pushes"
   }
 }

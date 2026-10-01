@@ -38,7 +38,7 @@ data "aws_caller_identity" "me" {}
 
 locals {
   account_id   = data.aws_caller_identity.me.account_id
-  gha_subjects = ["repo:${var.github_repo}:ref:refs/heads/main", "repo:${var.github_repo}:pull_request"]
+  gha_subjects = ["repo:${var.github_repo}:ref:refs/heads/main"]
 }
 
 # --- Terraform state ---
@@ -85,7 +85,7 @@ resource "aws_iam_role" "gha_deploy" {
   })
 }
 
-# ponytail: one admin role for plan (PRs) and apply (main); split a read-only plan role once the repo is public.
+# Admin, but reachable only from pushes to main (PR jobs get no cloud credentials).
 resource "aws_iam_role_policy_attachment" "gha_deploy_admin" {
   role       = aws_iam_role.gha_deploy.name
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"

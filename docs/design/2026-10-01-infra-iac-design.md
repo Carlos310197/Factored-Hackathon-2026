@@ -111,3 +111,4 @@ RAW and META tables stay in the pipeline's SQL scripts (`infra/snowflake/02_raw_
 
 - 2026-10-01: GitHub provider dropped (no repo admin); IDs live in the workflow file.
 - 2026-10-01: final review fixes: `PIPELINE_SVC` gets its own role `pipeline-runner` (one AWS identity per Snowflake user); no plan artifact (secret in plaintext); workflow-level concurrency; state lock timeout.
+- 2026-10-01: all AWS infra is Terraform (Carlos's CDK design to be ported). `gha-deploy` and `pipeline-runner` trust `main` only; PR jobs run fmt/validate/mocked tests with no cloud credentials; `pipeline-runner` has no AWS permissions; serving bucket denies non-TLS.

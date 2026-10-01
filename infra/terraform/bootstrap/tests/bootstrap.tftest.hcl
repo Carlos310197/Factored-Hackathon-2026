@@ -21,11 +21,8 @@ run "trust_policy_exact_subjects" {
   command = apply
 
   assert {
-    condition = jsondecode(aws_iam_role.gha_deploy.assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == [
-      "repo:Carlos310197/Factored-Hackathon-2026:ref:refs/heads/main",
-      "repo:Carlos310197/Factored-Hackathon-2026:pull_request",
-    ]
-    error_message = "gha-deploy must trust exactly main pushes and pull requests of the team repo"
+    condition     = jsondecode(aws_iam_role.gha_deploy.assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == ["repo:Carlos310197/Factored-Hackathon-2026:ref:refs/heads/main"]
+    error_message = "gha-deploy (admin + ACCOUNTADMIN) must trust only main pushes, never pull requests"
   }
 
   assert {
