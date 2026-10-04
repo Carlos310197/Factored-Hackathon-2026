@@ -25,7 +25,7 @@ Then open the next unit in `feature-specs/` (index: `feature-specs/README.md`) a
 
 - Do not add `Co-Authored-By: Claude` (or any Claude attribution line) to commit messages or PR descriptions in this repo.
 - For every feature: write the tests first, then implement, then run the tests again, and keep fixing until everything passes.
-- Implement every feature in a worktree, using the `.agents/skills/using-git-worktrees` skill. Include the work of each feature (worktree) under `.worktree` creating a folder called `worktree-{name_of_feature}` where `{name_of_feature}` is the name of the file from `feature-specs` without the number, i.e., for the implementation of the feature `01-pipeline-scaffold.md` use `worktree-pipeline-scaffold` as the name of the folder.
+- Implement every feature in a worktree, using the `.agents/skills/using-git-worktrees` skill. Include the work of each feature (worktree) under `.worktree` creating a folder called `worktree-{name_of_feature}` where `{name_of_feature}` is the name of the file from `feature-specs` without the number, i.e., for the implementation of the feature `01-pipeline-scaffold.md` use `worktree-pipeline-scaffold` as the name of the folder. After finishing the implementation, create a remote branch of the worktree and push the changes there, and finally create a PR in which you include an adecuate title and description (summary in bullets of what's being implement in the current feature).
 
 ## Keeping Context Current
 
