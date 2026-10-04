@@ -4,14 +4,14 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Phase
 
-- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core scaffold complete (unit 12)**. Agent core continues with units 13–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
+- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–13 complete** (scaffold and Jev client). Agent core continues with units 14–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
 - Region: **us-east-1** for all our AWS resources and Snowflake. The organizer bucket (theirs) stays in us-east-2.
-- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04). Agent suite: `cd agent && uv run pytest` → 4 passed (2026-10-04).
+- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04). Agent suite: `cd agent && uv run pytest` → 13 passed (2026-10-04).
 - Submission deadline: **2026-10-05**.
 
 ## Current Goal
 
-- Continue the agent core at `feature-specs/13-identity-service.md`. The as-is diagnosis (`40`) can run in parallel. The UI (53+) and deployment (77+) follow the agent core.
+- Continue the agent core at `feature-specs/14-llm-extract.md`. The as-is diagnosis (`40`) can run in parallel. The UI (53+) and deployment (77+) follow the agent core.
 
 ## Completed
 
@@ -42,6 +42,12 @@ Update this file whenever the current phase, the active unit or the implementati
   - Verified pinned library APIs import (AnthropicBedrockMantle, BedrockAgentCoreApp, RequestContext, PingStatus, DynamoDBSaver, interrupt, Command, InMemorySaver);
   - Default region is us-east-1 (per Architecture Decision 2026-10-04 #1);
   - All tests pass: 4/4 in agent/, 43/43 in root offline suite.
+- 2026-10-04: **Unit 13: Jev Client** (`agent/src/bankagent/decisions/`):
+  - `agent/src/bankagent/decisions/jev.py`: `JevClient` with strict validation, typed answers (`ChoiceAnswer`, `NoulAnswer`), one retry on 5xx/timeout, state hashing;
+  - `agent/tests/test_jev.py`: 9 tests covering typed answer parsing, validation errors (missing/invalid choice/noul), retry behavior (5xx, 4xx, timeout), and empty key rejection;
+  - `agent/scripts/smoke_jev.py`: Live smoke test script with synthetic data (requires owner approval);
+  - `agent/docs/smoke-results.md`: Placeholder for live smoke results;
+  - All tests pass: 13/13 in agent/, 43/43 in root offline suite.
 
 ## In Progress
 
@@ -54,7 +60,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | Units | Subsystem | Status | First dependency |
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
-| 12–25 | Agent core | 12 **done**; 13–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
+| 12–25 | Agent core | 12–13 **done**; 14–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
 | 26–39 | Transaction resolver | not started | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
