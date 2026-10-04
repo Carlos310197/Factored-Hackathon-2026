@@ -6,6 +6,7 @@ data/
 # python / dbt build output
 .venv/
 __pycache__/
+.pytest_cache/
 *.pyc
 dbt/target/
 dbt/dbt_packages/
@@ -27,3 +28,4 @@ worktrees/
 *.tfstate
 *.tfstate.*
 *.tfplan
+
