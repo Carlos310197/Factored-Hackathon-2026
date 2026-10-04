@@ -182,7 +182,7 @@ This goes in a README section, in this order:
 3. **Safer deploys:** a post-deploy functional smoke test with automatic rollback, and canary traffic on the AgentCore endpoint.
 4. **On-call:** alarm notifications routed to on-call (SNS to paging) and a runbook per alarm.
 5. **Cost guardrails:** AWS Budgets, a per-turn cost metric and a cost alarm.
-6. **Hardening:** customer-managed KMS keys, automatic secret rotation, WAF on Amplify and the HTTP API, a custom domain.
+6. **Hardening:** customer-managed KMS keys, automatic secret rotation, WAF on the web ALB and the HTTP API, a custom domain.
 7. **Retention:** a policy for `disputes` and `handoffs` (1 year, then archive), and a deletion process for data-subject requests.
 8. **Private networking:** AgentCore VPC mode with VPC endpoints for S3, DynamoDB and Bedrock; egress allowed only to TypeSafe.
 9. **Capacity:** load testing and quota increases.
@@ -281,7 +281,7 @@ The definition of done for each spec. Feature specs have smaller, unit-level che
 
 ### Definition of done · ui §13
 
-- On Amplify Hosting, in front of the deployed agent:
+- On ECS Fargate Spot (us-east-1), in front of the deployed agent:
   - `/demo` runs Act 1 (sign in with claims shown), Act 2 (free-typed turns, each followed by its trace block), and Act 3 (all 8 scenario chips);
   - the unauthorized-charge scenario lands in `/agent`, is claimed and taken over, the agent and customer exchange messages live, and the case is resolved.
 - A customer cannot read or subscribe to another session (tests plus one manual attempt recorded).
@@ -290,8 +290,8 @@ The definition of done for each spec. Feature specs have smaller, unit-level che
 
 ### Definition of done · deployment §11
 
-- `infra/` deploys all six stacks into a clean account by following `bootstrap.sh` and the README.
-- A push to `main` runs `deploy.yml` green through `verify`. A PR shows its `cdk diff` and passes `infra-check`.
+- `infra/terraform/` deploys every root into a clean account by following `bootstrap/apply.sh`, `put-secrets.sh` and the README *(updated 2026-10-04: everything is Terraform)*.
+- A push to `main` runs `deploy.yml` green through `verify`. A PR shows a `terraform plan` per root and passes the Terraform tests, `trivy` and the stateful guard.
 - The UI spec's definition of done (§13) passes against the deployed stack.
 - `lb-demo-ops` shows live data from the demo run, and every alarm is OK afterwards.
 - The README covers:

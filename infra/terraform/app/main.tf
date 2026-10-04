@@ -21,7 +21,7 @@ provider "aws" {
 variable "allowed_cidrs" {
   description = "Team IPs allowed to reach the app (curl checkip.amazonaws.com)"
   type        = list(string)
-  default     = ["181.67.2.219/32"] # Andrés; add Carlos
+  default     = ["181.67.2.219/32", "38.25.85.60/32"] # Andrés, Carlos
 }
 
 variable "image" {

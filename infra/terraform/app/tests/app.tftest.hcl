@@ -17,7 +17,7 @@ run "only_allowed_ips_reach_the_app_port" {
   command = apply
 
   assert {
-    condition     = toset(aws_vpc_security_group_ingress_rule.app[*].cidr_ipv4) == toset(["181.67.2.219/32"])
+    condition     = toset(aws_vpc_security_group_ingress_rule.app[*].cidr_ipv4) == toset(["181.67.2.219/32", "38.25.85.60/32"])
     error_message = "ingress must be exactly the allowed /32s"
   }
 

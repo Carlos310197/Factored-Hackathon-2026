@@ -4,7 +4,15 @@
 
 ## Goal
 
-Check the CloudFormation, CDK, Bedrock-signing, bucket, GitHub-runner, quota and observability facts that later units depend on, and fill the capacity table's quota values.
+Check the Terraform-provider, Bedrock-signing, bucket, GitHub-runner, quota and observability facts that later units depend on, and fill the capacity table's quota values.
+
+> *(Updated 2026-10-04: everything is Terraform.)* The reference task's CloudFormation and CDK checks become Terraform-provider checks. Check, with the provider version pinned in `infra/terraform/*/.terraform.lock.hcl` (or the newest `hashicorp/aws` 6.x if it must move):
+> 1. `aws_bedrockagentcore_agent_runtime` and `aws_bedrockagentcore_agent_runtime_endpoint` exist and support a custom JWT authorizer and a request header allowlist. Fallback: `awscc_bedrockagentcore_runtime`; last resort `terraform_data` + AWS CLI (unit 83).
+> 2. `aws_appsync_api` (Event API) and `aws_appsync_channel_namespace` with `code_handlers` exist. Fallback: the `awscc` equivalents (unit 84).
+> 3. A Terraform resource for CloudWatch Transaction Search (`aws_xray_trace_segment_destination` or similar). Fallback: the AWS CLI call in `apply.sh` (unit 88).
+> 4. AgentCore Runtime, AppSync Events, and Haiku 4.5 / Sonnet 5.5 on Bedrock are available in **us-east-1**.
+>
+> Each result, and the fallback it selects, goes to `progress-tracker.md` → Architecture Decisions.
 
 ## Read First
 
@@ -24,12 +32,12 @@ Each value is filled in during plan task 1 from Service Quotas and documentation
 | Component | What limits it |
 |---|---|
 | AgentCore Runtime | One microVM per session; the concurrent-session quota; cold-start time (measured). Turn budget 20 s (agent-core §8). |
-| Bedrock | On-demand token and request quotas per minute for Haiku 4.5 and Sonnet 5.5 in us-east-2. Expected to be the first ceiling under load. |
+| Bedrock | On-demand token and request quotas per minute for Haiku 4.5 and Sonnet 5.5 in us-east-1. Expected to be the first ceiling under load. |
 | Jev (TypeSafe) | Alpha endpoint, unpublished rate limit. Measured where possible; stated as a risk. |
 | DynamoDB | On-demand. `decision_records` is partitioned by session, so there's no hot key at demo scale. |
 | DuckDB over S3 | Per-turn read latency, measured. The fallback is the 90-day agent export (agent-core §7.1). |
 | AppSync Events | Connection and publish quotas, far above demo needs |
-| Amplify SSR | Request timeout vs the 20 s turn. The fallback is 202-plus-push (UI §10). |
+| Web (ECS Fargate Spot) | One 0.5 vCPU / 1 GB task; Spot interruptions (about a minute to replace). No request timeout while reached directly; the demo-day ALB's idle timeout (60 s default) is above the 20 s turn. |
 | Identity HTTP API | Stage throttling 10 rps, burst 20 |
 
 No load test is run. The README states capacity from quotas and measured single-user latency, labeled as such.

@@ -40,7 +40,7 @@ No spec section belongs only to this unit. The requirements are the context sect
 
 ### Notes
 
-- **Superseded steps:** the stack wiring and deploy steps (Steps 5 and 7) move to the Python `LbDemo-Realtime` stack (unit 84). Build the mapping, the publisher and their tests here.
+- **Superseded steps:** the stack wiring and deploy steps (Steps 5 and 7) move to the Terraform `realtime` root (unit 84). Build the mapping, the publisher and their tests here.
 
 ## Scope Limits
 

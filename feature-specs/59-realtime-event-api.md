@@ -21,8 +21,8 @@ No spec section belongs only to this unit. The requirements are the context sect
 
 ### Files
 
-- Create: `infra/realtime/package.json`, `tsconfig.json`, `cdk.json`, `vitest.config.ts`, `bin/app.ts`, `lib/realtime-stack.ts`, `handlers/namespace.js`, `authorizer/index.ts`, `authorizer/rules.ts`, `scripts/probe-subscribe.ts`, `scripts/stream-arns.sh`
-- Test: `infra/realtime/test/rules.cases.ts`, `test/namespace.test.ts`, `test/authorizer.test.ts`, `test/stack.test.ts`
+- Create: `infra/realtime/package.json`, `tsconfig.json`, `vitest.config.ts`, `handlers/namespace.js`, `authorizer/index.ts`, `authorizer/rules.ts`, `scripts/probe-subscribe.ts`, `scripts/stream-arns.sh`
+- Test: `infra/realtime/test/rules.cases.ts`, `test/namespace.test.ts`, `test/authorizer.test.ts`
 
 ### Interfaces
 
@@ -30,25 +30,23 @@ No spec section belongs only to this unit. The requirements are the context sect
 - Produces:
   - `channelAllowed(segments: string[], c: {role: string; sid: string} | undefined) -> boolean`, in both `authorizer/rules.ts` and `handlers/namespace.js` (same rule, same test cases);
   - `verifyRealtime(token, getKey, issuer) -> Promise<{role, sid, sub} | null>`;
-  - `RealtimeStack(scope, id, props: RealtimeProps)` with outputs `HttpDomain`, `RealtimeDomain`, `ApiArn`;
-  - `RealtimeProps = {tablePrefix, idpIssuer, idpJwksUrl, streamArns: {handoffs, decision_records, conversation_messages}}`.
+  - `scripts/probe-subscribe.ts`, run against the deployed API in unit 90.
 
 ### Notes
 
-- **Superseded steps:** deployment plan Task 8 replaces this task's TypeScript `RealtimeStack`, `bin/app.ts` and the synth/deploy/probe steps (Steps 6, 8, 9) with the Python stack in unit 84. Build the handler code, the authorizer and their Vitest tests here; skip the TypeScript CDK app and its deploy.
+- **Superseded steps** *(updated 2026-10-04: everything is Terraform)*: this task's TypeScript CDK app (`cdk.json`, `bin/app.ts`, `lib/realtime-stack.ts`, `test/stack.test.ts`, `scripts/stream-arns.sh`) and its synth/deploy steps (Steps 6, 8, 9) are not built. The Event API, namespaces and Lambdas are defined in the Terraform `realtime` root (unit 84). Build the handler code, the authorizer, the probe script and their Vitest tests here.
 
 ## Scope Limits
 
-- the Event API, its authorizer and namespace handlers, the stack skeleton, and a probe script. No publisher (that's Task 8).
+- the namespace handlers, the authorizer and a probe script (the infrastructure is unit 84). No publisher (that's Task 8).
 - Don't touch files outside this unit's list, except to fix a bug in an earlier unit (with a test).
 
 ## Check When Done
 
 - `npm test` passes.
-- `npx cdk synth` produces one `AWS::AppSync::Api` and 3 `AWS::AppSync::ChannelNamespace`.
-- After an approved deploy, the probe script is **allowed** on the own-session channel and **refused** on another session.
+- After an approved deploy (unit 90), the probe script is **allowed** on the own-session channel and **refused** on another session.
 - The reference task's tests exist and pass:
-  `onSubscribe reads handlerContext or resolverContext and refuses others' channels`, `onPublish forwards events unchanged`, `accepts a realtime token`, `rejects an access token (wrong audience), an expired token and garbage`, `rejects tokens without role or sid`, `authorizes connect without a channel and passes role+sid as handlerContext, no caching`, `refuses a customer subscribing to another session when the channel is known`, `refuses an invalid token`, `has one Event API with three channel namespaces`, `subscribes with the Lambda authorizer and publishes with IAM only`
+  `onSubscribe reads handlerContext or resolverContext and refuses others' channels`, `onPublish forwards events unchanged`, `accepts a realtime token`, `rejects an access token (wrong audience), an expired token and garbage`, `rejects tokens without role or sid`, `authorizes connect without a channel and passes role+sid as handlerContext, no caching`, `refuses a customer subscribing to another session when the channel is known`, `refuses an invalid token` (the two stack tests move to unit 84's `realtime.tftest.hcl`)
 - The subsystem's offline suite still passes.
 - `context/progress-tracker.md` is updated, and the unit is committed alone.
 

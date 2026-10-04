@@ -80,7 +80,7 @@ Numbered work units in build order. Each one maps to a single task of a referenc
 
 | # | Unit | Depends on | Plan task |
 | --- | --- | --- | --- |
-| 53 | [UI Platform Checks (Amplify SSR, AppSync Events, CDK)](53-ui-platform-checks.md) `[live]` | none | ui 1 |
+| 53 | [UI Platform Checks (AppSync Events)](53-ui-platform-checks.md) `[live]` | none | ui 1 |
 | 54 | [Agent: `sessions` and `conversation_messages` Tables and Streams](54-agent-ui-tables.md) | 17 | ui 2 |
 | 55 | [Identity: Staff Login, Realtime Token, Demo List, Short-TTL Tokens](55-identity-staff-realtime.md) | 14 | ui 3 |
 | 56 | [Entrypoint: Control Gate, Idempotent Turns, Message Log, `turn_end`](56-entrypoint-ui-gate.md) | 54, 22 | ui 4 |
@@ -113,13 +113,13 @@ Numbered work units in build order. Each one maps to a single task of a referenc
 | 78 | [Agent: Deployed Settings, Git SHA, Sessions TTL, Trace Id](78-deployed-settings.md) | 56 | deployment 2 |
 | 79 | [Agent Observability: Stamped Records, EMF Metrics, Node Spans, ADOT](79-observability.md) | 78 | deployment 3 |
 | 80 | [Identity Service as a Lambda](80-identity-lambda.md) | 55 | deployment 4 |
-| 81 | [CDK Scaffold, Config, cdk-nag and `LbDemo-Data`](81-cdk-data-stack.md) | 77, 78 | deployment 5 |
-| 82 | [`LbDemo-Identity`: IdP Lambda Behind an HTTP API](82-identity-stack.md) | 81, 80 | deployment 6 |
-| 83 | [`LbDemo-Agent`: the AgentCore Runtime](83-agent-stack.md) | 82, 79 | deployment 7 |
-| 84 | [`LbDemo-Realtime`: AppSync Events from Python](84-realtime-stack.md) | 81, 59, 60 | deployment 8 |
-| 85 | [`LbDemo-Web`: Amplify Hosting, Build Tag and Trace Link](85-web-stack.md) | 81, 83, 84, 75 | deployment 9 |
-| 86 | [`LbDemo-Ops`: Alarms and the Dashboard](86-ops-stack.md) | 85 | deployment 10 |
-| 87 | [Cross-Stack Checks: IAM Wildcards, Log Retention, cdk-nag](87-cross-stack-checks.md) | 86 | deployment 11 |
-| 88 | [Bootstrap: GitHub OIDC Stack, `bootstrap.sh`, `seed_demo.py`](88-bootstrap.md) | 87 | deployment 12 |
-| 89 | [CI/CD: Reusable Tests, PR Diff with Stateful Guard, Deploy → Web → Verify](89-cicd.md) | 88 | deployment 13 |
+| 81 | [Terraform `data` Root: Tables, Image Repositories, Shared Conventions](81-terraform-data-root.md) | 77, 78 | deployment 5 |
+| 82 | [Terraform `identity` Root: IdP Lambda Behind an HTTP API](82-identity-stack.md) | 81, 80 | deployment 6 |
+| 83 | [Terraform `agent` Root: the AgentCore Runtime](83-agent-stack.md) | 82, 79 | deployment 7 |
+| 84 | [Terraform `realtime` Root: AppSync Events, Authorizer, Publisher](84-realtime-stack.md) | 81, 82, 59, 60 | deployment 8 |
+| 85 | [Web on ECS Fargate Spot, Build Tag and Trace Link](85-web-stack.md) | 81, 82, 83, 84, 75 | deployment 9 |
+| 86 | [Terraform `ops` Root: Alarms and the Dashboard](86-ops-stack.md) | 85 | deployment 10 |
+| 87 | [Cross-Root Checks: IAM Wildcards, Log Retention, Security Scan](87-cross-stack-checks.md) | 86 | deployment 11 |
+| 88 | [Bootstrap: Secrets, Plan Role, Transaction Search, `seed_demo.py`](88-bootstrap.md) | 87 | deployment 12 |
+| 89 | [CI/CD: Reusable Tests, PR Plans with Stateful Guard, Deploy → Verify](89-cicd.md) | 88 | deployment 13 |
 | 90 | [First Deploy, Live Checks, Operations README and Spec Fixes](90-first-deploy-ops.md) `[live]` | 89, 24 | deployment 14 |

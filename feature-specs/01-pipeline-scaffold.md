@@ -19,9 +19,11 @@ Copied word for word from the design specs. Architecture Decisions in `progress-
 
 ### Prerequisites (manual, one time, before unit 02)
 
+**Done (2026-10-01), as amended:** the Snowflake account `RLQHFPF-AXC97788` exists on AWS **us-east-1**, and the serving bucket `latam-bank-serving-762197749808-use1` (us-east-1) is managed by Terraform `infra/terraform/platform`, not created by hand. CI authenticates through AWS workload identity (`pipeline-runner` → `PIPELINE_SVC`), so step 2's pipeline key pair is only the dbt fallback. The steps below are kept for reference.
+
 *From the pipeline plan (owner actions; the agent only checks they're done):*
 
-1. Create a Snowflake trial: cloud AWS, region `us-east-2 (Ohio)`, Standard edition. Note the account identifier (`<org>-<account>`).
+1. Create a Snowflake trial: cloud AWS, region `us-east-1 (N. Virginia)`, Standard edition. Note the account identifier (`<org>-<account>`).
 2. Generate a key pair for your own admin user and for the pipeline service user (used until GitHub OIDC is confirmed for dbt):
    ```bash
    openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out ~/.snowflake/admin_rsa_key.p8 -nocrypt
@@ -30,7 +32,7 @@ Copied word for word from the design specs. Architecture Decisions in `progress-
    openssl rsa -in ~/.snowflake/pipeline_rsa_key.p8 -pubout -out ~/.snowflake/pipeline_rsa_key.pub
    ```
    In Snowsight, as ACCOUNTADMIN: `ALTER USER <your_user> SET RSA_PUBLIC_KEY = '<contents of admin_rsa_key.pub without header/footer lines>';`
-3. Create our S3 bucket `latam-bank-serving-<suffix>` in `us-east-2` (private, versioning off).
+3. Create our S3 bucket `latam-bank-serving-<suffix>` in `us-east-1` (private, versioning off).
 4. The team repo already exists: `Carlos310197/Factored-Hackathon-2026` (private for now; rename to `factored-hackathon-2026-<team>` and make public before submission). `<org>/<repo>` is `Carlos310197/Factored-Hackathon-2026`. Use the `andrezc98` GitHub account (`gh auth switch --user andrezc98`); it is the one with access.
 5. Add to `.env` (gitignored) alongside the organizer keys:
    ```

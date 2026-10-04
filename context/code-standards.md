@@ -18,7 +18,7 @@ Read **General** and **Testing and Live Calls**, then only the subsystem section
 - Tests that need real services carry markers (`live`, `container`) or flags (`--live`) and are excluded by default.
 - Anything that calls Jev, Bedrock, the persona model, S3 or other real AWS resources runs **only after the owner explicitly approves that run**.
 - A unit is done only when its tests pass and the review-focus cases listed in its feature spec are pinned by tests.
-- Every task ends with one commit that stages only that unit's files, never `.env*`, and ends with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Every task ends with one commit that stages only that unit's files, never `.env*`. Commit messages and PR descriptions carry no `Co-Authored-By: Claude` or other Claude attribution line (CLAUDE.md → Repo Rules).
 
 ### Testing requirements from the specs
 
@@ -106,23 +106,24 @@ Quality metrics (automated resolution, containment, escalation quality, unsafe o
   - the console lifecycle (claim → take over → message both ways → return → resolve);
   - demo acts 1–3.
   - An axe scan on every page.
-- **Live smoke run** (manual, only with the owner's approval): one full ES handoff and takeover against the deployed stack, recording turn latency, push latency and the SSR timeout behaviour.
+- **Live smoke run** (manual, only with the owner's approval): one full ES handoff and takeover against the deployed stack, recording turn latency and push latency.
 - **Design pass:** `impeccable detect --json` over `web/`, once, after the UI is finished; findings fixed in one batch.
 
 #### Testing · deployment §10
 
-- **Infra unit tests** (`infra/tests/`, pytest with `aws_cdk.assertions`, offline, run in CI):
-  - every table has point-in-time recovery, `RETAIN`, and its TTL attribute where specced; Streams are on exactly the three tables;
-  - the runtime has a `CustomJWTAuthorizer` whose discovery URL is the `Identity` stack's output;
-  - IAM: no `Action: "*"`, and no `Resource: "*"` outside the allow-list with reasons;
+*(Updated 2026-10-04: everything is Terraform.)*
+
+- **Terraform tests** (`terraform test` in each root under `infra/terraform/`, mocked providers and `override_data` for remote state, offline, run in CI):
+  - every table has point-in-time recovery, deletion protection, `prevent_destroy`, and its TTL attribute where specced; Streams are on exactly the three tables;
+  - the runtime has a custom JWT authorizer whose discovery URL is the `identity` root's issuer;
   - the publisher's event source mapping has bisect on error, `ReportBatchItemFailures`, at most 5 retries and the SQS on-failure destination;
-  - the serving bucket blocks public access and denies non-TLS requests;
-  - every log group has 30-day retention;
-  - the Amplify app has auto-build off, and its branch environment variables are wired from stack outputs;
+  - the serving bucket is read by name in `data`, never managed there (Terraform `platform` owns its public-access block and TLS-only policy, checked in `platform.tftest.hcl`);
+  - the web (`app`): the ECS service runs on `FARGATE_SPOT` with the circuit breaker and rollback on, the security group admits only the allowed CIDRs, the task role is DynamoDB-only, and the container environment is wired from the other roots' outputs;
   - every §6.3 alarm exists with its threshold, `DemoUnhealthy` covers all of them, and the dashboard has five rows;
   - no SNS topic exists.
-- **cdk-nag** (AwsSolutions pack) in `infra-check`, failing on any error without a written suppression reason.
-- **Stateful-replacement guard:** a script over `cdk diff` output, tested against two fixture diffs (one safe, one replacing a table).
+- **Terraform source checks** (root `tests/test_tf_*.py`, pytest over `python-hcl2`): IAM has no `Action: "*"` or `<service>:*`, and no `Resource: "*"` outside `STAR_OK` with reasons; every log group has 30-day retention; every table is protected.
+- **Security scan:** `trivy config --severity HIGH,CRITICAL --exit-code 1 infra/terraform` in CI, failing on any finding without a reasoned entry in `infra/terraform/.trivyignore.yaml`.
+- **Stateful-replacement guard:** `infra/scripts/stateful_guard.py` over `terraform show -json` of the `data` plan, tested against two fixture plans (one safe, one replacing a table).
 - **Live checks after the first deploy** (manual, recorded in the README):
   - `verify` passes;
   - one ES dispute and one PT decline explanation end to end through `/demo`;
@@ -242,23 +243,32 @@ These rules apply to every task, and each task's requirements include them.
   - `infra/realtime`: `npm test`.
   - `agent`: `uv run pytest` (offline).
   - Anything that touches real AWS, Jev or Bedrock runs **only after the owner explicitly approves that run**.
-- **Commits:** each task ends with a commit that stages only that task's files and never `.env*`. End each message with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- **Commits:** each task ends with a commit that stages only that task's files and never `.env*`. No Claude attribution line (CLAUDE.md → Repo Rules).
 
-## Deployment (`infra/`, workflows, agent observability)
+## Deployment (`infra/terraform/`, `infra/scripts/`, workflows, agent observability)
 
-- **Account and region:** one AWS account, region `us-east-2`, environment `demo`. No other environment or account.
+- **Account and region:** one AWS account (`762197749808`), region `us-east-1`, environment `demo`. No other environment or account. The organizer bucket (theirs) is the only us-east-2 resource.
+- **Terraform only** *(2026-10-04)*: every AWS and Snowflake resource is defined in a root under `infra/terraform/` (`bootstrap`, `platform`, `data`, `identity`, `agent`, `realtime`, `app`, `ops`). No CDK, CloudFormation or console-made resources.
+- **Terraform conventions:**
+  - Terraform `1.15.2` (as in `infra.yml`), `hashicorp/aws ~> 6.0`, `required_version = ">= 1.10"`; commit each root's `.terraform.lock.hcl`. Use `hashicorp/awscc` only where `hashicorp/aws` lacks the resource (unit 77 decides).
+  - Backend: `s3` bucket `fh26-tfstate-762197749808-use1`, key `<root>/terraform.tfstate`, region `us-east-1`, `use_lockfile = true`. One state per root.
+  - Cross-root values only through `data "terraform_remote_state"` on that backend; never hard-coded ARNs from another root.
+  - Images: the deploy workflow pushes `:<git sha>` and overwrites the SSM parameter `/fh26/<name>/image`; the parameter is a Terraform resource with `lifecycle { ignore_changes = [value] }`, and the root uses its value. Never a workflow-only `-var` for the image.
+  - IAM in `data "aws_iam_policy_document"`. Log groups declared in Terraform with 30-day retention.
+  - Every root has `tests/<root>.tftest.hcl` with `mock_provider`, and passes `terraform fmt -check`, `validate` and `test` offline.
 - **Names:**
-  - stacks: `LbDemo-Data`, `LbDemo-Identity`, `LbDemo-Agent`, `LbDemo-Realtime`, `LbDemo-Web`, `LbDemo-Ops`, and `LbDemo-GitHub` (bootstrap only);
-  - resource names start with `lb-demo-`; tables are `lb-demo-<name>`;
+  - roots as above; state keys `<root>/terraform.tfstate`;
+  - the resources that already exist keep their names (cluster `latam-bank`, service and ECR repo `latam-bank-web`, bucket `latam-bank-serving-762197749808-use1`, roles `gha-deploy`, `pipeline-runner`, `snowflake-serving`, parameters `/fh26/...`);
+  - new resources start with `lb-demo-`; tables are `lb-demo-<name>`;
   - runtime `lb_demo_agent` with endpoint `live`;
   - dashboard `lb-demo-ops`; composite alarm `lb-demo-DemoUnhealthy`.
-- **Secrets (Secrets Manager):** `lb-demo/jev`, `lb-demo/idp-signing-key` and `lb-demo/amplify-github-token`.
-  - They're created only by `infra/bootstrap.sh`. CDK references them by name and never creates, rotates or deletes them.
+- **Secrets (Secrets Manager):** `lb-demo/jev` and `lb-demo/idp-signing-key`.
+  - The containers are created only by Terraform `bootstrap/`, with no secret version; `put-secrets.sh` sets the values, so they never reach Terraform state. No other root creates, rotates or deletes them.
   - Never in the repo, GitHub secrets or logs.
-  - GitHub holds only two **repository variables**: `AWS_DEPLOY_ROLE_ARN` and `AWS_DIFF_ROLE_ARN`.
+  - GitHub holds no secrets; the role ARNs (`gha-deploy`, `gha-plan`) are written in the workflow files, as `infra.yml` does today.
 - **The Jev key variable is named `JEV_API_KEY` everywhere**, local `.env` included. In AWS the agent gets `JEV_SECRET_ID=lb-demo/jev` and reads the key at startup.
-- **Stateful resources** (the six tables) have `RemovalPolicy.RETAIN`, and `LbDemo-Data` has termination protection on.
-- **IAM:** one role per principal. No `Action: "*"`. `Resource: "*"` only for the actions in `infra/tests/test_iam.py::STAR_OK`, each with a reason.
+- **Stateful resources** (the six tables) have `lifecycle { prevent_destroy = true }` and `deletion_protection_enabled = true`.
+- **IAM:** one role per principal. No `Action: "*"`. `Resource: "*"` only for the actions in `tests/test_tf_iam.py::STAR_OK`, each with a reason.
 - **Retention:**
 
   | Data | Kept for |
@@ -272,12 +282,12 @@ These rules apply to every task, and each task's requirements include them.
 - **Metrics:** namespace `LatamBank`. Observability code is best-effort: it never raises into a customer's turn.
 - **Logs:** never include message text (`LOG_MESSAGE_TEXT=false`).
 - **Commands:**
-  - `infra/`: run from `infra/` (`uv run pytest`, `npx aws-cdk@2 synth`);
+  - each root: `cd infra/terraform/<root> && terraform fmt -check && terraform init -backend=false && terraform validate && terraform test`;
+  - Terraform source checks, guard, verify and workflow tests: repo root `uv run pytest`;
   - `agent/`: run from `agent/` (`uv run pytest`);
-  - `infra/realtime/`: `npm test`.
-  - Before any `infra/` synth or test, run `npm ci` in `infra/realtime/`: `NodejsFunction` bundles with its local esbuild.
+  - `infra/realtime/`: `npm ci && npm run build && npm test`. Run the build before any `terraform` command in `realtime/`: its `archive_file` zips `dist/`.
 - **Approval:** anything that creates or changes AWS resources, or calls Jev or Bedrock, runs **only after the owner explicitly approves that step**.
-- **Commits:** each task ends with a commit that stages only that task's files and never `.env*`. End each message with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- **Commits:** each task ends with a commit that stages only that task's files and never `.env*`. No Claude attribution line (CLAUDE.md → Repo Rules).
 
 ## Evaluation (`analysis/`, `eval/`)
 

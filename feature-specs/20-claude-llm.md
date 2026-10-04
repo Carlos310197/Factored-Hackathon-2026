@@ -24,7 +24,7 @@ Models are configured per role in `llm/models.yaml` (overridable by environment 
 - **`extract`:** Claude Haiku 4.5, thinking off.
 - **`compose`:** Claude Sonnet 5.5, effort `low`.
 
-Both use structured outputs (`output_config.format`), a prompt-cached stable prefix, and the SDK's Bedrock client (region `us-east-2`; exact model IDs and availability confirmed in the first implementation task). Refusals are handled with the SDK's client-side refusal-fallback middleware; if a refusal survives it, the turn uses a template or hands off. Whether "Haiku for both" is good enough is measured in spec 2.
+Both use structured outputs (`output_config.format`), a prompt-cached stable prefix, and the SDK's Bedrock client (region `us-east-1`; exact model IDs and availability confirmed in the first implementation task). Refusals are handled with the SDK's client-side refusal-fallback middleware; if a refusal survives it, the turn uses a template or hands off. Whether "Haiku for both" is good enough is measured in spec 2.
 
 **Claude has no tools.** Both calls are pure input-to-JSON; only graph nodes call tools.
 

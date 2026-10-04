@@ -4,18 +4,37 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Phase
 
-- Design and planning complete; implementation not started. Six design specs (`docs/design/`) and six plans (`docs/reference/plans/`), reorganized into `context/` and `feature-specs/` on 2026-10-01.
-- Existing code: only the profiling scripts in `analysis/` (`domain_evidence.py`, `etl_facts.py`, `profile_demand.py`).
+- **Data pipeline built (units 01–11)** and **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell). Agent core, resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `agent/`, `eval/` or `web/` code yet.
+- Region: **us-east-1** for all our AWS resources and Snowflake. The organizer bucket (theirs) stays in us-east-2.
+- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04).
 - Submission deadline: **2026-10-05**.
 
 ## Current Goal
 
-- Start the build at `feature-specs/01-pipeline-scaffold.md`. The agent core (from `12`) and the as-is diagnosis (`40`) don't depend on the pipeline and can run in parallel.
+- Start the agent core at `feature-specs/12-agent-scaffold.md`. The as-is diagnosis (`40`) can run in parallel. The UI (53+) and deployment (77+) follow the agent core.
 
 ## Completed
 
-- 2026-09-26 → 2026-10-01: design specs and implementation plans for all six subsystems.
-- 2026-10-01: docs reorganized into `context/` + `feature-specs/`; specs archived in `docs/design/`, plans in `docs/reference/plans/`.
+- 2026-09-26 → 2026-10-01: design specs and implementation plans for all six subsystems, plus the infra-as-code design and plan (`docs/design/2026-10-01-infra-iac-design.md`, `docs/reference/plans/2026-10-01-infra-iac.md`).
+- 2026-10-01: docs reorganized into `context/` + `feature-specs/`; specs archived in `docs/design/`, plans in `docs/reference/plans/`. `analysis/` (profiling scripts) moved out of git (gitignored).
+- 2026-10-01: **Terraform infrastructure** (`infra/terraform/`, applied by `.github/workflows/infra.yml`; see `architecture-context.md` → Deployed Infrastructure):
+  - `bootstrap/`: state bucket `fh26-tfstate-762197749808-use1`, GitHub OIDC provider, role `gha-deploy`, Snowflake user `TF_DEPLOY` (AWS workload identity), organizer keys in SSM. Applied once from a laptop; state migrated to S3.
+  - `platform/`: serving bucket `latam-bank-serving-762197749808-use1` (TLS-only, private), warehouse, role, databases and schemas, storage integration `SI_SERVING` + AWS role `snowflake-serving`, file format, stages, role `pipeline-runner` + Snowflake user `PIPELINE_SVC`. A Snowflake login and stage-listing smoke test (`tests/test_infra_smoke.py`) runs after each apply.
+  - `app/`: ECR repo `latam-bank-web`, ECS cluster `latam-bank` on Fargate Spot, service `latam-bank-web` running a Node placeholder on port 3000 (public IP, team-IP allowlist, no ALB); `bin/app-url` prints its URL.
+  - Moved from us-east-2 to us-east-1 the same day (state bucket, serving bucket, workflows).
+- 2026-10-01: **Data pipeline, units 01–11:**
+  - 01 scaffold (`pyproject.toml`, `pipeline/connect.py` with workload identity → snow CLI connection → key pair);
+  - 02 RAW and META tables (`infra/snowflake/02_raw_tables.sql`, `pipeline/setup.py`); the other Snowflake objects are Terraform;
+  - 03–04 loader with ETag manifest and batched `COPY` (`pipeline/load.py`);
+  - 05–07 dbt sources with freshness, staging with typing, dedup and quarantine, curated marts with enforced contracts, `dq_results` (`pipeline/dq_results.py`);
+  - 08 parquet export with the atomic `latest.json` pointer (`pipeline/export.py`);
+  - 09 fixture drop end-to-end proof (`fixtures/make_fixture.py`, `tests/test_fixture_drop.py`);
+  - 10 workflows: `ci.yml` (offline checks) and `pipeline.yml` (daily 06:00 UTC + push to `main`: load → dbt build → export);
+  - 11 pipeline README (`README.md` → Data pipeline).
+  - Live state (checked 2026-10-04 with `gh run list --workflow pipeline.yml`): the last five runs all succeeded: two pushes on 2026-10-01 (including the us-east-1 move) and the daily schedule since then, the latest about 10 hours before the check (run `37199535018`, 1m44s). Load → `dbt build` → export works live, and `serving/latest.json` is refreshed daily.
+- 2026-10-04: specs and context updated to the deployed reality: region us-east-1, web on ECS Fargate Spot, Terraform-owned serving bucket (see Architecture Decisions, 2026-10-04). CLAUDE.md gained Repo Rules (no Claude attribution in commits or PRs; tests first for every feature).
+- 2026-10-04: **everything is Terraform.** Deployment units 77, 81–90 and UI units 53, 59, 60 rewritten from CDK to Terraform roots (Architecture Decisions, 2026-10-04 #7).
+- 2026-10-04: Carlos's IP `38.25.85.60/32` added to `allowed_cidrs` in `infra/terraform/app/main.tf` (test updated first; `terraform test` 3/3 passed). Live after `infra.yml` applies it on `main`.
 
 ## In Progress
 
@@ -25,16 +44,25 @@ Update this file whenever the current phase, the active unit or the implementati
 
 Unit ranges, in build order (see `feature-specs/README.md` for the full list and dependencies):
 
-| Units | Subsystem | First dependency |
-| --- | --- | --- |
-| 01–11 | Data pipeline | none |
-| 12–25 | Agent core | none (16 uses a synthetic fixture; 23 uses the local drop) |
-| 26–39 | Transaction resolver | 12, 16 |
-| 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | 43+ need agent core 12–24 |
-| 53–76 | UI | agent core 12–22 |
-| 77–90 | Deployment | 77 has none; the rest follow the agent core and UI |
+| Units | Subsystem | Status | First dependency |
+| --- | --- | --- | --- |
+| 01–11 | Data pipeline | **done**, running daily and green | none |
+| 12–25 | Agent core | next | none (16 uses a synthetic fixture; 23 uses the local drop) |
+| 26–39 | Transaction resolver | not started | 12, 16 |
+| 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
+| 53–76 | UI | not started | agent core 12–22 |
+| 77–90 | Deployment | not started; Terraform `bootstrap`, `platform` and the `app` web shell already exist | 77 has none; the rest follow the agent core and UI |
 
 ## Open Questions
+
+### Raised 2026-10-04
+
+- ~~CDK or Terraform for the remaining stacks?~~ **Resolved 2026-10-04: everything is Terraform** (Architecture Decisions, 2026-10-04 #7).
+- **Web image pattern** (SSM `/fh26/<name>/image` owned by the root, overwritten by the deploy workflow): Carlos is confirming it with Andrés.
+- **Terraform provider coverage** for the AgentCore runtime, AppSync Events and Transaction Search: checked in unit 77, with the `awscc` or AWS CLI fallbacks chosen in advance (units 83, 84, 88).
+- **Web access:** `allowed_cidrs` now holds Andrés's and Carlos's IPs (home IPs can change: re-run `curl checkip.amazonaws.com`). The demo-day change (ALB + HTTPS, switch to on-demand `FARGATE`) needs the owner's approval.
+- **`gha-deploy` has `AdministratorAccess`** and trusts pull requests too. Unit 88 adds the read-only `gha-plan` role and narrows `gha-deploy` to `main`, before the repo goes public.
+- **Repo:** `Carlos310197/Factored-Hackathon-2026` is private; make it public (and rename to `factored-hackathon-2026-<team>` if required) before submission.
 
 ### From the data pipeline spec
 
@@ -42,8 +70,8 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 
 - Confirm in Slack `#technical-help` that dataset records may be loaded into Snowflake (third party) and sent to an external LLM. Synthetic data, but the brief says to follow the published data-use terms.
 - Carlos to confirm the workflow and the Snowflake choice.
-- Create the Snowflake trial (AWS us-east-2), our S3 bucket, and the public GitHub repo `factored-hackathon-2026-<team>`. The project folder is not a git repository yet.
-- Who owns the Snowflake account and the AWS account for the bucket and the agent.
+- ~~Create the Snowflake trial, our S3 bucket, and the public GitHub repo.~~ **Resolved 2026-10-01:** Snowflake account `RLQHFPF-AXC97788` (AWS us-east-1), serving bucket `latam-bank-serving-762197749808-use1` (Terraform), repo `Carlos310197/Factored-Hackathon-2026` (private until submission).
+- ~~Who owns the Snowflake account and the AWS account.~~ **Resolved:** the team created both; AWS account `762197749808` (SSO profile `hackathon-sso`).
 
 ### From the agent-core spec
 
@@ -52,8 +80,8 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 - **Data-use approval:** confirm with the organizers (Slack `#technical-help`) that dataset records may be sent to Amazon Bedrock and to TypeSafe (Jev). This extends the pipeline spec's open item.
 - **Jev route:** TypeSafe's direct route is mock-tested only upstream, and the Decisions endpoint is alpha → live smoke test on day 1; pin `jev-1.13.0`.
 - **Jev language quality:** Spanish and Portuguese accuracy is unknown (English is its strongest) → measured in spec 2, with the gloss setting as the lever.
-- **AgentCore:** confirm whether the bearer token reaches the container, availability in us-east-2, and cold-start latency.
-- **Bedrock:** exact model IDs and availability of Haiku 4.5 and Sonnet 5.5 in us-east-2; structured-output support on each.
+- **AgentCore:** confirm whether the bearer token reaches the container, availability in us-east-1, and cold-start latency.
+- **Bedrock:** exact model IDs and availability of Haiku 4.5 and Sonnet 5.5 in us-east-1; structured-output support on each.
 - **Pipeline:** the export sort-order change (§9.3).
 - **Schedule:** submissions close 2026-10-05, so specs 2 and 3 must be written in parallel with this implementation.
 
@@ -61,9 +89,9 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 
 #### Open items and risks · ui §14
 
-- **Amplify SSR:** the compute role and request timeout are unverified; the 202 + push fallback is designed in (§10). Checked in plan task 1.
-- **AppSync Events:** availability in us-east-2, and the `onSubscribe` handler's access to authorizer claims. Checked in plan task 1. If the handler can't see the claims, the Lambda authorizer enforces the channel path instead.
-- **Identity service reachability:** AgentCore's authorizer and our AppSync Lambda authorizer both need its JWKS over HTTPS. Hosting it is a dependency of the (not yet written) deployment work.
+- ~~**Amplify SSR:** the compute role and request timeout are unverified.~~ **Not applicable (2026-10-04):** the web runs on ECS Fargate Spot. The 202 + push fallback stays available.
+- **AppSync Events:** availability in us-east-1, and the `onSubscribe` handler's access to authorizer claims. Checked in plan task 1. If the handler can't see the claims, the Lambda authorizer enforces the channel path instead.
+- **Identity service reachability:** AgentCore's authorizer and our AppSync Lambda authorizer both need its JWKS over HTTPS. Hosting it is a dependency of the deployment work.
 - **Agent-core schedule:** §4 adds tables, a gate and contract fields to a plan that's already being implemented. They must land before the UI's integration tasks.
 - **Scenario data:** each scenario needs a demo identity whose real data triggers it (for example a transaction with `fraud_score` > 30, or a duplicate-looking pair). The selection script might not find all of them in the 60-day window; any gap is reported, never fabricated.
 - **Jev alpha endpoint:** a live demo depends on it. There's no silent fallback (agent-core §4.4); a failed turn shows as a failure in the trace.
@@ -77,13 +105,14 @@ Each is checked in plan task 1, with the fallback chosen in advance.
 
 | Item | Fallback |
 |---|---|
-| CloudFormation support for `AWS::BedrockAgentCore::Runtime` with JWT authorizer properties | CDK `AwsCustomResource` calling `CreateAgentRuntime` and `UpdateAgentRuntime` |
-| Whether a JWT-authorized runtime also accepts SigV4 calls | Bearer-only invocation from the BFF (§4.1) |
-| AppSync Events namespace handlers in CDK | L1 `AWS::AppSync::ChannelNamespace` with inline handler code |
-| AppSync Events and Amplify compute roles in us-east-2 | Already flagged in UI plan task 1 |
-| Amplify SSR timeout | 202-plus-push (UI §10) |
-| Amplify needs a GitHub token to connect the repo | A fine-grained token with read access to this repo only, stored in `lb-demo/amplify-github-token`, revoked after the hackathon |
-| Schedule: four days to the deadline, with application code still unwritten | The `Data` and `Identity` stacks and the deploy workflow go first, so the agent and web deploy as soon as they exist |
+| *(updated 2026-10-04)* `hashicorp/aws` support for `aws_bedrockagentcore_agent_runtime` (+ endpoint) with a JWT authorizer and header allowlist | `awscc_bedrockagentcore_runtime`; last resort `terraform_data` + AWS CLI |
+| Whether a JWT-authorized runtime also accepts SigV4 calls | Bearer-only invocation from the BFF (§4.1) — settled by deployment plan #1 |
+| *(updated 2026-10-04)* `aws_appsync_api` (Event API) and `aws_appsync_channel_namespace` with `code_handlers` in `hashicorp/aws` | the `awscc` equivalents |
+| AppSync Events in us-east-1 | Already flagged in UI plan task 1 |
+| ~~Amplify SSR timeout~~ | Not applicable: ECS Fargate Spot (2026-10-04) |
+| ~~Amplify needs a GitHub token~~ | Not applicable: the web image is built in CI and pushed to ECR (2026-10-04) |
+| Fargate Spot interruption during the demo | Switch the service to on-demand `FARGATE` for demo day (with the ALB) |
+| Schedule: application code still unwritten, one day to the deadline | Deploy the agent and web as soon as they exist; the infrastructure they need for state, data and hosting is already up |
 
 ## Schedule and Risks
 
@@ -133,6 +162,28 @@ Decisions that change or settle the copied spec text. **They take precedence ove
 - `context/` plus numbered `feature-specs/` are the working specs. The UI spec's decision "Process: No `context/` or feature-spec files" is superseded.
 - `docs/design/` (specs) and `docs/reference/plans/` (plans) are frozen. Plans are reference implementations, read by line range only.
 - Plan steps that wrote results into a plan or a spec now write them here.
+
+### 2026-10-04: Deployed infrastructure (region, web hosting, Terraform)
+
+These record what Andrés deployed on 2026-10-01 (`docs/design/2026-10-01-infra-iac-design.md`, `infra/terraform/`) and override the copied spec text everywhere.
+
+1. **Region us-east-1** for every AWS resource of ours (state and serving buckets, ECS, ECR, and later DynamoDB, AgentCore, Bedrock, AppSync, the identity API) and for Snowflake. Only the organizer bucket stays in us-east-2, so only the daily load crosses regions. Every "us-east-2" in the copied spec text means us-east-1.
+2. **The web runs on ECS Fargate Spot, not Amplify Hosting.** Terraform `infra/terraform/app` owns the ECR repo `latam-bank-web`, cluster `latam-bank` (`FARGATE_SPOT` default), service `latam-bank-web` (one 0.5 vCPU / 1 GB X86_64 task on port 3000, circuit breaker with rollback), task role `latam-bank-web-task` and execution role.
+   - No ALB for now: the task has a public IP, the security group admits only `allowed_cidrs`, and `bin/app-url` prints the URL. Demo day adds an ALB with HTTPS and switches to on-demand `FARGATE`.
+   - Consequences: no Amplify app, compute role, `amplify.yml`, GitHub token or SSR timeout check. The BFF's AWS access is the ECS task role. The web image is built in CI and tagged with the git SHA; the running tag is kept in SSM `/fh26/web/image` (owned by `app`, value ignored by Terraform), so no apply can roll the image back. `app` moves from `infra.yml`'s apply to `deploy.yml` (unit 89).
+   - Units changed: 53, 76, 77, 85 (rewritten), 86, 88, 89; `code-standards.md` → Deployment; `architecture-context.md`.
+3. **Infrastructure tooling:** Terraform, applied by GitHub Actions (see #7).
+4. **Accounts and repo exist:** AWS `762197749808` (SSO profile `hackathon-sso`), Snowflake `RLQHFPF-AXC97788`, repo `Carlos310197/Factored-Hackathon-2026`.
+5. **Auth to Snowflake is AWS workload identity**, not GitHub OIDC directly: GitHub → `pipeline-runner` → `PIPELINE_SVC`, and GitHub → `gha-deploy` → `TF_DEPLOY`. No Snowflake secret in GitHub. The key pair stays only as the dbt fallback.
+6. **Names:** the existing resources keep their `latam-bank-` / `fh26` names; the resources the new roots add (tables, runtime, Lambdas, APIs, alarms, dashboard) use `lb-demo-`.
+7. **Everything is Terraform** (owner decision, 2026-10-04). No CDK, CloudFormation stacks or cdk-nag anywhere.
+   - The spec's six CDK stacks become roots under `infra/terraform/`: `data`, `identity`, `agent`, `realtime`, `app` (exists: the web), `ops`, next to the existing `bootstrap` and `platform`. One state per root (`<root>/terraform.tfstate`); cross-root values only through `terraform_remote_state`; `deploy.yml` applies them in that order.
+   - Tests: `terraform test` with mocked providers per root (replaces `aws_cdk.assertions`); pytest over the HCL sources for IAM wildcards, log retention and table protection (`python-hcl2`); `trivy config` (replaces cdk-nag); the stateful guard reads `terraform show -json` of the `data` plan (replaces the `cdk diff` text guard).
+   - Images: agent and identity images go to ECR repos in `data`, the web's to `latam-bank-web`; the running tag of each is an SSM parameter `/fh26/<name>/image` that the deploy workflow overwrites and Terraform ignores (`ignore_changes = [value]`).
+   - Bootstrap: extends Terraform `bootstrap/` (secret containers with no version in state, values set by `put-secrets.sh`; a read-only `gha-plan` role for PR plans; Transaction Search). `cdk bootstrap`, the `GitHubStack` and `infra/bootstrap.sh` are dropped.
+   - Realtime: `infra/realtime/` keeps the TypeScript handler code and its Vitest tests only; esbuild bundles it, and the `realtime` root deploys it. The UI plan's TypeScript CDK app is not built.
+   - Failure handling changes: Terraform doesn't roll back a failed apply; the deploy stops and the next push converges (architecture-context → Failure handling · deployment §7).
+   - Units rewritten: 77, 81 (renamed `81-terraform-data-root.md`), 82–90; UI units 53, 59, 60; `code-standards.md` → Testing · deployment and Deployment; `architecture-context.md` → Stack, Decisions, System Boundaries, Terraform roots, Access Controls, Failure Handling; `project-overview.md` → definition of done.
 
 ### Agent-core plan (2026-09-29)
 
@@ -194,16 +245,16 @@ Added in the plan's Phase C (they continue the same numbering):
 ### Deployment plan (2026-10-01)
 
 **Spec adjustments found while planning:**
-1. **The BFF calls AgentCore with the Bearer token only** (UI plan Task 13 uses `fetch` with `Authorization`; no SigV4). This settles spec §4.1's open item: the Amplify compute role has **no** `InvokeAgentRuntime` permission.
+1. **The BFF calls AgentCore with the Bearer token only** (UI plan Task 13 uses `fetch` with `Authorization`; no SigV4). This settles spec §4.1's open item: the web's ECS task role (formerly the Amplify compute role) has **no** `InvokeAgentRuntime` permission.
 2. **There's no cookie-signing key.** The UI plan stores the IdP-signed JWT in the cookie directly. Spec §3 and §4.3's "cookie-signing key" is dropped.
-3. **The serving bucket and Snowflake role already exist** (pipeline plan Task 2, created by hand). `LbDemo-Data` references the bucket by name and adds a TLS-only bucket policy.
-   - The lifecycle backstop is dropped: CloudFormation can't set lifecycle rules on a bucket it doesn't own, and the export already keeps only 3 runs.
-   - Bootstrap step 6 (Snowflake) becomes a check that the integration still lists the stage.
+3. **The serving bucket and Snowflake role already exist and are Terraform-managed** *(updated 2026-10-04)*. Terraform `infra/terraform/platform` owns the bucket `latam-bank-serving-762197749808-use1` (us-east-1), its public-access block and TLS-only bucket policy, the AWS role `snowflake-serving`, and the storage integration `SI_SERVING` with its stages. `LbDemo-Data` only references the bucket by name and attaches **no** bucket policy (it would overwrite Terraform's).
+   - The lifecycle backstop is dropped: the export already keeps only 3 runs.
+   - Bootstrap step 6 (Snowflake) becomes a check that the integration still lists the stage; `infra.yml`'s smoke test already does this after every `platform` apply.
 4. **The identity Lambda is a container image** built from `agent/Dockerfile.identity`, served with Mangum. The labeled demo identities (`config/demo_users.yaml`) are gitignored because they name real dataset customer ids. So the Lambda reads them from `s3://<serving bucket>/identity/demo_users.yaml`, uploaded by `agent/scripts/seed_demo.py`.
 5. **Names:**
    - the table prefix is `lb-demo`, so tables are named `lb-demo-<name>`;
    - the AgentCore runtime name is `lb_demo_agent`, because runtime names allow only letters, digits and `_`;
-   - the stacks are `LbDemo-<Part>`.
+   - ~~the stacks are `LbDemo-<Part>`~~ *(2026-10-04)*: Terraform roots `infra/terraform/<root>` instead (2026-10-04 #7).
 6. **DynamoDB throttling is six per-table alarms** (read plus write throttle events), joined by the composite alarm. One CloudWatch alarm can hold at most 10 metrics, and `SEARCH` isn't allowed in alarms.
 7. **Metrics are emitted twice:** with their `Language` dimension, and with the same dimension set minus `Language` (EMF dimension sets). Alarms use the language-free series; the dashboard splits by language.
 8. **`sessions` TTL:** `TABLE_SPECS["sessions"]["ttl"]` becomes `"ttl"`, and `SessionRepo.ensure` writes it (90 days), as spec §4.5 requires.
@@ -215,15 +266,18 @@ Added in the plan's Phase C (they continue the same numbering):
     4. route `clarify` → `clarify`;
     5. otherwise → `act`.
 11. **The agent's Bedrock IAM actions** depend on which signing service `AnthropicBedrockMantle` uses. Task 1 records it, and Task 7 uses it.
-12. **The GitHub deploy role does slightly more than assume the CDK roles** (spec §4.2). It also has `amplify:StartJob`/`GetJob` on this app's `main` branch, and `bedrock-agentcore:GetAgentRuntime`/`GetAgentRuntimeEndpoint`, because the `web` and `verify` jobs call those APIs directly.
-13. **Workflow names:** the data pipeline plan already owns `.github/workflows/ci.yml`, so the app's workflows are `app-tests.yml` (reusable), `app-ci.yml` (pull requests) and `deploy.yml`.
+12. **The GitHub deploy role** (spec §4.2). *(Updated 2026-10-04.)* The deployed role is Terraform's `gha-deploy` with `AdministratorAccess`; it applies every root except `bootstrap`. When it's narrowed, it keeps the resource types the roots manage, plus: ECR push to `latam-bank-web`, `lb-demo-agent` and `lb-demo-identity`, `ssm:PutParameter` on `/fh26/*/image`, `ssm:PutParameter` on `/fh26/web/image`, ECS service and task-definition updates for `latam-bank-web`, and `bedrock-agentcore:GetAgentRuntime`/`GetAgentRuntimeEndpoint`, because the `web` and `verify` jobs call those APIs directly. The Amplify permissions are dropped.
+13. **Workflow names:** the data pipeline plan already owns `.github/workflows/ci.yml`, and `infra.yml` owns the Terraform roots, so the app's workflows are `app-tests.yml` (reusable), `app-ci.yml` (pull requests) and `deploy.yml`.
 
 **Supersedes in the UI plan** (Task 8 adds a note to that file):
 - Task 7 Step 6: the TypeScript `RealtimeStack` and `bin/app.ts`;
-- Task 7 Steps 8–9 and Task 8 Steps 5 and 7: the TypeScript stack, its synth, deploy and probe deploy commands;
+- Task 7 Steps 8–9 and Task 8 Steps 5 and 7: the TypeScript stack, its synth, deploy and probe deploy commands (now the Terraform `realtime` root, unit 84);
 - Task 24 Steps 2–3: the hand-made BFF IAM policy and the console-created Amplify app.
+- *(2026-10-04)* Also Task 24 Step 1 (`amplify.yml`) and the whole Amplify `LbDemo-Web` stack of deployment plan Task 9: the web is the Terraform ECS service (Architecture Decisions, 2026-10-04 #2).
 
-The handler code and its Vitest tests from UI Tasks 7–8 stay. The probe script stays, and is run against this plan's stack in Task 14.
+The handler code and its Vitest tests from UI Tasks 7–8 stay. The probe script stays, and is run against the deployed `realtime` root in unit 90.
+
+**Supersedes in the deployment plan** *(2026-10-04)*: every CDK construct, `cdk.json`, `infra/app.py`, `infra/lb_infra/`, `infra/tests/` (CDK assertions), cdk-nag, `cdk bootstrap`/`synth`/`diff`/`deploy`, and the `GitHubStack`. The plan's tasks remain the reference for resource settings, thresholds and test intent only.
 
 ## Spec Changelog
 
@@ -244,4 +298,5 @@ Records that the specs say to fill in at fixed points. Fill them here.
 
 ## Session Notes
 
-- None yet.
+- 2026-10-04: tracker brought up to date with the repo (pipeline 01–11 and Terraform infra done); specs moved to us-east-1 and ECS Fargate Spot. Offline suite 43 passed.
+- 2026-10-04: deployment specs converted to Terraform-only; Carlos added to `allowed_cidrs`. Terraform isn't installed on Carlos's laptop (a 1.15.2 binary was downloaded to a temp folder for the test run); install it (`brew install hashicorp/tap/terraform`) before Terraform units.

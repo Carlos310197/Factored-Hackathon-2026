@@ -31,6 +31,8 @@ No spec section belongs only to this unit. The requirements are the context sect
 
 ### Notes
 
+- *(Updated 2026-10-04: everything is Terraform.)* "Run the bootstrap" means `infra/terraform/bootstrap/apply.sh` then `put-secrets.sh` (unit 88), then `seed_demo.py`; the first deploy is `infra/scripts/deploy.sh <sha>` from the laptop or a push to `main` (unit 89). There's no `cdk bootstrap` or `cdk deploy`. The live URL is `bin/app-url` until the demo-day ALB exists.
+
 - Step 5's "spec corrections" (pipeline §7 role name, the planning changelog) are recorded in `progress-tracker.md` → Architecture Decisions and in `context/architecture-context.md`, not in `docs/design/`.
 - Record the results in `progress-tracker.md`, not in the plan.
 

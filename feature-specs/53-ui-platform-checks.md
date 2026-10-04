@@ -1,4 +1,4 @@
-# 53 · UI Platform Checks (Amplify SSR, AppSync Events, CDK)
+# 53 · UI Platform Checks (AppSync Events)
 
 **Subsystem:** UI · **Depends on:** none · **Reference:** ui plan, Task 1 · **[live]**
 
@@ -29,7 +29,7 @@ No spec section belongs only to this unit. The requirements are the context sect
 ### Notes
 
 - Record the results in `progress-tracker.md` (Session Notes, plus Architecture Decisions for anything that changes later units), not in the plan.
-- If the 25 s SSR check fails, unit 76 sets `CHAT_ASYNC=1` (unit 65 implements both modes).
+- *(updated 2026-10-04)* The web runs on ECS Fargate Spot, so the plan's Amplify SSR checks (compute role, request timeout) are skipped; record them as "not applicable". The remaining checks run in us-east-1. `CHAT_ASYNC=1` stays available (unit 65 implements both modes) but is not expected to be needed. The plan's CDK-construct check is replaced by the Terraform-provider checks in unit 77 (everything is Terraform, 2026-10-04).
 
 ## Scope Limits
 

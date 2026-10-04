@@ -38,7 +38,7 @@ Copied word for word from the design specs. Architecture Decisions in `progress-
 | `TemplateFallbackCount` | none |
 | `InjectionBlockedCount` | none |
 
-Lambda, DynamoDB, AppSync, SQS, API Gateway and Amplify metrics come from AWS.
+Lambda, DynamoDB, AppSync, SQS, API Gateway and ECS metrics come from AWS.
 
 ## Implementation
 

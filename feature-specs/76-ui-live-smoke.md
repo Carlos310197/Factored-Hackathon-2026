@@ -21,7 +21,7 @@ No spec section belongs only to this unit. The requirements are the context sect
 
 ### Files
 
-- Create: `amplify.yml` (repo root), `infra/realtime/iam/bff-policy.json`
+- Create: `web/Dockerfile` (Next.js standalone output, X86_64, listens on 3000), `web/.dockerignore`
 - Modify: `docs/superpowers/plans/2026-09-30-ui.md` (append "Task 24 results")
 
 ### Interfaces
@@ -31,7 +31,7 @@ No spec section belongs only to this unit. The requirements are the context sect
 
 ### Notes
 
-- **Superseded steps:** Step 2 (hand-made BFF IAM policy) and Step 3 (console-created Amplify app) are replaced by the CDK `LbDemo-Web` stack and the deploy workflow (units 85, 88–90). Use only `amplify.yml` from Step 1, plus Steps 4–6.
+- **Superseded steps** *(updated 2026-10-04)*: Steps 1–3 (`amplify.yml`, the hand-made BFF IAM policy, the console-created Amplify app) are replaced by the web image and the Terraform `infra/terraform/app` ECS service (units 85, 89). Use Steps 4–6 against the ECS URL (`bin/app-url`, or the ALB once it exists).
 - Record the results in `progress-tracker.md`, not in the plan.
 
 ## Scope Limits

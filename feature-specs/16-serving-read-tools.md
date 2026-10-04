@@ -47,7 +47,7 @@ Every tool returns `{data, receipt_id, source, as_of}`.
 - Consumes: `SessionContext`, `SCOPE_READ`, `new_id` (Task 1).
 - Produces:
   - `CONTRACT: dict[str, list[str]]` (column order per table);
-  - `ServingData(base_uri, region="us-east-2")` with `.pointer() -> Pointer(run_id, max_process_date: date, exported_at)` and `.query(run_id, table, where, params, order_by="") -> list[dict]` (JSON-safe values: Decimal → float, date/datetime → ISO string);
+  - `ServingData(base_uri, region="us-east-1")` with `.pointer() -> Pointer(run_id, max_process_date: date, exported_at)` and `.query(run_id, table, where, params, order_by="") -> list[dict]` (JSON-safe values: Decimal → float, date/datetime → ISO string);
   - `ServingError`;
   - `ToolResult(source, data, as_of, receipt_id)` with `.receipt() -> {"receipt_id", "source", "as_of", "data"}`;
   - `NotFound` (message `"not_found"`), `NotDeclined`;

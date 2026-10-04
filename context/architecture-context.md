@@ -1,12 +1,12 @@
 # Architecture Context
 
-> Text under a `· <spec> §<n>` heading, or after a *From …* line, is copied word for word from `docs/design/`. Where a planning decision changed a spec, the change is listed in `progress-tracker.md` → Architecture Decisions, and it takes precedence over the copied text.
+> Text under a `· <spec> §<n>` heading, or after a *From …* line, is copied word for word from `docs/design/`, except where marked *(updated 2026-10-04)*: those edits bring the text in line with the deployed infrastructure (region us-east-1, web on ECS Fargate Spot, Terraform-managed serving bucket). Where a planning decision changed a spec, the change is listed in `progress-tracker.md` → Architecture Decisions, and it takes precedence over the copied text.
 
 ## Stack
 
 | Layer | Technology | Role |
 | --- | --- | --- |
-| Warehouse | Snowflake (AWS us-east-2) + dbt-snowflake | RAW → STAGING → CURATED with enforced contracts, quarantine and DQ results |
+| Warehouse | Snowflake (AWS us-east-1, account `RLQHFPF-AXC97788`) + dbt-snowflake | RAW → STAGING → CURATED with enforced contracts, quarantine and DQ results |
 | Pipeline code | Python 3.12 (uv), `snowflake-connector-python`, GitHub Actions | Loader, export to the serving bucket, scheduled runs |
 | Serving set | S3 parquet + `latest.json`, read with DuckDB | The agent's read-only view of the curated data |
 | Agent | Python 3.12 (uv), LangGraph + `DynamoDBSaver`, `bedrock-agentcore` | The workflow graph, tools, policy and handoff, hosted on AgentCore Runtime |
@@ -17,7 +17,8 @@
 | Identity | Mock OIDC IdP (FastAPI; on AWS: Lambda + HTTP API) | Labeled test identities, RS256 JWTs, JWKS |
 | Web | Next.js 16 (App Router, React 19, TS strict), Tailwind v4, assistant-ui, Zustand, Zod | Customer chat, agent console, trace, demo stage; route handlers as a thin BFF |
 | Real time | AppSync Events + DynamoDB Streams + publisher Lambda | Push to `/session/<sid>`, `/queue`, `/trace/<sid>` |
-| Infrastructure | AWS CDK v2 (Python) + cdk-nag; Amplify Hosting | Six stacks in one account, environment `demo` |
+| Infrastructure | Terraform only (`infra/terraform/`: `bootstrap`, `platform`, `data`, `identity`, `agent`, `realtime`, `app`, `ops`), applied by GitHub Actions; `terraform test` with mocked providers, `trivy config` for security checks | One AWS account (`762197749808`), region us-east-1, environment `demo` |
+| Web hosting | ECS Fargate Spot (`infra/terraform/app`), image in ECR | Runs the Next.js app and its BFF route handlers |
 | Evaluation | DuckDB (as-is), a persona served through OpenCode, Claude judge | As-is diagnosis and held-out simulated evaluation |
 
 ## Decisions Already Taken
@@ -66,7 +67,7 @@ Decisions already taken (2026-09-26): workflow = account/payment inquiries + dis
 | Layout | The trace component lives in the agent's case view (Packet · Conversation · Trace tabs) **and** on a `/demo` stage beside the customer's phone |
 | Demo | Three acts: 1 Sign in (auth shown once) → 2 Live conversation (presenter types; the trace appears after each turn's analysis) → 3 Scenarios (scripted chips) |
 | Stack | One Next.js 16 (App Router) app; route handlers act as a thin BFF |
-| Hosting | AWS Amplify Hosting (us-east-2), Hosting only: no Amplify Gen2 backend, no Cognito |
+| Hosting | *(updated 2026-10-04)* ECS Fargate Spot (us-east-1): the Next.js app as one container image in ECR, no Amplify, no Cognito |
 | Chat library | assistant-ui primitives with `useExternalStoreRuntime`, styled by us |
 | Takeover transport | AWS AppSync Events, with push driven by DynamoDB Streams |
 | Brand | Plain "LATAM Bank", light branding, "demo · synthetic data" labels |
@@ -81,12 +82,12 @@ Decisions already taken (2026-09-26): workflow = account/payment inquiries + dis
 
 | Topic | Decision |
 |---|---|
-| Accounts and environments | **One AWS account** (the owner's, admin access), **one environment `demo`**, region us-east-2. Staging and production are remaining work (§9). |
+| Accounts and environments | **One AWS account** (the owner's, admin access), **one environment `demo`**, region us-east-1 *(updated 2026-10-04)*. Staging and production are remaining work (§9). |
 | Automation level | IaC plus continuous deployment: GitHub Actions deploys on every push to `main` |
-| IaC tool | AWS CDK in Python (`infra/`, uv), with CloudFormation L1 resources where no L2 construct exists |
-| Stack structure | One CDK app, six stacks split by lifecycle (§3), deployed in one workflow |
+| IaC tool | *(updated 2026-10-04)* Terraform (`hashicorp/aws` 6.x, `snowflakedb/snowflake`), with the `awscc` provider only where `hashicorp/aws` lacks a resource |
+| Stack structure | *(updated 2026-10-04)* One Terraform root per lifecycle (§3), each with its own state, applied in order by one workflow |
 | Identity service hosting | The Python `identity/` unit as one Lambda behind an API Gateway HTTP API |
-| Web build | Amplify Hosting, auto-build **off**; the deploy workflow starts the build after CDK |
+| Web build | *(updated 2026-10-04)* The deploy workflow builds the `web/` image, pushes it to ECR tagged with the git SHA, and rolls it out to the ECS service with `terraform apply` in `infra/terraform/app` |
 | Operations built | CloudWatch alarms and one ops dashboard. **No email or SNS notifications**: alarm state shows on the dashboard only. |
 
 *From evaluation §1:*
@@ -109,19 +110,23 @@ Decisions already taken (2026-09-26): workflow = account/payment inquiries + dis
 | --- | --- |
 | `pipeline/`, `dbt/`, `fixtures/`, `infra/snowflake/`, `tests/` (root) | Data pipeline: loader, dbt models and tests, fixture drop, Snowflake DDL |
 | `agent/` (package `bankagent`) | Agent core, identity service, transaction resolver (`bankagent.resolver`) and their tests |
-| `analysis/` (package `asis`) | As-is diagnosis over the raw local drop; the existing profiling scripts live here too |
+| `analysis/` (package `asis`) | As-is diagnosis over the raw local drop; the profiling scripts live here too (gitignored for now; the as-is package is added to git when built) |
 | `eval/` (package `evalkit`) | Held-out evaluation harness, depends on `../agent` by path |
 | `reports/` | Generated as-is and evaluation reports plus figures |
 | `web/` | The Next.js app |
-| `infra/` | CDK app (Python) and its tests; `infra/realtime/` holds the TypeScript realtime handlers |
-| `.github/workflows/` | `ci.yml` + `pipeline.yml` (data pipeline); `app-tests.yml`, `app-ci.yml`, `deploy.yml` (app) |
+| `infra/terraform/` | All infrastructure, one root per lifecycle (Deployment Topology → Terraform roots). Deployed today: `bootstrap/`, `platform/`, `app/`. Planned: `data/`, `identity/`, `agent/`, `realtime/`, `ops/` |
+| `infra/snowflake/` | Snowflake DDL the pipeline runs (RAW and META tables) |
+| `infra/realtime/` | TypeScript handler code for the realtime Lambdas and the namespace handler, with Vitest tests; bundled to `dist/` by esbuild (no CDK) |
+| `infra/scripts/` | Python helpers for CI: Terraform source checks, the stateful guard, `verify.py`, `deploy.sh` |
+| `bin/` | `bin/dbt` (dbt wrapper), `bin/app-url` (prints the web task's current public URL) |
+| `.github/workflows/` | `ci.yml` + `pipeline.yml` (data pipeline); `infra.yml` (Terraform `platform` and `app`: check on PR, apply on `main`); `app-tests.yml`, `app-ci.yml`, `deploy.yml` (app, planned) |
 | `docs/design/` | The original design specs (frozen rationale) |
 | `docs/reference/plans/` | The original implementation plans (reference code, read by line range only) |
 
 ### Code locations · ui §15
 
 - `web/`: the Next.js app (routes, BFF handlers, components, stores, dictionaries, tests).
-- `infra/realtime/`: CDK (TypeScript) for the AppSync Events API, namespace handlers, Lambda authorizer, publisher Lambda, Stream mappings and DLQ.
+- `infra/realtime/`: TypeScript code for the namespace handlers, the Lambda authorizer and the publisher Lambda. *(updated 2026-10-04)* The AppSync Events API, Stream mappings and DLQ are in the Terraform `realtime` root.
 - The agent-core changes live in the agent-core code paths its plan defines.
 
 ## Data Pipeline
@@ -145,7 +150,7 @@ Agent API  in-process DuckDB over the parquet, read-only
 
 Orchestration: one GitHub Actions workflow (`pipeline.yml`) with a daily cron and a run on every push to `main`: `load` → `dbt build` → `export`. Each step is a job that depends on the previous one succeeding.
 
-Snowflake account: new trial on AWS `us-east-2` (same region as the organizer bucket), Standard edition, one `X-Small` warehouse `WH_PIPELINE` with `AUTO_SUSPEND = 60`. Databases: `LATAM_BANK` (schemas `RAW`, `STAGING`, `CURATED`, `META`) and `LATAM_FIXTURE` (same schemas, used only by the fixture test).
+Snowflake account *(updated 2026-10-04)*: `RLQHFPF-AXC97788` on AWS `us-east-1` (the same region as our AWS resources; only the daily load from the organizer bucket in us-east-2 crosses regions), Standard edition, one `X-Small` warehouse `WH_PIPELINE` with `AUTO_SUSPEND = 60`. Databases: `LATAM_BANK` (schemas `RAW`, `STAGING`, `CURATED`, `META`) and `LATAM_FIXTURE` (same schemas, used only by the fixture test).
 
 #### Ingestion modes (documented migration path, not built) · pipeline §4.1
 
@@ -249,11 +254,11 @@ If LightGBM wins (§4.3), its native text model file goes alongside `model.json`
 Browser ── /login /chat (world B) · /agent /trace/[sid] /demo (world C)
    │ HTTPS, httpOnly cookies (cust_session | staff_session)      ▲ WebSocket (AppSync Events)
    ▼                                                             │ /session/<sid> · /queue · /trace/<sid>
-Next.js 16 on Amplify Hosting (us-east-2)                        │
+Next.js 16 on ECS Fargate Spot (us-east-1)                       │
    BFF route handlers (§6)                                       │
      ├─ identity service: login, OTP, staff login, realtime token│
      ├─ AgentCore /invocations: Bearer JWT, runtime session id   │
-     └─ DynamoDB reads/writes (compute role)                     │
+     └─ DynamoDB reads/writes (ECS task role)                    │
    ▼                                                             │
 DynamoDB: sessions* · conversation_messages* · handoffs · decision_records
    │ Streams (conversation_messages, handoffs, decision_records) │
@@ -289,20 +294,43 @@ Trace events stay slim on purpose: the full records are fetched through the BFF 
 
 ## Deployment Topology
 
-### Stacks · deployment §3
+### Terraform roots · deployment §3 *(updated 2026-10-04: everything is Terraform)*
 
-One CDK app in `infra/` (`infra/app.py`, `cdk.json`, its own `pyproject.toml`). Environment `demo`, us-east-2. Every resource name is prefixed `lb-demo-`. Stacks are listed in deploy order; each consumes only outputs of stacks above it, so CDK orders them.
+The spec's six CDK stacks become Terraform roots under `infra/terraform/`, one state file each in `s3://fh26-tfstate-762197749808-use1` (`<root>/terraform.tfstate`). Environment `demo`, us-east-1. A root reads the roots above it only through `data "terraform_remote_state"`, and `deploy.yml` applies them in this order. Names of the new resources keep the `lb-demo-` prefix; the roots that already exist keep `latam-bank-`/`fh26`.
 
-| # | Stack | Owns | Changes |
-|---|---|---|---|
-| 1 | `Data` | The six DynamoDB tables: `checkpoints`, `disputes`, `handoffs`, `decision_records` (agent-core §7.2), `sessions`, `conversation_messages` (UI §4). On-demand billing, point-in-time recovery on, TTLs as specced, Streams on `conversation_messages`, `handoffs` and `decision_records`. The serving bucket: block public access, TLS-only bucket policy, SSE-S3, a lifecycle rule on `serving/` as a backstop to the export's own cleanup. The `SI_SERVING` role that Snowflake assumes (pipeline §5.4). | Rarely. `RemovalPolicy.RETAIN` on every resource; termination protection on. |
-| 2 | `Identity` | The `identity/` Lambda (Python 3.12, ARM64) behind an API Gateway HTTP API. The issuer is the API's default `https://<api-id>.execute-api.us-east-2.amazonaws.com` URL. Stage throttling: rate 10/s, burst 20. Reads the RS256 signing key from Secrets Manager. | Occasionally |
-| 3 | `Agent` | ECR image asset (ARM64, tagged with the git SHA) → `AWS::BedrockAgentCore::Runtime` with a `CustomJWTAuthorizer` (discovery URL from `Identity`, the allowed audience), PUBLIC network mode (egress to Bedrock, TypeSafe and S3), runtime endpoint `live`. The execution role (§4.2). Environment: table prefix, serving URI, issuer, model config, `GIT_SHA`, the secret's name for `JEV_API_KEY` (read at startup). | Every agent change |
-| 4 | `Realtime` | AppSync Events API with namespaces `session`, `queue` and `trace`, and the `onSubscribe` handler (UI §3). The Lambda authorizer (verifies realtime tokens against cached JWKS). The `realtime-publisher` Lambda on the three Streams: bisect on error, `ReportBatchItemFailures`, 5 retries, SQS on-failure destination (the DLQ). | Occasionally |
-| 5 | `Web` | Amplify app connected to the GitHub repo: branch `main`, app root `web/`, platform `WEB_COMPUTE`, **auto-build off**. The SSR compute role (§4.2). Branch environment variables from the stacks above (issuer URL, runtime ARN, AppSync endpoints, table names). The cookie-signing key as a secret environment variable. | Rarely |
-| 6 | `Ops` | CloudWatch alarms and the `lb-demo-ops` dashboard (§6). No SNS topic. | Occasionally |
+| # | Root | Owns | Applied by | Changes |
+|---|---|---|---|---|
+| 0 | `bootstrap/` (exists) | State bucket, GitHub OIDC provider, `gha-deploy` and (unit 88) `gha-plan`, `TF_DEPLOY`, organizer keys in SSM, the secret containers `lb-demo/jev` and `lb-demo/idp-signing-key` (values set out of band), Transaction Search | a laptop (`apply.sh`) | Only when the trust chain changes |
+| 0 | `platform/` (exists) | Serving bucket, Snowflake objects, `SI_SERVING` + `snowflake-serving`, stages, `pipeline-runner` + `PIPELINE_SVC` | `infra.yml` on `main` | Occasionally |
+| 1 | `data/` | The six DynamoDB tables: `checkpoints`, `disputes`, `handoffs`, `decision_records` (agent-core §7.2), `sessions`, `conversation_messages` (UI §4). On-demand billing, point-in-time recovery on, TTLs as specced, Streams on `conversation_messages`, `handoffs` and `decision_records`. Shapes come from `tables.json`, exported from `TABLE_SPECS`. ECR repos `lb-demo-agent` and `lb-demo-identity`; SSM image parameters `/fh26/agent/image` and `/fh26/identity/image`. Reads the serving bucket by name; doesn't manage it. | `deploy.yml` | Rarely. `prevent_destroy` and deletion protection on every table. |
+| 2 | `identity/` | The `identity/` Lambda (container image, Python 3.12, ARM64) behind an API Gateway HTTP API. The issuer is the API's default `https://<api-id>.execute-api.us-east-1.amazonaws.com` URL. Stage throttling: rate 10/s, burst 20. Reads the RS256 signing key from Secrets Manager. | `deploy.yml` | Occasionally |
+| 3 | `agent/` | AgentCore runtime `lb_demo_agent` (image from `/fh26/agent/image`, ARM64, tagged with the git SHA) with a custom JWT authorizer (discovery URL from `identity`, the allowed audience) and the `Authorization` header allowlist, PUBLIC network mode (egress to Bedrock, TypeSafe and S3), endpoint `live`. The execution role (§4.2). Environment: table prefix, serving URI, issuer, model config, `GIT_SHA`, the secret's name for `JEV_API_KEY` (read at startup). The Terraform resource type is settled in unit 77. | `deploy.yml` | Every agent change |
+| 4 | `realtime/` | AppSync Events API with namespaces `session`, `queue` and `trace`, and the `onSubscribe` handler (UI §3). The Lambda authorizer (verifies realtime tokens against cached JWKS). The `realtime-publisher` Lambda on the three Streams: bisect on error, `ReportBatchItemFailures`, 5 retries, SQS on-failure destination (the DLQ). Lambda code is bundled from `infra/realtime/` with esbuild. | `deploy.yml` | Occasionally |
+| 5 | `app/` (exists) | The web: ECR repo `latam-bank-web`, ECS cluster `latam-bank` with `FARGATE_SPOT` as the default capacity provider, service `latam-bank-web` (one task, 0.5 vCPU / 1 GB, X86_64, port 3000, circuit breaker with rollback), SSM `/fh26/web/image`, the task role (§4.2), and container environment from the roots above (issuer URL, runtime invoke URL, AppSync endpoints, table names). | `deploy.yml` (moved from `infra.yml` in unit 89) | Every web change |
+| 6 | `ops/` | CloudWatch alarms and the `lb-demo-ops` dashboard (§6). No SNS topic. | `deploy.yml` | Occasionally |
 
-Splitting by lifecycle keeps stateful resources in a stack that almost never changes. A broken agent or web deploy cannot replace a table or the bucket.
+Splitting by lifecycle keeps stateful resources in a root that almost never changes. A broken agent or web deploy cannot replace a table, because its root doesn't own any.
+
+### Deployed Infrastructure (Terraform)
+
+What is live today, from `docs/design/2026-10-01-infra-iac-design.md` and `infra/terraform/`. Everything is applied by GitHub Actions (`infra.yml`) except `bootstrap/`, and nothing is created by hand in a console.
+
+| Fact | Value |
+|---|---|
+| AWS account | `762197749808`, admin through the SSO profile `hackathon-sso` |
+| Region | **us-east-1** for all our resources. The organizer bucket stays in us-east-2 (theirs). |
+| Snowflake account | `RLQHFPF-AXC97788`, AWS us-east-1 |
+| Repository | `Carlos310197/Factored-Hackathon-2026` (private; public before submission) |
+| Terraform state | `s3://fh26-tfstate-762197749808-use1`, keys `bootstrap/`, `platform/`, `app/terraform.tfstate`, `use_lockfile = true` |
+| Name prefixes | `latam-bank-`/`fh26` for the resources that exist (bucket, cluster, service, roles, parameters); `lb-demo-` for the resources the new roots add (tables, runtime `lb_demo_agent`, Lambdas, API, alarms) |
+
+| Root | Applied by | Owns |
+|---|---|---|
+| `bootstrap/` | a laptop, once | state bucket; GitHub OIDC provider; role `gha-deploy` (trust: `main` and `pull_request`; `AdministratorAccess` for now); Snowflake user `TF_DEPLOY` (AWS workload identity on `gha-deploy`); SSM `/fh26/organizer/aws_key_id` and `/aws_secret` |
+| `platform/` | `infra.yml` | serving bucket `latam-bank-serving-762197749808-use1` (private, SSE-S3, TLS-only); warehouse `WH_PIPELINE`, role `PIPELINE_ROLE`, databases `LATAM_BANK` and `LATAM_FIXTURE` with their schemas and grants; storage integration `SI_SERVING` and the AWS role `snowflake-serving`; file format `RAW.CSV_HEADER`; stages `RAW.ORGANIZER_STAGE`, `RAW.SERVING_STAGE`, `LATAM_FIXTURE.RAW.FIXTURE_STAGE`; role `pipeline-runner` and Snowflake user `PIPELINE_SVC` |
+| `app/` | `infra.yml` | ECR repo `latam-bank-web` (immutable tags, last 10 kept); ECS cluster `latam-bank` (`FARGATE_SPOT` default, `FARGATE` available); service `latam-bank-web` in the default VPC's public subnets with a public IP; security group open on port 3000 to the team's IPs only; execution and task roles; log group |
+
+**Web hosting now (ponytail):** no load balancer, so the task's public IP changes on every deploy or Spot interruption; `bin/app-url` prints the current URL. The image is a Node placeholder until `web/` ships one. **Demo day:** add an ALB with HTTPS and switch the service to `FARGATE` (on-demand). The task role gets its permissions (DynamoDB tables, nothing else) when those resources exist.
 
 ## Storage Model and Contracts
 
@@ -437,11 +465,11 @@ No browser ever holds AWS credentials. Each hop authenticates.
 |---|---|
 | Browser → BFF | httpOnly, Secure, SameSite=Lax cookie holding the 15-minute JWT |
 | BFF → identity | HTTPS; login and OTP routes are public and throttled at the HTTP API stage |
-| BFF → AgentCore | SigV4 from the Amplify compute role (`bedrock-agentcore:InvokeAgentRuntime` on this runtime ARN only) **plus** the customer's Bearer JWT, which the AgentCore authorizer checks and `app.py` re-verifies. If task 1 finds that a JWT-authorized runtime is Bearer-only, the BFF calls with the Bearer token alone and the compute role loses that permission. |
+| BFF → AgentCore | *(updated 2026-10-04, deployment plan #1)* The customer's Bearer JWT only, from the ECS task; the AgentCore authorizer checks it and `app.py` re-verifies. The task role has no `InvokeAgentRuntime` permission. |
 | Browser → AppSync | Subscribe-only realtime token → Lambda authorizer → `onSubscribe` channel check (UI §3 rule 4) |
 | Publisher → AppSync | IAM, `appsync:EventPublish` on this API only |
-| Snowflake → S3 | The `SI_SERVING` role with an external-ID trust condition, `serving/*` only |
-| GitHub → AWS | OIDC. The deploy role trusts only `repo:<org>/<repo>:ref:refs/heads/main`; a read-only diff role trusts `pull_request` |
+| Snowflake → S3 | Integration `SI_SERVING` assumes the AWS role `snowflake-serving` with an external-ID trust condition; read/write/list on the serving bucket only (Terraform `platform`) |
+| GitHub → AWS | OIDC. *(updated 2026-10-04)* Deployed today: one role `gha-deploy` trusting `repo:Carlos310197/Factored-Hackathon-2026` on `ref:refs/heads/main` and `pull_request`, plus `pipeline-runner` with the same trust. Splitting a read-only PR role is remaining work. |
 
 #### Roles · deployment §4.2
 
@@ -453,18 +481,19 @@ One role per principal, least privilege, no `*` resource except where the servic
 | Identity Lambda | `GetSecretValue` on `lb-demo/idp-signing-key`; logs |
 | Publisher Lambda | Read on the three streams; `appsync:EventPublish`; `sqs:SendMessage` to the DLQ |
 | AppSync authorizer | Logs only (JWKS is fetched over HTTPS) |
-| Amplify compute | Read and write on `sessions`, `conversation_messages` and `handoffs`; read on `decision_records`; `InvokeAgentRuntime` (subject to §4.1) |
-| GitHub deploy | `sts:AssumeRole` into the CDK bootstrap roles only |
-| GitHub diff | `sts:AssumeRole` into the CDK lookup role only |
+| Web task (`latam-bank-web-task`) | *(updated 2026-10-04)* Read and write on `sessions`, `conversation_messages` and `handoffs`; read on `decision_records`. No `InvokeAgentRuntime` (§4.1). The execution role `latam-bank-web-execution` pulls the image, writes logs and reads the web's secrets. |
+| GitHub deploy (`gha-deploy`) | *(updated 2026-10-04)* Applies every root except `bootstrap`. `AdministratorAccess` today; narrowing it to the roots' resource types is remaining work (deployment plan #12). |
+| GitHub plan (`gha-plan`, unit 88) | `ReadOnlyAccess`, state-bucket read and lock-file write, for PR plans |
 
 #### Secrets · deployment §4.3
 
 - **Secrets Manager:**
   - `lb-demo/jev`, the TypeSafe key;
-  - `lb-demo/idp-signing-key`, the RSA private key (the `kid` is published in the JWKS);
-  - `lb-demo/amplify-github-token`, used by CDK to connect Amplify to the repo.
-- **Secret creation:** all three are created by `bootstrap.sh`, not by CDK, so a deploy can never rotate or delete them. CDK only references them by name.
-- **Amplify secret environment variables:** the cookie-signing key.
+  - `lb-demo/idp-signing-key`, the RSA private key (the `kid` is published in the JWKS).
+  - *(updated 2026-10-04)* There's no Amplify GitHub token: the web is built in CI and pushed to ECR.
+- **Secret creation** *(updated 2026-10-04)*: the containers are in Terraform `bootstrap/` with `prevent_destroy` and **no secret version**, and `put-secrets.sh` sets the values, so they never reach Terraform state and no CI deploy can rotate or delete them. The other roots reference them by name.
+- **Web secrets** *(updated 2026-10-04)*: none today (deployment plan #2 drops the cookie-signing key). Any later web secret goes into the ECS task definition's `secrets` from Secrets Manager, never into `environment`.
+- **Organizer S3 keys:** SSM SecureString `/fh26/organizer/*` and the `RAW.ORGANIZER_STAGE` definition; they reach Terraform state through the stage resource (private, encrypted state bucket: the accepted exposure).
 - **Never stored** in the repo, GitHub secrets or logs. GitHub holds only the two role ARNs, which are not secret.
 - **Rotation:** manual for the prototype. The README documents signing-key rotation (add the new key to the JWKS, switch signing, remove the old key after 15 minutes).
 
@@ -482,14 +511,14 @@ One role per principal, least privilege, no `*` resource except where the servic
 | `decision_records`, `conversation_messages` | 90 days (TTL) |
 | `sessions` | 90 days (TTL, matching messages) |
 | `disputes`, `handoffs` | No TTL in the prototype; a 1-year policy is remaining work |
-| CloudWatch log groups | 30 days, set on every group CDK creates |
-| Serving runs | The last 3 (pipeline §5.4), with a 30-day lifecycle backstop |
+| CloudWatch log groups | 30 days, set on every group Terraform creates |
+| Serving runs | The last 3 (pipeline §5.4). *(updated 2026-10-04)* No lifecycle backstop (deployment plan #3). |
 | DynamoDB point-in-time recovery | 35 days (service default) |
 
 ### Access and secrets · pipeline §7
 
 - Organizer bucket: their static read-only keys, stored only inside the Snowflake stage definition (`CREATE STAGE organizer_stage URL = 's3://…/data/' CREDENTIALS = (…)`). They never appear in the repo, in GitHub secrets, or in CI logs.
-- GitHub Actions → Snowflake: a Snowflake `SERVICE` user with `WORKLOAD_IDENTITY (TYPE = OIDC, ISSUER = 'https://token.actions.githubusercontent.com', SUBJECT = 'repo:<org>/<repo>:ref:refs/heads/main')`, role `PIPELINE_ROLE` with usage on the warehouse and ownership of `LATAM_BANK` and `LATAM_FIXTURE`. The workflow requests the GitHub OIDC token (`permissions: id-token: write`). Verified: the Snowflake side, and the Python connector (`authenticator = WORKLOAD_IDENTITY`, `workload_identity_provider = OIDC`, `token = <GitHub JWT>`), which covers the `load` and `export` steps. To verify in the first implementation task: whether dbt-snowflake can pass that same token. If it cannot, the `dbt build` step uses key-pair auth for the same service user, with the private key in a GitHub secret and rotated after the hackathon; that would be the one secret of ours.
+- *(updated 2026-10-04: as built, GitHub Actions assumes the AWS role `pipeline-runner` via OIDC, and the Snowflake `SERVICE` user `PIPELINE_SVC` trusts that role with `WORKLOAD_IDENTITY (TYPE = AWS)`; Terraform uses `gha-deploy` → `TF_DEPLOY` the same way. The original text follows.)* GitHub Actions → Snowflake: a Snowflake `SERVICE` user with `WORKLOAD_IDENTITY (TYPE = OIDC, ISSUER = 'https://token.actions.githubusercontent.com', SUBJECT = 'repo:<org>/<repo>:ref:refs/heads/main')`, role `PIPELINE_ROLE` with usage on the warehouse and ownership of `LATAM_BANK` and `LATAM_FIXTURE`. The workflow requests the GitHub OIDC token (`permissions: id-token: write`). Verified: the Snowflake side, and the Python connector (`authenticator = WORKLOAD_IDENTITY`, `workload_identity_provider = OIDC`, `token = <GitHub JWT>`), which covers the `load` and `export` steps. To verify in the first implementation task: whether dbt-snowflake can pass that same token. If it cannot, the `dbt build` step uses key-pair auth for the same service user, with the private key in a GitHub secret and rotated after the hackathon; that would be the one secret of ours.
 - Snowflake → our bucket: storage integration `SI_SERVING` (IAM role trust to Snowflake's account, `s3:PutObject/DeleteObject/GetObject/ListBucket` on `serving/*`).
 - Agent (Fargate) → our bucket: task role with `s3:GetObject/ListBucket` on `serving/*`.
 - Net: one inherited static credential, held in Snowflake; none of ours, or exactly one (the dbt key pair) if the fallback is needed.
@@ -520,11 +549,10 @@ One role per principal, least privilege, no `*` resource except where the servic
   - single-item conditional writes are atomic, so a claim needs no transaction;
   - reads have no conditions, so authorization comes from checking ownership before querying by the session partition;
   - every Stream consumer needs bisect-on-error, per-item failure reporting, bounded retries and a DLQ, or a poison record stalls the shard for 24 h.
-- **Amplify Hosting** runs SSR Next.js. Server secrets come from the Amplify console's secret environment variables (SSM-backed).
+- *(updated 2026-10-04)* **ECS Fargate Spot** runs the Next.js server (`next start` in a container). Route handlers get AWS access through the task role and secrets through the task definition. There's no platform request timeout while the task is reached directly; behind the demo-day ALB the idle timeout (60 s default) is above the 20 s turn budget.
 - **Not yet verified; checked in plan task 1:**
-  - an IAM compute role for SSR route handlers;
-  - the SSR request timeout against our 20 s turn budget plus cold starts;
-  - AppSync Events in us-east-2.
+  - AppSync Events in us-east-1.
+  - *(updated 2026-10-04)* The Amplify compute-role and SSR-timeout checks no longer apply.
 - **Data facts carried from agent-core §2:**
   - customers are all Spanish-speaking, so Portuguese is conversational only;
   - data ends 2026-06-17, so the UI always shows "data as of";
@@ -537,7 +565,7 @@ One role per principal, least privilege, no `*` resource except where the servic
 - **Deadline:** submissions close 2026-10-05.
 - **AgentCore Runtime** (UI spec §2): it passes `Authorization` through to the container and strips other headers except `X-Amzn-Bedrock-AgentCore-Runtime-Custom-*`. Sessions are keyed by the runtime session id. The container is ARM64 and serves `/invocations` and `/ping`.
 - **The AgentCore JWT authorizer and the AppSync authorizer both need the identity service's discovery URL over HTTPS**, so identity must deploy before both.
-- **Amplify Hosting SSR** reads server secrets from secret environment variables; route handlers get AWS access through an IAM compute role (to be verified, UI spec §2).
+- *(updated 2026-10-04)* **The web runs on ECS Fargate Spot**: secrets from the task definition, AWS access through the task role. A Spot interruption replaces the task (and, without an ALB, its IP).
 - **AgentCore Observability** needs CloudWatch Transaction Search enabled once per account, and the ADOT Python distro in the container.
 - **The data pipeline already uses GitHub OIDC** (for Snowflake). AWS gets the same pattern: no stored AWS keys anywhere.
 - **Inconsistencies fixed by this spec:**
@@ -578,7 +606,7 @@ One role per principal, least privilege, no `*` resource except where the servic
 | Situation | Behaviour |
 |---|---|
 | AgentCore timeout or 5xx | Error bubble with *Reintentar* / *Tentar de novo*. The retry reuses `client_message_id`, so the turn never runs twice (§4.3). |
-| SSR timeout (if task 1 finds the limit too low) | `POST /api/chat` returns `202 {turn_id}`; the reply arrives as a `message` event on `/session/<sid>` |
+| Request timeout (if a proxy in front of the web, such as the demo-day ALB, cuts a turn short) *(updated 2026-10-04)* | `POST /api/chat` returns `202 {turn_id}`; the reply arrives as a `message` event on `/session/<sid>` |
 | Realtime disconnect | Thin "Reconectando…" / "Reconnecting…" banner; on reconnect, refetch after the cursor. Chat works over HTTP without push. |
 | Publisher failures | Stream consumer: bisect on error, report per-item failures, retries 5, SQS DLQ; a CloudWatch alarm on DLQ depth > 0 |
 | Claim race | Conditional failure → "Already claimed by <name>"; the row updates from `/queue` |
@@ -595,13 +623,14 @@ Runtime behaviour is specced in agent-core §8 and UI §10. This table covers de
 
 | Failure | Behavior |
 |---|---|
-| A test or `cdk deploy` fails | `deploy.yml` stops. CloudFormation rolls the failing stack back to its last good state; stacks already deployed stay. The web isn't rebuilt. |
-| Amplify build fails | The previous build keeps serving. The deploy is red. |
+| A test or a `terraform apply` fails *(updated 2026-10-04)* | `deploy.yml` stops; later roots aren't applied. Terraform does **not** roll back: resources it already changed in the failing root stay changed and are recorded in state. Fix forward or revert the commit, and the next deploy converges. |
+| Web image build or ECS rollout fails *(updated 2026-10-04)* | The deployment circuit breaker rolls the service back to the previous task definition, which keeps serving. The deploy is red. |
+| Spot interruption | ECS starts a replacement task; the app is unreachable for about a minute and, without an ALB, gets a new IP (`bin/app-url`). |
 | `verify` fails | The deploy is red. Roll back as below. |
-| The runtime update fails to stabilize (bad image or environment) | The runtime resource update fails, and CloudFormation restores the previous configuration. |
+| The runtime update fails to stabilize (bad image or environment) | *(updated 2026-10-04)* The `agent` apply fails; `verify` and later roots don't run. Whether `live` keeps serving the previous runtime version depends on the resource chosen in unit 77, which records it; if not, step 2 of the runbook below points it back. |
 | Jev secret missing or invalid | `app.py` still starts and `/ping` stays healthy. Every Jev call fails → clarify or handoff (agent-core §4.4). The `Jev failing` alarm turns red. No other model substitutes. |
 | Identity service down | No new logins. Existing tokens keep verifying from cached JWKS until they expire (at most 15 minutes). |
-| A deploy would replace or delete a stateful resource | The stateful-replacement guard in `infra-check` fails the PR when the `cdk diff` for `Data` shows a removal or replacement. `RETAIN` keeps the resource if it gets through anyway. |
+| A deploy would replace or delete a stateful resource | *(updated 2026-10-04)* The stateful guard fails the PR (and the deploy, before the `data` apply) when the `data` plan deletes or replaces a table. `prevent_destroy` and table deletion protection stop it if it gets through anyway. |
 
 **Rollback runbook (README):**
 1. `git revert` the bad commit and push; the normal deploy restores the previous state.

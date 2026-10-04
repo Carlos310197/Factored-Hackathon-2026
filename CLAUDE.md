@@ -21,6 +21,11 @@ Then open the next unit in `feature-specs/` (index: `feature-specs/README.md`) a
 - `docs/design/` holds the original specs, frozen. Their text already lives in `context/` and `feature-specs/`. To resolve a `§` reference, use `docs/design/README.md`.
 - Don't edit `docs/design/` or `docs/reference/`. Results that a plan step would write into a plan or spec go to `context/progress-tracker.md`.
 
+## Repo Rules
+
+- Do not add `Co-Authored-By: Claude` (or any Claude attribution line) to commit messages or PR descriptions in this repo.
+- For every feature: write the tests first, then implement, then run the tests again, and keep fixing until everything passes.
+
 ## Keeping Context Current
 
 Update `context/progress-tracker.md` after each meaningful implementation change.
