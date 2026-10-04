@@ -1,0 +1,10 @@
+# Team-authored, LABELED SYNTHETIC dispute policy (spec §5). Not a real bank policy.
+version: dispute-policy.v1
+synthetic: true
+disputable_status: [Approved]
+disputable_types: [Purchase, Withdrawal, Payment, Transfer]
+window_days: 60
+automated_max_amount_usd: 500
+fraud_score_human_review_above: 30   # fraud_score is on a 0–100 scale
+reasons: [duplicate_charge, wrong_amount, not_received, cancelled_but_charged, unauthorized]
+human_review_reasons: [unauthorized]
