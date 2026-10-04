@@ -1,0 +1,39 @@
+[project]
+name = "bankagent"
+version = "0.1.0"
+description = "LATAM Bank customer-service agent core (spec: docs/superpowers/specs/2026-09-29-agent-core-design.md)"
+requires-python = ">=3.12"
+dependencies = [
+  "anthropic[bedrock]>=1.9",
+  "bedrock-agentcore>=1.24",
+  "boto3>=1.35",
+  "duckdb>=1.1",
+  "fastapi>=0.115",
+  "httpx>=0.27",
+  "langgraph>=1.2",
+  "langgraph-checkpoint-aws>=1.2",
+  "opentelemetry-api>=1.27",
+  "pydantic>=2.8",
+  "pyjwt[crypto]>=2.9",
+  "pyyaml>=6",
+  "uvicorn>=0.30",
+]
+
+[dependency-groups]
+dev = ["pytest>=8", "moto[dynamodb]>=5", "python-dotenv>=1.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bankagent"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+markers = [
+  "live: calls a real external service (Jev, Bedrock, S3); run only with the owner's approval",
+  "container: needs the docker compose stack running",
+]
+addopts = "-m 'not live and not container'"
