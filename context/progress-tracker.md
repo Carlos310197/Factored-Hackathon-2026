@@ -73,7 +73,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | Units | Subsystem | Status | First dependency |
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
-| 12–25 | Agent core | 12–13 **done**; 14–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
+| 12–25 | Agent core | 12–14 **done**; 15–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
 | 26–39 | Transaction resolver | not started | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
