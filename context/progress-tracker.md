@@ -61,6 +61,11 @@ Update this file whenever the current phase, the active unit or the implementati
     - Session IDs prefixed with "S-", 15-minute TTL, scopes from config
   - 11 comprehensive tests covering full login flow, token verification, error cases (wrong password/OTP, expired/tampered tokens, wrong audience/issuer/unknown kid)
   - All tests pass: 24/24 in agent/, 43/43 in root offline suite
+- 2026-10-04: **Unit 15: Dispute Policy** (`agent/src/bankagent/policy/`):
+  - `dispute_policy.yaml`: labeled synthetic policy (v1) with rules for status, type, window, duplicates, reasons, and human review triggers;
+  - `dispute.py`: pure evaluation function returning `PolicyResult` with pass/fail per rule; handles USD amount fallback, fraud score thresholds (>30), escalation signals;
+  - 20 tests covering happy path, status redirects, non-disputable types, window boundaries, duplicates, human review triggers (unauthorized, fraud, amount), edge cases (fraud_score=30, amount=500), USD handling, and error cases;
+  - All tests pass: 44/44 in agent/, 43/43 in root offline suite.
 
 ## In Progress
 
@@ -73,7 +78,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | Units | Subsystem | Status | First dependency |
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
-| 12–25 | Agent core | 12–14 **done**; 15–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
+| 12–25 | Agent core | 12–15 **done**; 16–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
 | 26–39 | Transaction resolver | not started | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
