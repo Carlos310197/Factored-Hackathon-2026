@@ -18,6 +18,10 @@ fixtures/out/
 .claude/
 .agents/
 analysis/
+# worktree isolation for features
+.worktree/
+.worktrees/
+worktrees/
 # terraform
 .terraform/
 *.tfstate
