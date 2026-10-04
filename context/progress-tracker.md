@@ -4,14 +4,14 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Phase
 
-- **Data pipeline built (units 01–11)** and **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell). Agent core, resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `agent/`, `eval/` or `web/` code yet.
+- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core scaffold complete (unit 12)**. Agent core continues with units 13–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
 - Region: **us-east-1** for all our AWS resources and Snowflake. The organizer bucket (theirs) stays in us-east-2.
-- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04).
+- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04). Agent suite: `cd agent && uv run pytest` → 4 passed (2026-10-04).
 - Submission deadline: **2026-10-05**.
 
 ## Current Goal
 
-- Start the agent core at `feature-specs/12-agent-scaffold.md`. The as-is diagnosis (`40`) can run in parallel. The UI (53+) and deployment (77+) follow the agent core.
+- Continue the agent core at `feature-specs/13-identity-service.md`. The as-is diagnosis (`40`) can run in parallel. The UI (53+) and deployment (77+) follow the agent core.
 
 ## Completed
 
@@ -35,6 +35,13 @@ Update this file whenever the current phase, the active unit or the implementati
 - 2026-10-04: specs and context updated to the deployed reality: region us-east-1, web on ECS Fargate Spot, Terraform-owned serving bucket (see Architecture Decisions, 2026-10-04). CLAUDE.md gained Repo Rules (no Claude attribution in commits or PRs; tests first for every feature).
 - 2026-10-04: **everything is Terraform.** Deployment units 77, 81–90 and UI units 53, 59, 60 rewritten from CDK to Terraform roots (Architecture Decisions, 2026-10-04 #7).
 - 2026-10-04: Carlos's IP `38.25.85.60/32` added to `allowed_cidrs` in `infra/terraform/app/main.tf` (test updated first; `terraform test` 3/3 passed). Live after `infra.yml` applies it on `main`.
+- 2026-10-04: **Unit 12: Agent core scaffold** (`agent/`):
+  - `agent/pyproject.toml` with pinned dependencies (anthropic[bedrock]>=1.9, bedrock-agentcore>=1.24, langgraph>=1.2, langgraph-checkpoint-aws>=1.2, pyjwt[crypto]>=2.9, etc.);
+  - `agent/src/bankagent/__init__.py`, `settings.py`, `context.py`, `ids.py`: Settings from env, SessionContext with scope checks, time-sortable IDs;
+  - `agent/tests/test_scaffold.py`: 4 tests (settings defaults, serving URI required, scope enforcement, ID prefix and uniqueness);
+  - Verified pinned library APIs import (AnthropicBedrockMantle, BedrockAgentCoreApp, RequestContext, PingStatus, DynamoDBSaver, interrupt, Command, InMemorySaver);
+  - Default region is us-east-1 (per Architecture Decision 2026-10-04 #1);
+  - All tests pass: 4/4 in agent/, 43/43 in root offline suite.
 
 ## In Progress
 
@@ -47,7 +54,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | Units | Subsystem | Status | First dependency |
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
-| 12–25 | Agent core | next | none (16 uses a synthetic fixture; 23 uses the local drop) |
+| 12–25 | Agent core | 12 **done**; 13–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
 | 26–39 | Transaction resolver | not started | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
