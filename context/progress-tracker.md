@@ -4,14 +4,14 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Phase
 
-- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–14 complete** (scaffold, Jev client, and identity tokens). Agent core continues with units 15–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
+- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–16 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools). Agent core continues with units 17–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
 - Region: **us-east-1** for all our AWS resources and Snowflake. The organizer bucket (theirs) stays in us-east-2.
-- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04). Agent suite: `cd agent && uv run pytest` → 24 passed (2026-10-04).
+- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04). Agent suite: `cd agent && uv run pytest` → 57 passed (2026-10-04).
 - Submission deadline: **2026-10-05**.
 
 ## Current Goal
 
-- Continue the agent core at `feature-specs/15-dispute-policy.md`. The as-is diagnosis (`40`) can run in parallel. The UI (53+) and deployment (77+) follow the agent core.
+- Continue the agent core at `feature-specs/17-dynamodb-store.md`. The as-is diagnosis (`40`) can run in parallel. The UI (53+) and deployment (77+) follow the agent core.
 
 ## Completed
 
@@ -66,6 +66,13 @@ Update this file whenever the current phase, the active unit or the implementati
   - `dispute.py`: pure evaluation function returning `PolicyResult` with pass/fail per rule; handles USD amount fallback, fraud score thresholds (>30), escalation signals;
   - 20 tests covering happy path, status redirects, non-disputable types, window boundaries, duplicates, human review triggers (unauthorized, fraud, amount), edge cases (fraud_score=30, amount=500), USD handling, and error cases;
   - All tests pass: 44/44 in agent/, 43/43 in root offline suite.
+- 2026-10-04: **Unit 16: Serving Reader and Read Tools** (`agent/src/bankagent/data/`, `agent/src/bankagent/tools/`):
+  - `data/contract.py`: serving contract with column order per table (dim_customer, dim_product, fct_transaction, fct_complaint, seed_decline_reason);
+  - `data/serving.py`: `ServingData` class with DuckDB-based queries over parquet, `Pointer` for run metadata, JSON-safe type conversion (Decimal→float, date→ISO);
+  - `tools/read.py`: Customer-scoped read tools (`get_accounts`, `list_transactions`, `get_transaction`, `explain_decline`, `list_complaints`) with scope enforcement and `ToolResult` receipts;
+  - `tests/fixtures/serving_fixture.py`: labeled synthetic test data matching serving contract exactly (2 customers, 2 products, 10 transactions, 1 complaint, 5 decline reasons);
+  - 13 tests covering pointer reading, contract validation, JSON-safe values, SQL injection prevention, customer scoping, transaction ordering, decline explanations, and scope enforcement;
+  - All tests pass: 57/57 in agent/, 43/43 in root offline suite.
 
 ## In Progress
 
@@ -78,7 +85,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | Units | Subsystem | Status | First dependency |
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
-| 12–25 | Agent core | 12–15 **done**; 16–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
+| 12–25 | Agent core | 12–16 **done**; 17–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
 | 26–39 | Transaction resolver | not started | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
