@@ -4,14 +4,14 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Phase
 
-- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–13 complete** (scaffold and Jev client). Agent core continues with units 14–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
+- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–14 complete** (scaffold, Jev client, and identity tokens). Agent core continues with units 15–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
 - Region: **us-east-1** for all our AWS resources and Snowflake. The organizer bucket (theirs) stays in us-east-2.
-- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04). Agent suite: `cd agent && uv run pytest` → 13 passed (2026-10-04).
+- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04). Agent suite: `cd agent && uv run pytest` → 24 passed (2026-10-04).
 - Submission deadline: **2026-10-05**.
 
 ## Current Goal
 
-- Continue the agent core at `feature-specs/14-llm-extract.md`. The as-is diagnosis (`40`) can run in parallel. The UI (53+) and deployment (77+) follow the agent core.
+- Continue the agent core at `feature-specs/15-dispute-policy.md`. The as-is diagnosis (`40`) can run in parallel. The UI (53+) and deployment (77+) follow the agent core.
 
 ## Completed
 
@@ -48,6 +48,19 @@ Update this file whenever the current phase, the active unit or the implementati
   - `agent/scripts/smoke_jev.py`: Live smoke test script with synthetic data (requires owner approval);
   - `agent/docs/smoke-results.md`: Placeholder for live smoke results;
   - All tests pass: 13/13 in agent/, 43/43 in root offline suite.
+  - Live smoke test ran successfully (583ms latency, correct intent/transaction classification).
+- 2026-10-04: **Unit 14: Identity Tokens** (`agent/src/bankagent/auth/`, `agent/src/bankagent/identity/`):
+  - RS256 JWT token generation and verification (`auth/tokens.py`):
+    - `generate_keypair()`, `jwks_from_public()`, `issue_token()`, `verify_token()`
+    - `JwksCache` for caching IdP JWKS with TTL
+    - `AuthError` exception for authentication failures
+  - Mock OIDC identity service (`identity/app.py`, `identity/users.py`):
+    - `DemoUser` model and `load_users()` for YAML-based user configuration
+    - FastAPI app with routes: `POST /auth/login`, `POST /auth/otp`, `GET /.well-known/openid-configuration`, `GET /jwks.json`
+    - Login → OTP → token flow with single-use tickets
+    - Session IDs prefixed with "S-", 15-minute TTL, scopes from config
+  - 11 comprehensive tests covering full login flow, token verification, error cases (wrong password/OTP, expired/tampered tokens, wrong audience/issuer/unknown kid)
+  - All tests pass: 24/24 in agent/, 43/43 in root offline suite
 
 ## In Progress
 
