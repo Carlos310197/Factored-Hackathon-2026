@@ -235,6 +235,12 @@
       "skillPath": "skills/dbt/skills/using-dbt-for-analytics-engineering/SKILL.md",
       "computedHash": "59a854e12cce06d476279f3664e1913564666c3187842b3f7a99fabd987e14fa"
     },
+    "using-git-worktrees": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/using-git-worktrees/SKILL.md",
+      "computedHash": "48c8a1040e378e0cb7208107294e3afa9067b9370c3f33b49a443eb6b7528b0d"
+    },
     "vercel-react-best-practices": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
