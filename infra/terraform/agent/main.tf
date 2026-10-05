@@ -59,4 +59,8 @@ locals {
   image        = data.aws_ssm_parameter.image.value
   # gpt-oss on the Bedrock Mantle endpoint (Architecture Decisions 2026-10-05: LLM model defaults).
   models = { extract = "openai.gpt-oss-20b", compose = "openai.gpt-oss-120b" }
+  # Every Bedrock call runs as this role in account 040684487035 (full model access; this account's is limited).
+  # Its trust policy must allow role/lb-demo-agent-exec with this external id.
+  bedrock_role_arn    = "arn:aws:iam::040684487035:role/argos-bedrock-role"
+  bedrock_external_id = "fh26-7c1e9a52-3b4d-4f0e-9a8b-2d6c5e1f0a73"
 }

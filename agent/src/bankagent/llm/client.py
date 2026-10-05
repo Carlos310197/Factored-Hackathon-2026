@@ -3,6 +3,7 @@ import json
 import os
 import time
 from dataclasses import dataclass
+from types import SimpleNamespace
 
 import openai
 
@@ -26,14 +27,27 @@ class LLMCall:
     latency_ms: int
 
 
-def _generate_bedrock_token(region: str = "us-east-1") -> str:
-    """Generate a SigV4-signed token for Bedrock Mantle API using AWS credentials."""
+def _bedrock_session():
+    """Credentials that sign Bedrock calls. With BEDROCK_ROLE_ARN set, every call runs as that role (in another
+    account, so its model access, quotas and bill apply); unset, this account's own credentials."""
     import boto3
+
+    role = os.environ.get("BEDROCK_ROLE_ARN")
+    if not role:
+        return boto3.Session(profile_name=os.environ.get("AWS_PROFILE"))
+    kw = {"ExternalId": os.environ["BEDROCK_EXTERNAL_ID"]} if os.environ.get("BEDROCK_EXTERNAL_ID") else {}
+    # Assumed creds last 1 h; RefreshingClient re-mints (and so re-assumes) every 30 min.
+    c = boto3.client("sts").assume_role(RoleArn=role, RoleSessionName="lb-demo-agent", **kw)["Credentials"]
+    return boto3.Session(aws_access_key_id=c["AccessKeyId"], aws_secret_access_key=c["SecretAccessKey"],
+                         aws_session_token=c["SessionToken"])
+
+
+def _generate_bedrock_token(region: str = "us-east-1", session=None) -> str:
+    """Generate a SigV4-signed token for Bedrock Mantle API using AWS credentials."""
     from botocore.auth import SigV4Auth
     from botocore.awsrequest import AWSRequest
     
-    session = boto3.Session(profile_name=os.environ.get("AWS_PROFILE"))
-    credentials = session.get_credentials()
+    credentials = (session or _bedrock_session()).get_credentials()
     frozen = credentials.get_frozen_credentials()
     
     # Create the request to sign
@@ -80,12 +94,15 @@ def _mantle_client(region: str):
     """Create an OpenAI client configured for Bedrock Mantle endpoint."""
     base_url = os.environ.get("OPENAI_BASE_URL", f"https://bedrock-mantle.{region}.api.aws/v1")
     
-    # Try to import the token generator, fall back to SigV4 signing
-    try:
-        from aws_bedrock_token_generator import provide_token
-        api_key = os.environ.get("OPENAI_API_KEY") or provide_token(region=region)
-    except ImportError:
-        api_key = os.environ.get("OPENAI_API_KEY") or _generate_bedrock_token(region)
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        session = _bedrock_session()
+        # Try to import the token generator, fall back to SigV4 signing
+        try:
+            from aws_bedrock_token_generator import provide_token
+            api_key = provide_token(region=region, aws_credentials_provider=SimpleNamespace(load=session.get_credentials))
+        except ImportError:
+            api_key = _generate_bedrock_token(region, session)
     
     return openai.OpenAI(
         base_url=base_url,
