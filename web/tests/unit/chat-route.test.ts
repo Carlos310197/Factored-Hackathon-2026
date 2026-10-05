@@ -77,6 +77,7 @@ describe("POST /api/chat", () => {
   });
   it("CHAT_ASYNC returns 202 without awaiting, and a failed turn appends a system message", async () => {
     process.env.CHAT_ASYNC = "1";
+    m.appendMessage.mockResolvedValue({ id: "x" });
     m.customerFrom.mockResolvedValue(CUST);
     m.getSession.mockResolvedValue(null);
     const { AgentError } = await import("@/lib/server/agentcore");
