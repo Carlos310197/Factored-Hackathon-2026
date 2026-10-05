@@ -451,6 +451,7 @@ Added in the plan's Phase C (they continue the same numbering):
 - Staff: case actions show a spinner and are disabled while their POST runs; the conversation tab follows new messages unless the agent scrolled up; the trace list says "Loading trace…" / an error line instead of "No turns yet" before its first fetch lands.
 - Login: the OTP field takes focus when its step opens; the submit buttons show a spinner while busy. Demo prefill focuses the composer.
 - E2E a11y checks wait for finite animations to settle before axe runs (mid-fade colours read as low contrast).
+- Deployed 2026-10-05: web image `latam-bank-web:01ad3bd` (task definition `latam-bank-web:5`), URL `http://3.92.146.135:3000`.
 - Second opinion: Codex (gpt-5.5) reviewed `web/` for this pass; its items 1–7, 9, 10 were taken, item 8 (reserve trace slot height) skipped.
 
 ### 2026-10-05: Agent and web deployed (units 78, 83, 85 live)
