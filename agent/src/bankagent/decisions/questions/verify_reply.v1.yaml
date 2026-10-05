@@ -1,0 +1,14 @@
+version: verify_reply.v1
+claim_instructions: >-
+  Do the receipts cited by claim {i} (claims[{i}].cites, looked up in receipts) establish that claim exactly?
+  A draft, a queued job or a pending item does not establish completion. If a cited receipt is missing, answer false.
+claim_criteria:
+  "true": "The cited receipts directly establish the claim."
+  "false": "The cited receipts are missing, unrelated, or do not establish the claim."
+promise:
+  instructions: >-
+    Does reply_text promise a refund, a card block, a deadline, a resolution or any other outcome that no receipt
+    establishes?
+  criteria:
+    "true": "It promises an outcome or timeline not established by any receipt."
+    "false": "It promises nothing beyond what the receipts establish."
