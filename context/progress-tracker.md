@@ -455,6 +455,7 @@ Added in the plan's Phase C (they continue the same numbering):
 - Deployed 2026-10-05: web image `latam-bank-web:01ad3bd` (task definition `latam-bank-web:5`), URL `http://3.92.146.135:3000`.
 - Redeployed 2026-10-05: web `latam-bank-web:1226755` (message times) at `http://3.91.148.118:3000`; agent `lb-demo-agent:444b94d` (localized status words in template replies, PT copy fixes), runtime endpoint `live` on version 2.
 - Login speed: the IdP's demo users are cached per web process (`idp.demoUsers`, failures not cached) and rendered into `/login` server-side (1.5 s cap, then the form fetches them itself), so the fields are filled on first paint. Code step: six digit boxes over one real input, digits only, auto sign-in on the sixth typed digit, "Entrando como …" with a Cambiar/Trocar link back; the language toggle is hidden on the code step.
+- Redeployed 2026-10-05: web `latam-bank-web:adcd6d9` (login prefill + code step) at `http://54.237.212.205:3000`; `/login` HTML carries the demo user (~0.3 s).
 - Second opinion: Codex (gpt-5.5) reviewed `web/` for this pass; its items 1–7, 9, 10 were taken, item 8 (reserve trace slot height) skipped.
 
 ### 2026-10-05: Agent and web deployed (units 78, 83, 85 live)
