@@ -4,14 +4,14 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Phase
 
-- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), **Agent core units 12–22 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing, OpenAI on Bedrock, LangGraph workflow and agent service, AgentCore runtime entrypoint) and **Transaction resolver units 26–28 complete** (features and splits, history sampler, simulator). Agent core continues with units 23–25, the resolver with units 29–39. Evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
+- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), **Agent core units 12–24 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing, OpenAI on Bedrock, LangGraph workflow and agent service, AgentCore runtime entrypoint, local serving builder and demo identities, container image + local compose stack + terminal chat) and **Transaction resolver units 26–28 complete** (features and splits, history sampler, simulator). Agent core continues with unit 25, the resolver with units 29–39. Evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
 - Region: **us-east-1** for all our AWS resources and Snowflake. The organizer bucket (theirs) stays in us-east-2.
-- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-05). Agent suite: `cd agent && uv run pytest` → 187 passed (2026-10-05).
+- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-05). Agent suite: `cd agent && uv run pytest` → 191 passed (2026-10-05). Container contract: `cd agent && uv run pytest -m container` → 4 passed against `docker compose up` (2026-10-05).
 - Submission deadline: **2026-10-05**.
 
 ## Current Goal
 
-- Continue the transaction resolver at `feature-specs/29-resolver-agent-hooks.md` (Agent-Core Changes I: extract hints, dev writer, `understand.v2`); `31-resolver-model.md` needs only `26` and can run in parallel. Agent core `23–25` and the as-is diagnosis (`40`) can also run in parallel. The UI (53+) and deployment (77+) follow the agent core.
+- Continue the transaction resolver at `feature-specs/29-resolver-agent-hooks.md` (Agent-Core Changes I: extract hints, dev writer, `understand.v2`); `31-resolver-model.md` needs only `26` and can run in parallel. Agent core `25` and the as-is diagnosis (`40`) can also run in parallel. The UI (53+) and deployment (77+) follow the agent core.
 
 ## Completed
 
@@ -143,6 +143,14 @@ Update this file whenever the current phase, the active unit or the implementati
   - `tests/test_resolver_simulate.py`: 7 tests pinning the review focus (config hash + validation, same-seed determinism, nil excludes the target, style rates within ±2 points over 10k draws, hard oversampling ≈50%, rounding + relative ranges, relative dates carry their label);
   - All tests pass: 187/187 in agent/ (180 existing + 7 new);
   - Followed TDD: tests written first, all initially failing with `ModuleNotFoundError`, then implementation added to make them pass.
+- 2026-10-05: **Unit 24: Container Image, Local Stack and Terminal Chat** (`agent/`):
+  - `Dockerfile` + `.dockerignore`: ARM64 image (`ghcr.io/astral-sh/uv:python3.12-bookworm-slim`) whose default command serves `/ping` + `/invocations` on 8080 (`python -m bankagent.app`); the same image runs the mock IdP on 8081 (`python -m bankagent.identity.app`). Synced with `uv sync --frozen --no-default-groups` (no dev/resolver tooling in the runtime image, per code-standards); DuckDB `httpfs`/`aws` extensions installed at build time;
+  - `docker-compose.yml` (replaces the Task 6 version): `dynamodb` (DynamoDB Local), `init-tables` (`scripts/create_tables.py`), `identity` and `agent`. Region us-east-1 (Architecture Decisions 2026-10-04 #1 overrides the plan's us-east-2), `JEV_API_KEY` required from the shell (never committed), serving mounted read-only at `/serving`, `~/.aws` mounted read-only **except** `~/.aws/sso/cache` (botocore writes its refreshed SSO token there — the plan's fully read-only mount made every `/invocations` fail at runtime build);
+  - `scripts/chat.py`: terminal client — login → OTP through the IdP, then chat with `/invocations`; `/quit`/`/exit` to end;
+  - `tests/test_container_contract.py` (marker `container`, no model calls): the four pinned tests `test_ping_is_healthy`, `test_invocation_without_token_asks_to_log_in`, `test_identity_publishes_discovery_and_jwks`, `test_valid_token_with_empty_message_is_rejected_before_any_model_call`;
+  - **Bug fix in unit 14 (with a test):** `bankagent/identity/app.py`'s module entrypoint loaded **no** users and required the agent's `SERVING_URI`, so `python -m bankagent.identity.app` could not serve the demo identities the stack mounts. It now builds from `DEMO_USERS` + `IDP_ISSUER`/`IDP_AUDIENCE`/`IDP_KID` (`create_app_from_env`), pinned by `test_module_entrypoint_serves_demo_users_and_settings_from_env` in `tests/test_identity.py`;
+  - Verified: `docker compose build && docker compose up -d` brings the four services up (the four DynamoDB tables created), `uv run pytest -m container` → 4 passed against it, `uv run pytest` → 191 passed, and the chat client logs in as `demo01` and exits cleanly;
+  - All tests pass: 191/191 offline in agent/ (190 at branch point + 1 bug-fix test), 4/4 container against the stack.
 
 ## In Progress
 
@@ -155,7 +163,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | Units | Subsystem | Status | First dependency |
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
-| 12–25 | Agent core | 12–23 **done**; 24–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
+| 12–25 | Agent core | 12–24 **done**; 25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
 | 26–39 | Transaction resolver | 26–28 **done** (features, splits, history sampler, simulator); 29 next | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
@@ -409,3 +417,4 @@ Records that the specs say to fill in at fixed points. Fill them here.
 - 2026-10-04: tracker brought up to date with the repo (pipeline 01–11 and Terraform infra done); specs moved to us-east-1 and ECS Fargate Spot. Offline suite 43 passed.
 - 2026-10-04: deployment specs converted to Terraform-only; Carlos added to `allowed_cidrs`. Terraform isn't installed on Carlos's laptop (a 1.15.2 binary was downloaded to a temp folder for the test run); install it (`brew install hashicorp/tap/terraform`) before Terraform units.
 - 2026-10-05: unit 28 (resolver simulator) landed in worktree `worktree-resolver-simulator`, branch `feature/28-resolver-simulator`. The simulator's rates are assumptions (simulate.yaml says so); unit 32 must generate 30,000 training and 3,000 simulated-validation cases from `sample_histories` + `simulate` (spec §5.1 sizes). Baseline at branch point was 180 agent tests; 187 with the 7 new ones.
+- 2026-10-05: unit 24 (container image, local stack, terminal chat) landed in worktree `worktree-container-local-stack`, branch `feature/24-container-local-stack`. To run the stack from `agent/`: generate the gitignored local artifacts (`uv run python scripts/build_local_serving.py --data-dir <repo>/data/data --out .serving`, then `uv run python scripts/pick_demo_users.py`), `export JEV_API_KEY=…` and `AWS_PROFILE=<your profile>`, `docker compose up -d`, then `uv run pytest -m container`. No `default` AWS profile exists on the laptop, so `AWS_PROFILE` must be exported (the compose defaults to `default`). Baseline at branch point was 190 agent tests; 191 with the identity entrypoint fix.

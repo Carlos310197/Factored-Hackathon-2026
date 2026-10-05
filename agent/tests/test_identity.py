@@ -104,3 +104,25 @@ def test_unknown_kid_rejected():
 def test_unsupported_lang_claim_defaults_to_es():
     tok = issue_token(PRIV, KID, ISS, AUD, "CLI-X", "S-1", {SCOPE_READ}, "fr")
     assert verify_token(tok, JWKS, ISS, AUD).lang == "es"
+
+
+def test_module_entrypoint_serves_demo_users_and_settings_from_env(tmp_path, monkeypatch):
+    """`python -m bankagent.identity.app` (the container's IdP) builds itself from DEMO_USERS and the IDP_* vars."""
+    from bankagent.identity.app import create_app_from_env
+
+    p = tmp_path / "demo_users.yaml"
+    p.write_text(yaml.safe_dump({"users": [
+        {"username": "demo01", "password_sha256": hash_password("demo-01"), "otp": "123456",
+         "customer_id": "CLI-FIXC00000001", "lang": "es"}]}))
+    monkeypatch.setenv("DEMO_USERS", str(p))
+    monkeypatch.setenv("IDP_ISSUER", "http://identity:8081")
+    monkeypatch.setenv("IDP_AUDIENCE", "bankagent")
+    monkeypatch.setenv("IDP_KID", "idp-local")
+
+    api = TestClient(create_app_from_env())
+    r = api.post("/auth/login", json={"username": "demo01", "password": "demo-01"})
+    tok = api.post("/auth/otp", json={"login_ticket": r.json()["login_ticket"], "otp": "123456"}).json()
+    jwks = api.get("/jwks.json").json()
+    assert jwks["keys"][0]["kid"] == "idp-local"
+    assert api.get("/.well-known/openid-configuration").json()["issuer"] == "http://identity:8081"
+    assert verify_token(tok["access_token"], jwks, "http://identity:8081", "bankagent").customer_id == "CLI-FIXC00000001"
