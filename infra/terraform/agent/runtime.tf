@@ -43,6 +43,8 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
     JEV_SECRET_ID       = data.aws_secretsmanager_secret.jev.name
     BEDROCK_ROLE_ARN    = local.bedrock_role_arn
     BEDROCK_EXTERNAL_ID = local.bedrock_external_id
+    RESOLVER_ARTIFACT   = local.resolver.artifact
+    THRESHOLDS_FILE     = local.resolver.thresholds
   }
 
   lifecycle {
