@@ -24,7 +24,7 @@ class OtpRequest(BaseModel):
 
 SHORT_TTL_S = 30
 TICKET_AUDIENCE = "login-ticket"
-TICKET_TTL_S = 300
+TICKET_TTL_S = 120  # bounds OTP guessing on one ticket across containers (API throttle 10 rps → ≤1,200 tries)
 STAFF_SCOPE = "handoff:work"
 REALTIME_SCOPE = "realtime:subscribe"
 
@@ -45,8 +45,10 @@ def create_app(users: dict[str, DemoUser], private_pem: str, public_pem: str, ki
 
     # Login tickets are short-lived signed tokens, so login and OTP can land on different Lambda containers. A ticket's
     # audience is TICKET_AUDIENCE, never accepted as an access token. Single use is per container (spent set): across
-    # containers a ticket can be retried until it expires (TICKET_TTL_S).
-    spent: set[str] = set()
+    # containers a ticket can be retried until it expires (TICKET_TTL_S). Only valid tickets are remembered, and only
+    # until they expire, so the map stays bounded by the login rate.
+    spent: dict[str, int] = {}
+    app.state.spent_tickets = spent
 
     @app.post("/auth/login")
     def login(req: LoginRequest) -> dict:
@@ -62,16 +64,18 @@ def create_app(users: dict[str, DemoUser], private_pem: str, public_pem: str, ki
 
     @app.post("/auth/otp", response_model=TokenResponse)
     def otp(req: OtpRequest) -> TokenResponse:
+        now = clock()
+        for t in [t for t, exp in spent.items() if exp <= now]:
+            del spent[t]
         username = None
-        if req.login_ticket not in spent:
-            spent.add(req.login_ticket)
-            try:  # expiry is checked against the injected clock, not wall time
-                claims = jwt.decode(req.login_ticket, public_pem, algorithms=["RS256"], audience=TICKET_AUDIENCE,
-                                    issuer=issuer, options={"verify_exp": False})
-                if int(claims["exp"]) > clock():
-                    username = claims["sub"]
-            except jwt.PyJWTError:
-                pass
+        try:  # expiry is checked against the injected clock, not wall time
+            claims = jwt.decode(req.login_ticket, public_pem, algorithms=["RS256"], audience=TICKET_AUDIENCE,
+                                issuer=issuer, options={"verify_exp": False})
+            if int(claims["exp"]) > now and req.login_ticket not in spent:
+                spent[req.login_ticket] = int(claims["exp"])
+                username = claims["sub"]
+        except jwt.PyJWTError:
+            pass
         if not username:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid or expired ticket")
 

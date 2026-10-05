@@ -143,6 +143,19 @@ def test_login_ticket_expires_and_is_not_an_access_token(users):
     import jwt
     with pytest.raises(jwt.InvalidAudienceError):
         jwt.decode(t, PUB, algorithms=["RS256"], audience=AUD, options={"verify_exp": False})
-    now[0] += 301
+    now[0] += 121
     assert api.post("/auth/otp", json={"login_ticket": t, "otp": "123456"}).status_code == 401
     assert api.post("/auth/otp", json={"login_ticket": "garbage", "otp": "123456"}).status_code == 401
+
+
+def test_spent_tickets_stay_bounded(users):
+    now = [1_000_000.0]
+    api = TestClient(create_app(users, PRIV, PUB, KID, ISS, AUD, clock=lambda: now[0]))
+    t = api.post("/auth/login", json={"username": "ana.mx", "password": "demo-ana"}).json()["login_ticket"]
+    for _ in range(50):  # garbage is never remembered
+        api.post("/auth/otp", json={"login_ticket": f"junk-{_}", "otp": "1"})
+    assert api.post("/auth/otp", json={"login_ticket": t, "otp": "123456"}).status_code == 200
+    assert len(api.app.state.spent_tickets) == 1
+    now[0] += 121
+    api.post("/auth/otp", json={"login_ticket": "junk", "otp": "1"})
+    assert api.app.state.spent_tickets == {}  # expired tickets are dropped
