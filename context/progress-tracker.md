@@ -497,3 +497,4 @@ Records that the specs say to fill in at fixed points. Fill them here.
 
 - 2026-10-05: **UI unit 63**: server auth done offline (unit tests with a local JWKS); the live IdP run (`docker compose up` in `agent/`) was not done.
 - 2026-10-05: **UI unit 64**: DynamoDB access written from the plan; the 6 integration tests were NOT run (no DynamoDB Local; docker not started). Run `DYNAMODB_ENDPOINT=http://localhost:8000 npm test -- ddb` after `docker compose up -d dynamodb` in `agent/`.
+- 2026-10-05: **UI unit 66**: handoff routes (list, packet, claim/takeover/return/resolve) done. Beyond the plan, `NotFoundError` from unit 64 maps to 404 (typed, with a test). The agent-message POST in `sessions/[sid]/messages/route.ts` (unit 65) already enforces `control == human:<agent>`, so it was left as is.
