@@ -120,6 +120,19 @@ class SessionRepo:
     def control(self, session_id: str) -> str:
         return (self.get(session_id) or {}).get("control", "agent")
 
+    def take_turn(self, session_id: str, limit: int) -> bool:
+        """Count one turn if the session is under `limit`. One conditional UpdateItem, so parallel requests and other
+        containers cannot exceed the cap, and a turn counts before the model runs (a failing turn still counts)."""
+        try:
+            self.t.update_item(Key={"session_id": session_id}, UpdateExpression="ADD turns :one",
+                               ConditionExpression="attribute_not_exists(turns) OR turns < :limit",
+                               ExpressionAttributeValues={":one": 1, ":limit": limit})
+            return True
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                return False
+            raise
+
 
 class MessageLog:
     """The conversation transcript (UI spec §4.2) plus idempotency markers (`~idem#<message_id>`, kind=idem)."""

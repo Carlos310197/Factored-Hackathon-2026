@@ -459,7 +459,7 @@ Added in the plan's Phase C (they continue the same numbering):
 
 ### 2026-10-05: Spend cap, latency and staleness alarms, budget
 
-- `AgentService` caps a session at 30 turns (`MAX_TURNS`): a capped turn returns a fixed ES/PT reply (`turn_limit`) and makes no Bedrock or Jev call; `turn_count` lives in the graph state. Logs `session turn cap reached`.
+- `AgentService` caps a session at 30 turns (`MAX_TURNS`): a capped turn returns a fixed ES/PT reply (`turn_limit`) and makes no Bedrock or Jev call. The count is `SessionRepo.take_turn`, one conditional DynamoDB `UpdateItem` (`ADD turns` if under the limit) before the model runs, so parallel requests and other containers can't exceed it and failed turns count (fixes the security review's TOCTOU and fail-open findings). Logs `session turn cap reached`.
 - `AgentService` logs `slow turn` when a turn takes over 20 s (`SLOW_TURN_S`).
 - `alarms.tf`: 3 more alarms (TurnSlow ≥3 in 15 min, StalePointer ≥1 in 1 h, TurnCapReached ≥20 in 1 h) and an AWS Budget `lb-demo-monthly` (100 USD; email at 80 % actual, 100 % forecast), both only when `alarm_email` is set.
 

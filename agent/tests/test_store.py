@@ -73,3 +73,12 @@ def test_decision_log_sequence_ttl_and_floats(ddb):
 def test_codec_roundtrip_drops_nulls():
     v = {"a": 1.5, "b": [2.25, {"c": None, "d": 3}], "e": "x"}
     assert from_dynamo(to_dynamo(v)) == {"a": 1.5, "b": [2.25, {"d": 3}], "e": "x"}
+
+
+def test_take_turn_is_an_atomic_capped_counter(ddb_store):
+    """One conditional UpdateItem per turn: parallel requests and other containers can't exceed the cap."""
+    s = ddb_store.sessions
+    s.ensure("S-cap", "CLI-1", "es")
+    assert [s.take_turn("S-cap", 3) for _ in range(5)] == [True, True, True, False, False]
+    assert s.get("S-cap")["turns"] == 3  # refused turns don't increment
+    assert s.get("S-cap")["customer_id"] == "CLI-1"  # the counter never clobbers the session item
