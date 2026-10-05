@@ -58,9 +58,10 @@ Run `37378614273-1` (commit `57b728f`), read back from Snowflake and the serving
 | complaints | 67,095 (1,097 daily files) | 67,095 | 0 | 67,095 (`fct_complaint`) |
 | interactions | 686,296 (1,097 daily files) | 686,296 | 0 | not exported (not used by the agent) |
 
-- **dbt build:** 80 nodes, 77 pass, 3 warn, 0 error. `META.DQ_RESULTS` for the run: 58 tests (53 error-severity, all pass; 5 warn-severity, 3 of them warned).
+- **dbt build:** 80 nodes (16 models, 1 seed, 58 data tests, 5 unit tests): 77 pass, 3 warn, 0 error. `META.DQ_RESULTS` records the 58 data tests (53 error-severity, all pass; 5 warn-severity, 3 of them warned); unit tests check the SQL logic, not the data, so they are not DQ results.
 - **The 3 warnings** are source nulls that are allowed by design: complaints `claimed_amount` (45,344 rows), interactions `duration_seconds` (96,234) and `customer_detected_accent` (204,750).
 - **Quarantine is empty** on the organizer drop: no cast failures, contract nulls or bad enums. The fixture drop is what proves quarantine and the 1 % gate work.
+- **Validated again** on run `37381703277-1` (commit `88a2edd`): same counts, same `contract_hash`, `dq_summary` `{pass: 55, warn: 3}`, and the first `dbt-lineage-37381703277-1` artifact (manifest + run results, 114 KB).
 - **Lineage:** `META.RUN_MANIFEST` holds 3,293 files and 5,728,399 rows, all loaded as `new` by the initial run; later runs skipped every file (same ETag) and wrote no rows. From now on each run also keeps dbt's `manifest.json` and `run_results.json` as a workflow artifact (`dbt-lineage-<run_id>`, 90 days), and `latest.json` names the commit, the contract hash and the DQ summary.
 
 ### Limitations found in the data
