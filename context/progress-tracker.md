@@ -34,7 +34,7 @@ Update this file whenever the current phase, the active unit or the implementati
   - Live state (checked 2026-10-04 with `gh run list --workflow pipeline.yml`): the last five runs all succeeded: two pushes on 2026-10-01 (including the us-east-1 move) and the daily schedule since then, the latest about 10 hours before the check (run `37199535018`, 1m44s). Load → `dbt build` → export works live, and `serving/latest.json` is refreshed daily.
 - 2026-10-04: specs and context updated to the deployed reality: region us-east-1, web on ECS Fargate Spot, Terraform-owned serving bucket (see Architecture Decisions, 2026-10-04). CLAUDE.md gained Repo Rules (no Claude attribution in commits or PRs; tests first for every feature).
 - 2026-10-04: **everything is Terraform.** Deployment units 77, 81–90 and UI units 53, 59, 60 rewritten from CDK to Terraform roots (Architecture Decisions, 2026-10-04 #7).
-- 2026-10-04: Carlos's IP `38.25.85.60/32` added to `allowed_cidrs` in `infra/terraform/app/main.tf` (test updated first; `terraform test` 3/3 passed). Live after `infra.yml` applies it on `main`.
+- 2026-10-04: a second team IP added to `allowed_cidrs` in `infra/terraform/app/main.tf` (test updated first; `terraform test` 3/3 passed). Live after `infra.yml` applies it on `main`.
 - 2026-10-04: **Unit 12: Agent core scaffold** (`agent/`):
   - `agent/pyproject.toml` with pinned dependencies (anthropic[bedrock]>=1.9, bedrock-agentcore>=1.24, langgraph>=1.2, langgraph-checkpoint-aws>=1.2, pyjwt[crypto]>=2.9, etc.);
   - `agent/src/bankagent/__init__.py`, `settings.py`, `context.py`, `ids.py`: Settings from env, SessionContext with scope checks, time-sortable IDs;
@@ -452,6 +452,10 @@ Added in the plan's Phase C (they continue the same numbering):
 **Spec adjustment 8 (queue rows):** `handoff.v1` has no top-level amount, so queue rows and `/queue` events show priority, reasons, language, age and holder. The amount appears in the packet's verified facts.
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
+
+### 2026-10-05: Public ALB (stable URL), team IPs removed
+
+- `infra/terraform/app`: internet-facing ALB `latam-bank-web` (HTTP 80, no domain so no certificate) → IP target group on 3000, health check `/login`; the task security group admits port 3000 only from the ALB's security group. `allowed_cidrs` (the two home IPs) is gone from code, tests and this tracker; the ECS service is updated in place (no replacement), still Fargate Spot. Output `url`; `bin/app-url` prints the ALB address. Applied by `infra.yml` on merge.
 
 ### 2026-10-05: Spend cap, latency and staleness alarms, budget
 

@@ -39,17 +39,76 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
 
 resource "aws_security_group" "web" {
   name        = "latam-bank-web"
-  description = "Web UI: team IPs only, until the demo ALB exists"
+  description = "Web UI: team IPs only, until the demo ALB exists" # unchanged: a new description would replace the group
   vpc_id      = data.aws_vpc.default.id
 }
 
+# The task port admits only the ALB. The task keeps a public IP for pulling images (no NAT), but nothing else can reach it.
 resource "aws_vpc_security_group_ingress_rule" "app" {
-  count             = length(var.allowed_cidrs)
-  security_group_id = aws_security_group.web.id
-  cidr_ipv4         = var.allowed_cidrs[count.index]
+  security_group_id            = aws_security_group.web.id
+  referenced_security_group_id = aws_security_group.alb.id
+  ip_protocol                  = "tcp"
+  from_port                    = 3000
+  to_port                      = 3000
+}
+
+resource "aws_security_group" "alb" {
+  name        = "latam-bank-alb"
+  description = "Public web entry point (HTTP 80)"
+  vpc_id      = data.aws_vpc.default.id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "alb_http" {
+  security_group_id = aws_security_group.alb.id
+  cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "tcp"
-  from_port         = 3000
-  to_port           = 3000
+  from_port         = 80
+  to_port           = 80
+}
+
+resource "aws_vpc_security_group_egress_rule" "alb_to_tasks" {
+  security_group_id            = aws_security_group.alb.id
+  referenced_security_group_id = aws_security_group.web.id
+  ip_protocol                  = "tcp"
+  from_port                    = 3000
+  to_port                      = 3000
+}
+
+resource "aws_lb" "web" {
+  name               = "latam-bank-web"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb.id]
+  subnets            = data.aws_subnets.public.ids
+  idle_timeout       = 60 # above the BFF's 25 s wait for the agent
+}
+
+resource "aws_lb_target_group" "web" {
+  name                 = "latam-bank-web"
+  port                 = 3000
+  protocol             = "HTTP"
+  target_type          = "ip"
+  vpc_id               = data.aws_vpc.default.id
+  deregistration_delay = 30
+
+  health_check {
+    path                = "/login"
+    matcher             = "200"
+    interval            = 15
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+  }
+}
+
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.web.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.web.arn
+  }
 }
 
 resource "aws_vpc_security_group_egress_rule" "all" {
@@ -181,9 +240,15 @@ resource "aws_ecs_service" "web" {
     security_groups  = [aws_security_group.web.id]
     assign_public_ip = true
   }
+  load_balancer {
+    target_group_arn = aws_lb_target_group.web.arn
+    container_name   = "web"
+    container_port   = 3000
+  }
+  health_check_grace_period_seconds = 60
   deployment_circuit_breaker {
     enable   = true
     rollback = true
   }
-  depends_on = [aws_ecs_cluster_capacity_providers.main]
+  depends_on = [aws_ecs_cluster_capacity_providers.main, aws_lb_listener.http]
 }

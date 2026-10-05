@@ -135,7 +135,7 @@ unit-tested; the graph wiring is not).
 
 | Component | Limit we know of | Source |
 |---|---|---|
-| Web app | 1 Fargate Spot task, 0.5 vCPU / 1 GB, plain HTTP | `infra/terraform/app/ecs.tf` |
+| Web app | 1 Fargate Spot task (0.5 vCPU / 1 GB) behind a public ALB, plain HTTP; a Spot interruption means about 1–2 min of downtime while a new task starts, the URL stays the same | `infra/terraform/app/ecs.tf` |
 | Agent runtime (AgentCore) | New sessions 25/s, data-plane calls 1,000/s (account quotas); each session runs in its own microVM | AWS Service Quotas, `bedrock-agentcore` |
 | LLM (Bedrock Mantle) | Not visible: the on-demand quotas listed for gpt-oss and Ministral in our account read 0, and inference runs through the Mantle endpoint (and a role in a second account), whose throughput limits Service Quotas doesn't show | AWS Service Quotas, `bedrock` |
 | Jev (TypeSafe) | No published rate limit; 3 s timeout per call, 2–3 calls per turn | `decisions/jev.py` |
@@ -263,7 +263,8 @@ We report what we measured. We don't report numbers we haven't run.
   the "data as of" date.
 - **Synthetic data:** escalation and SLA rates, wait times, CSAT and agent load are generator artifacts and are not used to
   argue for this system.
-- **Hosting:** plain HTTP, so session cookies are not `Secure`; one Fargate task.
+- **Hosting:** plain HTTP behind the ALB (no domain, so no certificate), so session cookies are not `Secure`; one Fargate
+  Spot task.
 - **Spend cap is per session only:** the demo identities and the mock IdP are public, so anyone can drive Bedrock and
   Jev calls (Bedrock bills to the account that owns the Bedrock role). A session stops after 30 turns with a fixed reply
   and no model call, and an alarm fires when sessions keep hitting the cap; but a new login starts a new session, so the
