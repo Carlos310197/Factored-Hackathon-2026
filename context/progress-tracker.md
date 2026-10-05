@@ -453,6 +453,7 @@ Added in the plan's Phase C (they continue the same numbering):
 - E2E a11y checks wait for finite animations to settle before axe runs (mid-fade colours read as low contrast).
 - Each customer, assistant and agent bubble shows its time (`fmtTime`, viewer's timezone, `HH:mm`) in a `<time>` under the bubble.
 - Deployed 2026-10-05: web image `latam-bank-web:01ad3bd` (task definition `latam-bank-web:5`), URL `http://3.92.146.135:3000`.
+- Redeployed 2026-10-05: web `latam-bank-web:1226755` (message times) at `http://3.91.148.118:3000`; agent `lb-demo-agent:444b94d` (localized status words in template replies, PT copy fixes), runtime endpoint `live` on version 2.
 - Second opinion: Codex (gpt-5.5) reviewed `web/` for this pass; its items 1–7, 9, 10 were taken, item 8 (reserve trace slot height) skipped.
 
 ### 2026-10-05: Agent and web deployed (units 78, 83, 85 live)
