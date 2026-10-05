@@ -4,14 +4,14 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Phase
 
-- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–20 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing, OpenAI on Bedrock). Agent core continues with units 21–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
+- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–21 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing, OpenAI on Bedrock, LangGraph workflow and agent service). Agent core continues with units 22–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
 - Region: **us-east-1** for all our AWS resources and Snowflake. The organizer bucket (theirs) stays in us-east-2.
-- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04). Agent suite: `cd agent && uv run pytest` → 138 passed (2026-10-05).
+- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-05). Agent suite: `cd agent && uv run pytest` → 151 passed (2026-10-05).
 - Submission deadline: **2026-10-05**.
 
 ## Current Goal
 
-- Continue the agent core at `feature-specs/19-graph-turn.md`. The as-is diagnosis (`40`) can run in parallel. The UI (53+) and deployment (77+) follow the agent core.
+- Continue the agent core at `feature-specs/22-api-contract.md`. The as-is diagnosis (`40`) can run in parallel. The UI (53+) and deployment (77+) follow the agent core.
 
 ## Completed
 
@@ -103,6 +103,18 @@ Update this file whenever the current phase, the active unit or the implementati
   - `scripts/smoke_bedrock.py`: Live smoke test script for Bedrock API (requires owner approval);
   - 14 new tests in test_llm.py and test_templates.py covering model config, extract/compose request shapes, error handling (refusal, connection errors, invalid JSON, truncation), template rendering (ES/PT), money formatting, and fallback logic;
   - All tests pass: 125/125 in agent/ (111 existing + 14 new), 43/43 in root offline suite.
+- 2026-10-05: **Unit 21: LangGraph Workflow and Agent Service** (`agent/src/bankagent/graph/`, `agent/src/bankagent/service.py`):
+  - `graph/__init__.py`: graph module marker
+  - `graph/state.py`: `AgentState` dataclass extending `MessagesState` with all workflow state fields (turn_id, message, language, run_id, as_of, candidates, allowed_ids, extraction, route, counters, reasons, decisions, goal, awaiting, clarification, pending, intent, target_txn_id, dispute_reason, escalated, txn, statement, confirmation_summary, policy_checks, filed, receipts, actions, queue, queued_offer, recent, reply)
+  - `graph/deps.py`: `Deps` dataclass injecting all dependencies (read/write tools, store, policy, jev, llm_client, models, thresholds, question sets, gloss_mode, clock)
+  - `graph/nodes.py`: `Nodes` class with 12 node implementations (load_context, understand, answer_inquiry, resolve_transaction, check_eligibility, confirm, file_dispute, verify, clarify, handoff, reply, await_customer), each implementing one step of the workflow with error handling and decision logging
+  - `graph/build.py`: `build_graph()` function wiring nodes into `StateGraph` with conditional edges based on `state["route"]["next"]`, interrupt for multi-turn confirmation/clarification
+  - `service.py`: `AgentService` class wrapping compiled graph with `handle_turn()` and `state()` methods, turn budget enforcement, recursion limit, error recovery with fallback template
+  - `tests/fakes.py`: added `FakeJev` test double with scripted understand/verify responses, choice/noul answer builders
+  - `tests/harness.py`: test harness with `make_harness()` factory, `Harness` dataclass, pre-defined session contexts (CTX_ES, CTX_ES2, CTX_PT, CTX_READ_ONLY)
+  - `tests/test_graph_paths.py`: 12 scenario tests covering main conversation paths (account inquiry ES/PT, decline explanation, dispute flow with confirmation, ambiguous intent clarification, unsupported request, unrecognized charge handoff, over-limit human review, legal threat, declined payment dispute, multi-intent queue, unsupported language, run_id persistence)
+  - `tests/test_graph_failures.py`: 15 failure scenario tests (Jev down once/twice, Jev down during confirmation, unclear confirmation 3x, modify during confirmation, duplicate dispute, injection refused then handed off, compose failure, unverified claims, verify outage, foreign ID blocked, serving unavailable, missing dispute scope, turn budget exhausted, extract failure, recursion limit)
+  - All 27 new tests pass; total 151/151 in agent/ (124 existing + 27 new), 43/43 in root offline suite
 - 2026-10-05: **Unit 26: Resolver Features and Splits** (`agent/src/bankagent/resolver/`):
   - Added `numpy>=2.0` and `rapidfuzz>=3.9` as runtime dependencies;
   - Added `resolver` dependency group: `scikit-learn>=1.5`, `lightgbm>=4.5`, `mlflow>=3.1`, `matplotlib>=3.9` (offline training/evaluation only, excluded from runtime image via `--no-default-groups`);
@@ -124,7 +136,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | Units | Subsystem | Status | First dependency |
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
-| 12–25 | Agent core | 12–20 **done**; 21–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
+| 12–25 | Agent core | 12–21 **done**; 22–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
 | 26–39 | Transaction resolver | 26 **done** (features and splits) | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |

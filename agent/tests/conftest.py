@@ -12,3 +12,16 @@ os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
 def serving_root(tmp_path_factory):
     from tests.fixtures.serving_fixture import build_serving
     return build_serving(tmp_path_factory.mktemp("serving"))
+
+
+@pytest.fixture
+def ddb_store():
+    import boto3
+    from moto import mock_aws
+
+    from bankagent.store.repos import Store
+    from bankagent.store.tables import create_tables
+
+    with mock_aws():
+        create_tables(boto3.client("dynamodb", region_name="us-east-2"), "t")
+        yield Store.connect("t", "us-east-2")
