@@ -11,7 +11,7 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Goal
 
-- Transaction resolver is done except the human ceiling: Carlos fills `agent/resolver/data/ceiling_v1.csv` (40 blind cases), then `uv run python scripts/resolver.py report` adds it to the report.
+- Transaction resolver is complete (units 26–39, both runs, human ceiling).
 
 ## Completed
 
@@ -245,6 +245,8 @@ Update this file whenever the current phase, the active unit or the implementati
   - **Adoption decision unchanged: adopt P**, now with the paired interval excluding zero on the hard slice. Caveats: the two runs share the same 150 messages, so they are not independent evidence; thresholds were tuned on gpt-oss extractions; both results are reported;
   - `scripts/resolver.py report` now prints the extract model next to the prompt version. Docs updated (`agent/README.md`, `context/code-standards.md`, Architecture Decisions 2026-10-05).
 
+- 2026-10-05: **Human ceiling done** (Carlos, blind, 40 random test cases: 16 hard / 21 easy / 3 not_in_list; `agent/resolver/data/ceiling_v1.csv`, also linked from `resolver/ministral/data`): 27/40 = 67.5%. Rule used: type `none` when a message is ambiguous. Misses: 11 `none` answers where the target was in the list (abstentions), 1 wrong candidate, 1 candidate picked on a not-in-list case; of the 27 answers that named a candidate, 25 were right (92.6%). Both reports (`resolver/reports/` and `resolver/ministral/reports/`) now carry the ceiling and this reading; it is not comparable to `resolved_one_step`. Resolver definition of done: complete.
+
 ## In Progress
 
 - None.
@@ -257,7 +259,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
 | 12–25 | Agent core | **done**; 25 ran and recorded the definition-of-done run | none (16 uses a synthetic fixture; 23 uses the local drop) |
-| 26–39 | Transaction resolver | 26–39 **done** (P adopted; human ceiling pending) | 12, 16 |
+| 26–39 | Transaction resolver | 26–39 **done** (P adopted; human ceiling done) | 12, 16 |
 | 40–52 | Evaluation | 40–50 **done** (offline code, branch `feature/40-50-evaluation`); 51–52 are `[live]` and wait for the owner's approval and for unit 39's adoption decision | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
 | 77–90 | Deployment | not started; Terraform `bootstrap`, `platform` and the `app` web shell already exist | 77 has none; the rest follow the agent core and UI |
@@ -636,7 +638,7 @@ Records that the specs say to fill in at fixed points. Fill them here.
 **Changelog:**
 - 2026-09-29: draft.
 - Test-set SHA-256 (frozen 2026-10-05, before any evaluation; `agent/resolver/data/test_sheet_v1_completed.csv`, 150 messages, committed on `main` in `b3d60a7`): `1ab867754edd05bf8ed136071e9cd1326c59831119f2de06ad1b136d1f9a4bdd`.
-- Adoption decision (2026-10-05, §6.4): **adopt P** (Jev + ranker, `understand.v2`, `thresholds.v2`). wrong-action P 0.7% = B2 0.7%; hard-slice resolved-within-one-step P 96.0% > B2 95.6% (not statistically established at n = 150). Report: `agent/resolver/reports/eval-2026-10-05.md`. Human ceiling pending.
+- Adoption decision (2026-10-05, §6.4): **adopt P** (Jev + ranker, `understand.v2`, `thresholds.v2`). wrong-action P 0.7% = B2 0.7%; hard-slice resolved-within-one-step P 96.0% > B2 95.6% (not statistically established at n = 150). Report: `agent/resolver/reports/eval-2026-10-05.md`. Human ceiling 27/40 (abstain-on-ambiguity rule, see reports).
 
 ### Evaluation
 
