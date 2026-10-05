@@ -376,6 +376,16 @@ Bedrock Mantle chat-completions endpoint, not the `openai.gpt-5-6-luna` / `opena
 gpt-oss models occasionally emit malformed JSON (decoder restarts / split values); `llm/client.py` rejects it and
 the reply falls back to the fixed template (unit 25 findings, tests in `tests/test_llm.py`).
 
+### 2026-10-05: Bedrock inference runs in a second account
+
+The hackathon account has limited Bedrock model access, so the agent's LLM calls run in account `040684487035`.
+When `BEDROCK_ROLE_ARN` is set, `llm/client.py` `_bedrock_session()` assumes that role (with `BEDROCK_EXTERNAL_ID`)
+and mints the Mantle token from the assumed credentials; when it is unset, it uses this account's credentials as
+before. The `agent` root sets both env vars (`main.tf` locals) and grants `lb-demo-agent-exec` `sts:AssumeRole` on
+`arn:aws:iam::040684487035:role/argos-bedrock-role`. That role (managed outside this repo) must trust
+`arn:aws:iam::762197749808:role/lb-demo-agent-exec` with the external id and allow `bedrock-mantle:CallWithBearerToken`
+plus `bedrock-mantle:CreateInference` on its own projects. Inference quotas and cost now land on that account.
+
 ### 2026-10-05: Web session cookies and the E2E guard (final-review fixes)
 
 - `COOKIE_SECURE` drives the `Secure` flag on session cookies (default "1" in production, "0" disables). The current deployment is plain HTTP on the ECS public IP, so it must be set to 0 there until an ALB with TLS exists.

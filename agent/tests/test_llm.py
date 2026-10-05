@@ -149,3 +149,33 @@ def test_auth_error_without_refresh_still_raises_llm_error():
     client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
     with pytest.raises(LLMError):
         call_json(client, M["extract"], "s", "u", {"type": "object"})
+
+
+def test_mantle_token_is_minted_from_the_cross_account_role_when_configured(monkeypatch):
+    import boto3
+    import aws_bedrock_token_generator
+
+    from bankagent.llm import client as C
+    assumed, minted = [], []
+
+    class FakeSTS:
+        def assume_role(self, **kw):
+            assumed.append(kw)
+            return {"Credentials": {"AccessKeyId": "ASIAB", "SecretAccessKey": "s", "SessionToken": "t"}}
+
+    real_client = boto3.client
+    monkeypatch.setattr(boto3, "client", lambda name, *a, **kw: FakeSTS() if name == "sts" else real_client(name, *a, **kw))
+    monkeypatch.setattr(aws_bedrock_token_generator, "provide_token",
+                        lambda region=None, aws_credentials_provider=None, **kw: minted.append(aws_credentials_provider.load()) or "tok")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    monkeypatch.delenv("BEDROCK_ROLE_ARN", raising=False)
+    C._mantle_client("us-east-1")
+    assert assumed == [] and minted[-1].access_key == "testing"  # unset → this account's own credentials
+
+    monkeypatch.setenv("BEDROCK_ROLE_ARN", "arn:aws:iam::040684487035:role/argos-bedrock-role")
+    monkeypatch.setenv("BEDROCK_EXTERNAL_ID", "ext")
+    C._mantle_client("us-east-1")
+    assert assumed[0]["RoleArn"] == "arn:aws:iam::040684487035:role/argos-bedrock-role"
+    assert assumed[0]["ExternalId"] == "ext"
+    assert (minted[-1].access_key, minted[-1].token) == ("ASIAB", "t")
