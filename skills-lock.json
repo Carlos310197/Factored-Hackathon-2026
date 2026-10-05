@@ -223,6 +223,12 @@
       "skillPath": "skills/core-skills/signing-in-to-aws/SKILL.md",
       "computedHash": "721b70d3e162a1d6b76567ff183ff49a1368e3c25b5c9792371668b7e9256857"
     },
+    "tdd": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/tdd/SKILL.md",
+      "computedHash": "9ce12c4a1e209e557fcf9d02086ade3d7ffdb976186018fc1b063b4164246004"
+    },
     "troubleshooting-application-failures": {
       "source": "aws/agent-toolkit-for-aws",
       "sourceType": "github",
