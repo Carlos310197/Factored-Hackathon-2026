@@ -150,3 +150,11 @@ def test_default_clock_wiring_survives_a_turn(ddb_store, serving_root):
     deps = Deps(**{f.name: getattr(h.service.deps, f.name) for f in fields(Deps) if f.name != "clock"})
     r = AgentService(deps, InMemorySaver()).handle_turn(CTX_ES, "¿Cuál es el saldo de mi tarjeta?")
     assert r["reply_text"] == "[answer]"
+
+
+def test_empty_jev_key_turn_clarifies_instead_of_raising(ddb_store, serving_root):
+    """A container started without the Jev secret still answers: clarify, then handoff."""
+    from bankagent.decisions.jev import JevClient
+    h = make_harness(ddb_store, serving_root, [])
+    object.__setattr__(h.service.deps, "jev", JevClient(""))
+    assert h.turn("hola, una consulta")["awaiting"] == "clarification"

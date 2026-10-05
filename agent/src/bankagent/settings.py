@@ -48,6 +48,7 @@ def load_settings(env: Mapping[str, str] = os.environ, secrets_client=None) -> S
     """Settings for the deployed runtime. When JEV_SECRET_ID is set and JEV_API_KEY isn't, the key is read from
     Secrets Manager once. A failure leaves it empty: Jev calls then fail and the graph clarifies or hands off.
     The container still starts, so /ping stays healthy (never a crash loop)."""
+    # A failed secret read is not retried until the container restarts (the runtime is built once).
     merged = dict(env)
     secret_id = merged.get("JEV_SECRET_ID")
     if secret_id and not merged.get("JEV_API_KEY"):
