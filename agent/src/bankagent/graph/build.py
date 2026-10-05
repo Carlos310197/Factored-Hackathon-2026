@@ -97,6 +97,7 @@ def build_graph(deps: Deps, checkpointer):
         "file_dispute",
         lambda state: state["route"]["next"],
         {
+            "confirm": "confirm",  # the card changed since the customer confirmed it: ask again
             "verify": "verify",
             "handoff": "handoff",
             "reply": "reply"

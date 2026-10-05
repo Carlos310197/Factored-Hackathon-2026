@@ -2,6 +2,8 @@
 Each node is a function that takes (state, config) and returns a partial state update.
 Identity comes from config['configurable']['ctx'], verified on every turn.
 """
+import hashlib
+import json
 import logging
 from dataclasses import asdict, replace
 from datetime import datetime, timezone
@@ -77,6 +79,12 @@ def _refs(receipts: list[dict]) -> list[str]:
             out.append(data.get("handoff_id"))
     return list(dict.fromkeys(x for x in out if x))
 
+
+
+def _card_hash(txn: dict, reason: str | None) -> str:
+    """Hash of the structured confirmation card (merchant, date, amount, currency, reason)."""
+    card = json.dumps(confirmation_payload(txn, reason), sort_keys=True, default=str)
+    return hashlib.sha256(card.encode()).hexdigest()
 
 class Nodes:
     """Graph node implementations."""
@@ -403,12 +411,13 @@ class Nodes:
                 return {
                     **upd,
                     "confirmation_summary": confirmation_summary(txn, reason, state["language"]),
+                    "card_hash": _card_hash(txn, reason),
                     "route": {"next": "confirm"}
                 }
             
-            if result.outcome == "human_review":
+            if result.outcome == "human_review":  # no customer confirmation on this path, so no card to check
                 reasons = list(dict.fromkeys(state["reasons"] + result.triggers()))
-                return {**upd, "reasons": reasons, "route": {"next": "file_dispute"}}
+                return {**upd, "reasons": reasons, "card_hash": "", "route": {"next": "file_dispute"}}
             
             if result.redirect == "explain_decline":
                 return {**upd, "intent": "decline_explanation", "route": {"next": "answer_inquiry"}}
@@ -436,6 +445,12 @@ class Nodes:
             
             try:
                 txn = self.d.read.get_transaction(ctx, state["run_id"], as_of, state["txn"]["transaction_id"]).data
+                if state.get("card_hash") and _card_hash(txn, state["dispute_reason"]) != state["card_hash"]:
+                    # "Sí" confirms exactly the card shown; the record behind it changed, so show the new card.
+                    self._log(state, config, "file_dispute", "guard", {"error": "card changed since it was shown"})
+                    return {"txn": txn, "card_hash": _card_hash(txn, state["dispute_reason"]),
+                            "confirmation_summary": confirmation_summary(txn, state["dispute_reason"], lang),
+                            "route": {"next": "confirm"}}
                 res = self.d.write.create_dispute(
                     ctx, txn, state["dispute_reason"], state["statement"], as_of,
                     bool(state.get("escalated")), ctx.session_id, state["turn_id"], lang

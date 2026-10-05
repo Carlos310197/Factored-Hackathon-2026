@@ -132,3 +132,22 @@ def test_session_keeps_its_run_id_when_pointer_moves(ddb_store, tmp_path):
     write_pointer(root, run_id="run-that-does-not-exist")
     r = h.turn("¿y ahora?")
     assert r["reply_text"] == "[answer]" and h.state()["run_id"] == RUN_ID
+
+
+def test_confirmation_is_bound_to_the_card_the_customer_saw(ddb_store, serving_root):
+    """'Sí' confirms exactly the card shown: if the transaction behind it changed, nothing is filed and the card is
+    shown again with the new data."""
+    h = make_harness(ddb_store, serving_root, [DISPUTE_NETFLIX, {"intent": "dispute_charge", "confirmation": "confirm"}])
+    r1 = h.turn("Me cobraron dos veces Netflix, quiero disputarlo")
+    assert r1["awaiting"] == "confirmation" and "15.99" in r1["reply_text"]
+    read = h.service.deps.read
+    original = read.get_transaction
+
+    def changed(*a, **kw):  # the record behind the card changed before the customer said yes
+        res = original(*a, **kw)
+        return type(res)(res.source, {**res.data, "amount": 99.0}, res.as_of)
+
+    read.get_transaction = changed
+    r2 = h.turn("sí, confirmo")
+    assert ddb_store.disputes.get(t(101)) is None
+    assert r2["awaiting"] == "confirmation" and "99" in r2["reply_text"]
