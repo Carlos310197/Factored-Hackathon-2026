@@ -67,4 +67,6 @@ def test_staff_and_passwords_are_added_once_and_hand_added_users_kept():
     assert once[0]["demo_password"] == "demo-01" and once[1]["demo_password"] == "x"
     staff = [u for u in once if u.get("role") == "agent"]
     assert [u["username"] for u in staff] == ["agent.ana", "agent.luis", "agent.bia"]
+    from bankagent.identity.users import hash_password
+    assert all(u["password_sha256"] == hash_password(u["demo_password"]) for u in staff)
     assert add_demo_passwords_and_staff(once) == once

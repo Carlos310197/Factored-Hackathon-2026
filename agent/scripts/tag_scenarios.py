@@ -1,5 +1,7 @@
 """Tag each demo identity with the /demo scenarios its real (synthetic) data supports (UI spec §4.9, §9.3).
 Never fabricates: a scenario no customer supports is printed as MISSING.
+DEMO ONLY: the staff and demo accounts it adds have guessable passwords (the IdP accepts them in any mode);
+they must not ship to a non-demo deployment.
 Usage: uv run python scripts/tag_scenarios.py data/serving config/demo_users.yaml"""
 import json
 import re
