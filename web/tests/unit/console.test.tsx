@@ -49,4 +49,21 @@ describe("Console", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Claim" }));
     await waitFor(() => expect(f.mock.calls.some(([u, i]) => u === "/api/handoffs/HND-A/claim" && i?.method === "POST")).toBe(true));
   });
+
+  it("does not reload the acted-on case over a newly selected one", async () => {
+    let release!: () => void;
+    const slow = new Promise<void>((r) => { release = r; });
+    vi.stubGlobal("fetch", vi.fn(async (u: string, init?: RequestInit) => {
+      if (u.startsWith("/api/handoffs?")) return Response.json({ data: [row("HND-A"), row("HND-B")] });
+      if (init?.method === "POST") { await slow; return Response.json({ data: packet("HND-A") }); }
+      return Response.json({ data: { packet: packet(u.endsWith("HND-A") ? "HND-A" : "HND-B"), control: "agent" } });
+    }));
+    render(<Console me={me} initialId="HND-A" />);
+    await userEvent.click(await screen.findByRole("button", { name: "Claim" }));
+    await userEvent.click(screen.getByRole("option", { name: /HND-B/ }));
+    expect(await screen.findByRole("heading", { name: /HND-B/ })).toBeInTheDocument();
+    await act(async () => { release(); await slow; });
+    expect(screen.getByRole("heading", { name: /HND-B/ })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /HND-A/ })).toBeNull();
+  });
 });

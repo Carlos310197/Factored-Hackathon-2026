@@ -26,6 +26,8 @@ export function Console({ me, initialId, renderTab }: { me: { sub: string; name:
   const dataRef = useRef<CaseData | null>(null);
   useEffect(() => { dataRef.current = data; });
   const busy = useRef(false);
+  const selectedRef = useRef(selected);
+  useEffect(() => { selectedRef.current = selected; });
   const seen = useRef<Set<string>>(new Set()); // ids already shown, so only truly new rows get the highlight
   const timers = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
   useEffect(() => { const t = timers.current; return () => t.forEach(clearTimeout); }, []);
@@ -85,7 +87,8 @@ export function Console({ me, initialId, renderTab }: { me: { sub: string; name:
       if (a === "takeover" && r.ok) setTab("conversation");
     } catch { setNotice("That didn't work. Try again."); }
     finally { busy.current = false; }
-    await Promise.all([loadCase(id), loadRows()]);
+    // the user may have moved to another case meanwhile; reloading A would cancel B's load
+    await Promise.all([selectedRef.current === id ? loadCase(id) : null, loadRows()]);
   }
 
   return (
