@@ -4,9 +4,9 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Phase
 
-- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–18 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet). Agent core continues with units 19–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
+- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–19 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing). Agent core continues with units 20–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
 - Region: **us-east-1** for all our AWS resources and Snowflake. The organizer bucket (theirs) stays in us-east-2.
-- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04). Agent suite: `cd agent && uv run pytest` → 84 passed (2026-10-04).
+- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04). Agent suite: `cd agent && uv run pytest` → 111 passed (2026-10-04).
 - Submission deadline: **2026-10-05**.
 
 ## Current Goal
@@ -81,6 +81,17 @@ Update this file whenever the current phase, the active unit or the implementati
   - `docker-compose.yml`: DynamoDB Local for testing;
   - 6 tests covering table creation, conditional puts, GSI queries, TTL, and codec roundtrip;
   - All tests pass: 63/63 in agent/, 43/43 in root offline suite.
+- 2026-10-04: **Unit 19: Jev Question Sets, Thresholds, and Routing** (`agent/src/bankagent/decisions/`):
+  - `questions.py`: Load versioned question sets from YAML (understand.v1, verify_reply.v1);
+  - `thresholds.py`: Load versioned thresholds from YAML with intent, target, handoff, injection, and confirmation thresholds;
+  - `understand.py`: Build understand requests with candidate transaction aliases (c1..cN), parse Jev responses into Understanding dataclass;
+  - `verify.py`: Build verify_reply requests for claim validation, parse Jev responses into VerifyOutcome;
+  - `routing.py`: Code routing function that applies thresholds to Jev answers, handles escalation (unauthorized/legal/human), injection attempts, confirmation flows, and clarification limits;
+  - `questions/understand.v1.yaml`: Question set for intent classification, target transaction, dispute reason, and escalation nouls;
+  - `questions/verify_reply.v1.yaml`: Question set for claim verification and promise validation;
+  - `thresholds.v1.yaml`: Labeled synthetic thresholds (not calibrated; tuned in spec 2);
+  - 27 new tests in test_decisions.py and test_routing.py covering request building, alias security, candidate selection, parsing, routing logic, escalation, and edge cases;
+  - All tests pass: 111/111 in agent/ (84 existing + 27 new).
 
 ## In Progress
 
@@ -93,7 +104,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | Units | Subsystem | Status | First dependency |
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
-| 12–25 | Agent core | 12–18 **done**; 19–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
+| 12–25 | Agent core | 12–19 **done**; 20–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
 | 26–39 | Transaction resolver | not started | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
