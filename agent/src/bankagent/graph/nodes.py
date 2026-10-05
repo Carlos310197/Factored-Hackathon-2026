@@ -3,7 +3,7 @@ Each node is a function that takes (state, config) and returns a partial state u
 Identity comes from config['configurable']['ctx'], verified on every turn.
 """
 import logging
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime, timezone
 from typing import Any
 
@@ -615,10 +615,16 @@ class Nodes:
         """Compose reply and verify claims. Returns None if verification fails."""
         allowed, feedback = set(state.get("allowed_ids") or []), None
         
-        for _ in range(2):  # First draft + one regeneration
+        for draft in range(2):  # First draft + one regeneration
+            if draft and self._over_budget(config):  # no time left for a regeneration: the template answers
+                self._log(state, config, "reply", "error", {"error": "turn budget exceeded before regeneration"})
+                return None
+            # The BFF stops waiting at 25 s: a compose that starts late only gets what is left of the turn budget.
+            left = config["configurable"].get("deadline", float("inf")) - self.d.clock()
+            cfg = self.d.models["compose"]
+            cfg = replace(cfg, timeout_s=max(1.0, min(cfg.timeout_s, left)))
             try:
-                composed, call = compose(self.d.llm_client, self.d.models["compose"],
-                                        goal, receipts, lang, feedback)
+                composed, call = compose(self.d.llm_client, cfg, goal, receipts, lang, feedback)
             except LLMError as e:
                 self._log(state, config, "reply", "error", {"role": "compose", "error": str(e)})
                 return None

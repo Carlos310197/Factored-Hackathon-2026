@@ -179,3 +179,9 @@ def test_mantle_token_is_minted_from_the_cross_account_role_when_configured(monk
     assert assumed[0]["RoleArn"] == "arn:aws:iam::040684487035:role/argos-bedrock-role"
     assert assumed[0]["ExternalId"] == "ext"
     assert (minted[-1].access_key, minted[-1].token) == ("ASIAB", "t")
+
+
+def test_each_call_uses_its_roles_timeout():
+    llm = FakeLLM()
+    extract(llm, M["extract"], "hola", "2026-06-17", [])
+    assert llm.calls[-1]["timeout"] == M["extract"].timeout_s == 10.0
