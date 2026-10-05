@@ -3,7 +3,9 @@ writes the customer's ES/PT message from those details only; the real extract re
 by construction. Committed rows keep transaction fields only (no customer or product ids)."""
 import random
 
-from bankagent.llm.client import LLMError, call_json
+import time
+
+from bankagent.llm.client import LLMCall, LLMError
 from bankagent.llm.config import RoleConfig
 from bankagent.llm.extract import extract
 from bankagent.resolver.histories import History
@@ -18,9 +20,12 @@ WRITER_SYSTEM = """You write test data: ONE realistic message a bank customer se
 one of their transactions. Write it in the requested language, informally, like a real customer, 1-3 sentences.
 Use ONLY the details listed; do not add amounts, dates, merchants, places or other facts that are not listed.
 Express dates naturally ("el martes pasado", "semana passada", "el 10 de junio") and amounts as a person would.
-Return JSON {"message": "..."}."""
-WRITER_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["message"],
-                 "properties": {"message": {"type": "string"}}}
+Return only the message text, nothing else."""
+
+
+def _plain(amount: float) -> str:
+    """Digits only: a float's 'g' format turns 33984700 into 3.39847e+07, which the writer then copies."""
+    return f"{amount:.2f}".rstrip("0").rstrip(".")
 
 
 def details_en(case: dict) -> list[str]:
@@ -33,7 +38,7 @@ def details_en(case: dict) -> list[str]:
     if m.get("amount") is not None:
         cur = f' {m["currency"]}' if m.get("currency") else ""
         prefix = "exactly" if st.get("amount") == "exact" else "about"
-        out.append(f"the amount: {prefix} {m['amount']:g}{cur}")
+        out.append(f"the amount: {prefix} {_plain(m['amount'])}{cur}")
     if m.get("date_from"):
         if st.get("date") == "relative":
             out.append(f"when: {st['date_label']} (today is {case['anchor']})")
@@ -48,11 +53,26 @@ def details_en(case: dict) -> list[str]:
     return out or ["no specific details: the customer only says there is a charge or movement they want to ask about"]
 
 
-def write_message(client, cfg: RoleConfig, case: dict, lang: str, flavor: str):
+def write_message(client, cfg: RoleConfig, case: dict, lang: str, flavor: str) -> LLMCall:
+    """Plain text, not JSON: the writer's whole output is the message, and the model's JSON mode sometimes returns a
+    doubled opening brace that the strict parser (rightly) rejects."""
+    import openai
+
     goal = ("they want to dispute or complain about this charge" if flavor == "dispute"
             else "they ask what happened with this transaction")
     user = (f"language: {LANG_NAMES[lang]}\ngoal: {goal}\ndetails:\n" + "\n".join(f"- {d}" for d in details_en(case)))
-    return call_json(client, cfg, WRITER_SYSTEM, user, WRITER_SCHEMA)
+    start = time.monotonic()
+    try:
+        resp = client.chat.completions.create(
+            model=cfg.model, max_tokens=cfg.max_tokens,
+            messages=[{"role": "system", "content": WRITER_SYSTEM}, {"role": "user", "content": user}])
+    except openai.OpenAIError as e:
+        raise LLMError(f"{type(e).__name__}: {e}") from e
+    if not resp.choices or resp.choices[0].finish_reason == "length" or not resp.choices[0].message.content:
+        raise LLMError("writer returned no usable text")
+    text = resp.choices[0].message.content.strip().strip('"').strip()
+    usage = {"input_tokens": resp.usage.prompt_tokens, "output_tokens": resp.usage.completion_tokens}
+    return LLMCall({"message": text}, cfg.model, cfg.prompt_version, usage, int((time.monotonic() - start) * 1000))
 
 
 def build_dev_set(histories: list[History], sim_cfg: dict, seed: int, n: int, client, models: dict[str, RoleConfig],

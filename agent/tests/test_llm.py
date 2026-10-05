@@ -110,3 +110,12 @@ def test_extract_schema_has_nullable_hints():
 
 def test_dev_writer_role_is_configured():
     assert M["dev_writer"].prompt_version == "devwriter.v1" and M["dev_writer"].effort == "low"
+
+
+def test_doubled_opening_brace_is_accepted_but_a_restart_after_content_is_not():
+    """gpt-oss on Bedrock often emits '{ {"a": 1}': a stray opener with nothing inside it. No content is dropped, so
+    the complete object that follows is the answer. A restart after content (unit 25's regression) stays rejected."""
+    out = call_json(_client("stop", '{\n  {"language_detected": "es"}'), M["extract"], "s", "u", {"type": "object"})
+    assert out.data == {"language_detected": "es"}
+    with pytest.raises(LLMError, match="ambiguous"):
+        call_json(_client("stop", '{"a": "tex{"a": "x"}'), M["extract"], "s", "u", {"type": "object"})
