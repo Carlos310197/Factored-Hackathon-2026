@@ -41,17 +41,16 @@ class AgentService:
             "recursion_limit": self.recursion_limit,
         }
 
-        # Spend cap: the demo identities are public, so a session gets a fixed number of turns. A capped turn makes no
-        # Bedrock or Jev call. ponytail: per session only; a per-customer cap needs a counter in the sessions table.
-        snapshot = self.graph.get_state(config)
-        turns = (snapshot.values or {}).get("turn_count", 0) if snapshot else 0
-        if turns >= self.max_turns:
+        # Spend cap: the demo identities are public, so a session gets a fixed number of turns, counted atomically in
+        # the sessions table before the model runs. A capped turn makes no Bedrock or Jev call.
+        # ponytail: per session only; a per-customer cap would count on the customer id the same way.
+        if self.deps.store.sessions and not self.deps.store.sessions.take_turn(ctx.session_id, self.max_turns):
             from bankagent.llm.templates import fallback_reply
             logger.warning("session turn cap reached", extra={"session_id": ctx.session_id})
             return {"reply_text": fallback_reply({"kind": "turn_limit"}, [], ctx.lang), "language": ctx.lang,
                     "awaiting": "none", "options": [], "refs": [], "data_as_of": None, "turn_id": turn_id}
 
-        initial_state: AgentState = {"message": message, "turn_id": turn_id, "turn_count": turns + 1}
+        initial_state: AgentState = {"message": message, "turn_id": turn_id}
         start = self.deps.clock()
 
         try:

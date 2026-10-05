@@ -202,6 +202,7 @@ def test_session_turn_cap_stops_model_spend(ddb_store, serving_root):
     """Public demo identities: a session gets a fixed number of turns, then a fixed reply with no Bedrock/Jev calls."""
     h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}] * 2)
     h.service.max_turns = 2
+    ddb_store.sessions.ensure(CTX_ES.session_id, CTX_ES.customer_id, "es")
     h.turn("¿Mi saldo?")
     h.turn("¿Y el de la otra tarjeta?")
     calls = (len(h.llm.calls), len(h.jev.calls))
