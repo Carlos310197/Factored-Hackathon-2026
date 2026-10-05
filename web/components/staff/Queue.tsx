@@ -22,9 +22,9 @@ export function Queue({ rows, filter, onFilter, selected, onSelect, fresh, me }:
         <h2 className="text-[11px] font-bold uppercase tracking-wider text-c-muted">Queue</h2>
         <span className="text-xs text-c-muted tabular-nums">{rows.length} {rows.length === 1 ? "case" : "cases"}</span>
       </div>
-      <div role="tablist" aria-label="Queue filter" className="flex flex-wrap gap-1 px-3 pb-3 border-b border-c-line">
+      <div role="group" aria-label="Queue filter" className="flex flex-wrap gap-1 px-3 pb-3 border-b border-c-line">
         {FILTERS.map(([f, name]) => (
-          <button key={f} role="tab" aria-selected={filter === f} onClick={() => onFilter(f)}
+          <button key={f} aria-pressed={filter === f} onClick={() => onFilter(f)}
             className={`rounded-control px-2.5 py-1 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-c-signal ${
               filter === f ? "bg-c-ink text-c-panel" : "bg-c-track text-c-ink hover:bg-c-line"}`}>{name}</button>
         ))}

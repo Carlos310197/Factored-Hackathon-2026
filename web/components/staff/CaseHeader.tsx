@@ -21,14 +21,23 @@ export function CaseHeader({ packet, control, me, onAction }: { packet: HandoffP
   const first = useRef<HTMLSelectElement>(null);
   const actions = allowedActions(packet, me.sub);
   const heldByOther = packet.claimed_by && packet.claimed_by !== me.sub && packet.status !== "resolved";
-  useEffect(() => { if (resolving) first.current?.focus(); }, [resolving]);
+  const dlg = useRef<HTMLDialogElement>(null);
+  const title = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    const d = dlg.current;
+    if (!resolving || !d) return;
+    // native modal: focus trap, Esc (cancel event) and inert background; jsdom lacks showModal
+    if (typeof d.showModal === "function") d.showModal(); else d.setAttribute("open", "");
+    first.current?.focus();
+  }, [resolving]);
   const close = () => { setResolving(false); opener.current?.focus(); };
+  const openResolve = () => { setCode("resolved_by_agent"); setNote(""); setResolving(true); };
   const meta = [`Customer ${packet.customer_id}`, packet.language === "es" ? "Spanish" : "Portuguese", `data as of ${fmtDate(packet.data_as_of, "es")}`,
     `session ${packet.session_id}`, `opened ${opened(packet.created_at)}`];
   return (
     <header className="bg-c-panel ring-1 ring-c-line rounded-panel px-4 py-3.5 flex justify-between items-start gap-4">
       <div className="min-w-0">
-        <h1 className="text-lg font-bold flex items-center gap-2.5 flex-wrap">
+        <h1 ref={title} tabIndex={-1} className="text-lg font-bold outline-none flex items-center gap-2.5 flex-wrap">
           {packet.handoff_id}
           <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${packet.priority === "critical" ? "bg-c-alert-tint text-c-alert" : "bg-c-track text-c-ink"}`}>
             <span className={`size-2 rounded-[2px] ${MARK[packet.priority]}`} aria-hidden />
@@ -46,13 +55,14 @@ export function CaseHeader({ packet, control, me, onAction }: { packet: HandoffP
             className={`${btn} ${i === 0 ? "bg-c-signal text-c-panel hover:opacity-90" : "bg-c-track hover:bg-c-line"}`}>{ACTION_LABEL[a]}</button>
         ))}
         {actions.includes("resolve") && (
-          <button ref={opener} onClick={() => setResolving(true)} className={`${btn} bg-c-track hover:bg-c-line`}>{ACTION_LABEL.resolve}</button>
+          <button ref={opener} onClick={openResolve} className={`${btn} bg-c-track hover:bg-c-line`}>{ACTION_LABEL.resolve}</button>
         )}
       </div>
       {resolving && (
-        <div className="fixed inset-0 z-10 bg-c-ink/40 flex items-center justify-center" onKeyDown={(e) => e.key === "Escape" && close()}>
-          <form role="dialog" aria-modal="true" aria-labelledby="resolve-title" className="bg-c-panel ring-1 ring-c-line rounded-panel p-5 w-[26rem] flex flex-col gap-3.5"
-            onSubmit={(e) => { e.preventDefault(); setResolving(false); onAction("resolve", { code, note }); }}>
+        <dialog ref={dlg} aria-labelledby="resolve-title" onCancel={(e) => { e.preventDefault(); close(); }}
+          className="m-auto bg-c-panel text-c-ink ring-1 ring-c-line rounded-panel p-5 w-[26rem] backdrop:bg-c-ink/40">
+          <form className="flex flex-col gap-3.5"
+            onSubmit={(e) => { e.preventDefault(); setResolving(false); title.current?.focus(); onAction("resolve", { code, note }); }}>
             <h2 id="resolve-title" className="font-bold">Resolve {packet.handoff_id}</h2>
             <label className="flex flex-col gap-1 text-sm font-semibold">Outcome
               <select ref={first} value={code} onChange={(e) => setCode(e.target.value as ResolutionCode)} className={`${field} font-normal`}>
@@ -68,7 +78,7 @@ export function CaseHeader({ packet, control, me, onAction }: { packet: HandoffP
               <button type="submit" className={`${btn} bg-c-signal text-c-panel hover:opacity-90`}>Resolve case</button>
             </div>
           </form>
-        </div>
+        </dialog>
       )}
     </header>
   );
