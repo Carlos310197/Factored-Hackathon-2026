@@ -72,3 +72,81 @@ def satisfaction(c) -> dict:
                           from surveys""")[0]
     out["satisfaction.link_rate"] = m(link, n)
     return out
+
+
+# Shift hours are an assumption (the data has no schedule); the report states it.
+SHIFT_HOURS = {"Morning": list(range(6, 14)), "Afternoon": list(range(14, 22)), "Night": [22, 23, 0, 1, 2, 3, 4, 5]}
+
+
+def capacity(c) -> dict:
+    n_agents, pt, load = _rows(c, """select count(*), avg((lower(languages) like '%portugu%')::int),
+                                     avg(try_cast(total_monthly_interactions as double)) from agents""")[0]
+    out = {"capacity.agents_total": m(n_agents, n_agents), "capacity.pt_agent_share": m(pt, n_agents),
+           "capacity.monthly_load_mean": m(load, n_agents)}
+    for t, n in _rows(c, "select agent_type, count(*) from agents group by 1"):
+        out[f"capacity.by_type.{t}"] = m(n, n_agents)
+    shifts = dict(_rows(c, "select work_shift, count(*) from agents group by 1"))
+    by_hour = dict(_rows(c, "select hour(try_cast(interaction_date as timestamp)), count(*) from interactions group by 1"))
+    for shift, hours in SHIFT_HOURS.items():
+        agents = shifts.get(shift, 0)
+        contacts = sum(by_hour.get(h, 0) for h in hours)
+        out[f"capacity.by_shift.{shift}.agents"] = m(agents, n_agents)
+        out[f"capacity.by_shift.{shift}.contacts_per_agent"] = m(contacts / agents if agents else None, contacts)
+    return out
+
+
+def disputes(c) -> dict:
+    where = f"where subcategory in {DISPUTE_SUBCATEGORIES!r}"
+    fr = ("date_diff('minute', try_cast(creation_date as timestamp), try_cast(first_response_date as timestamp))"
+          " / 60.0")
+    res = "try_cast(resolution_days as double)"
+    n, n_fr, fr50, n_res, res50, sla, backlog = _rows(c, f"""
+        select count(*), count({fr}), quantile_cont({fr}, 0.5), count({res}), quantile_cont({res}, 0.5),
+               avg({_b('sla_breached')}), avg((status in ('Open', 'In Process'))::int) from complaints {where}""")[0]
+    total = _rows(c, "select count(*) from complaints")[0][0]
+    out = {"complaints.total": m(total, total), "disputes.count": m(n, n),
+           "disputes.first_response_h_p50": m(fr50, n_fr), "disputes.resolution_days_p50": m(res50, n_res),
+           "disputes.sla_breach_rate": m(sla, n), "disputes.backlog_share": m(backlog, n)}
+    for ch, k in _rows(c, f"select reception_channel, count(*) from complaints {where} group by 1"):
+        out[f"disputes.by_channel.{ch}"] = m(k / n, n)
+    for sub, k in _rows(c, f"select subcategory, count(*) from complaints {where} group by 1"):
+        out[f"disputes.by_subcategory.{sub}"] = m(k, n)
+    return out
+
+
+def digital(c) -> dict:
+    return {f"digital.monthly.{et}": m(n / MONTHS_IN_WINDOW, n)
+            for et, n in _rows(c, "select event_type, count(*) from digital group by 1")}
+
+
+def transcripts(c) -> dict:
+    n, distinct, cg = _rows(c, """select count(*), count(distinct customer_text),
+                                  avg((coalesce(detected_intents, '') like '%consulta_general%')::int) from transcripts""")[0]
+    return {"transcripts.rows": m(n, n), "transcripts.distinct_customer_text": m(distinct, n),
+            "transcripts.consulta_general_share": m(cg, n)}
+
+
+def fairness(c) -> dict:
+    out = {}
+    dur = "try_cast(i.duration_seconds as double)"
+    base = f"from interactions i left join customers k using (customer_id) where i.reason_category = '{IN_SCOPE_REASON}'"
+    dims = {"country": "k.country", "segment": "k.segment", "accent": "coalesce(i.customer_detected_accent, 'unknown')"}
+    for dim, expr in dims.items():
+        for val, n, fcr, n_dur, h50 in _rows(c, f"""select {expr}, count(*), avg({_b('i.was_resolved')}), count({dur}),
+                                                     quantile_cont({dur}, 0.5) {base} group by 1"""):
+            out[f"fairness.by_{dim}.{val}.fcr"] = m(fcr, n)
+            out[f"fairness.by_{dim}.{val}.handle_time_s_p50"] = m(h50, n_dur)
+    for val, n, csat in _rows(c, f"""select k.country, count(*), avg(try_cast(s.main_score as double))
+                                     from surveys s join interactions i using (interaction_id)
+                                     left join customers k on k.customer_id = i.customer_id
+                                     where i.reason_category = '{IN_SCOPE_REASON}' and s.survey_type = 'CSAT'
+                                     group by 1"""):
+        out[f"fairness.by_country.{val}.csat_mean"] = m(csat, n)
+    return out
+
+
+def collect(c) -> dict:
+    out = {}
+    for fn in (demand, quality, satisfaction, capacity, disputes, digital, transcripts, fairness):
+        out |= fn(c)
+    return dict(sorted(out.items()))

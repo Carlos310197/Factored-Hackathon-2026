@@ -178,6 +178,7 @@ Update this file whenever the current phase, the active unit or the implementati
 
 - 2026-10-05: **Units 40–50: evaluation, offline code** (one worktree `worktree-evaluation`, branch `feature/40-50-evaluation`, built while resolver units 38–39 run; each unit committed alone; units 51–52 are `[live]` and wait for 39's adoption decision):
   - 40 `analysis/` as-is project: `asis.load` (DuckDB views, backup prefix refused, no PII columns), `asis.metrics` demand/quality/satisfaction, synthetic fixture. Plan code used unchanged; `cd analysis && uv run pytest` → 6 passed. `.gitignore` now tracks `analysis/pyproject.toml`, `uv.lock`, `asis/` and `reports/` (the old profiling scripts in `analysis/` stay untracked, as before).
+  - 41 `asis.metrics` capacity/disputes/digital/transcripts/fairness/`collect`, `asis.artifacts` (seven detectors + `detect_all`). Plan code unchanged; `cd analysis && uv run pytest` → 13 passed. `SHIFT_HOURS` is an assumption (the data has no schedule).
 
 ## In Progress
 
