@@ -534,7 +534,7 @@ Records that the specs say to fill in at fixed points. Fill them here.
 
 **Changelog:**
 - 2026-09-29: draft.
-- Test-set SHA-256: to be filled at freeze (§5.4).
+- Test-set SHA-256 (frozen 2026-10-05, before any evaluation; `agent/resolver/data/test_sheet_v1_completed.csv`, 150 messages, committed on `main` in `b3d60a7`): `1ab867754edd05bf8ed136071e9cd1326c59831119f2de06ad1b136d1f9a4bdd`.
 - Adoption decision: to be filled after the test run (§6.4).
 
 ### Evaluation
