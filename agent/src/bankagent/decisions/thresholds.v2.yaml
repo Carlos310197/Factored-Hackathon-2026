@@ -1,0 +1,27 @@
+# Labeled synthetic: target_transaction tuned on the resolver dev set for Jev + ranker (resolver spec 6.3); rest as v1.
+# decisions/thresholds.v1
+version: thresholds.v2
+
+intent:
+  min_p: 0.80
+  min_margin: 0.15
+
+target_transaction: {min_p: 0.74, min_margin: 0.48}
+
+handoff_noul:
+  reports_unauthorized_use: 0.50
+  legal_or_regulator_threat: 0.50
+  asks_for_human: 0.60
+
+offer_human_noul:
+  distress: 0.60
+
+injection_attempt: 0.50
+confirmation_confirm: 0.90
+claim_supported: 0.80
+promises_unverified_action: 0.50
+
+max_clarifications: 2
+max_confirmation_asks: 2
+max_jev_failures: 2
+max_injections: 2

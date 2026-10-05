@@ -11,7 +11,7 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Goal
 
-- Transaction resolver units 38 (train, dev set, finalize, tune; about 600 Bedrock + 600 Jev calls) and 39 (freeze, evaluate once; Andrés's completed sheet needed first) are `[live]`: each step needs the owner's approval. Send `agent/resolver/data/test_sheet_v1.csv` and `TEST_SHEET_README.md` to Andrés. The as-is diagnosis (`40`) can also run in parallel. The UI (53+) and deployment (77+) follow.
+- Transaction resolver unit 38 is done (see Completed); unit 39 (freeze, evaluate once; Andrés's completed sheet needed first) are `[live]`: each step needs the owner's approval. Send `agent/resolver/data/test_sheet_v1.csv` and `TEST_SHEET_README.md` to Andrés. The as-is diagnosis (`40`) can also run in parallel. The UI (53+) and deployment (77+) follow.
 
 ## Completed
 
@@ -176,6 +176,15 @@ Update this file whenever the current phase, the active unit or the implementati
   - 37 `Deps.resolver` / `Deps.understand_qs_scored` (default `None`), `Settings.resolver_artifact` / `thresholds_file` (default off), `runtime.load_resolver` (never raises), `kind: model` decision records, and fallback to `understand.v1` with one `kind: error` record on any resolver failure. The Dockerfile needed no change: `--no-default-groups` already keeps lightgbm, scikit-learn, mlflow and matplotlib out of the image;
   - Tests: agent suite 242 passed (195 → 242), root offline suite 43 passed. Not run: units 38 and 39 (`[live]`), which need the owner's approval for each Bedrock/Jev run.
 
+- 2026-10-05: **Unit 38: Resolver Real Run I** (owner approved the Bedrock dev-set build and the Jev dev runs; run with `AWS_PROFILE=hackathon-sso`, the default profile is the organizers' S3-only user and gets a 403 on Bedrock Mantle):
+  - Train (offline, `train --serving .serving-full`, 30k train / 3k simulated-validation cases, 17 grid points, MLflow in `agent/mlruns`): logreg C=1 simulated-validation top-1 0.919 (hard 0.905), LightGBM 31 leaves / lr 0.1 / 500 trees top-1 0.927 (hard 0.894);
+  - Dev set: `agent/resolver/data/dev_v1.jsonl`, 300 rows (150 ES / 150 PT), 158 cases skipped after LLM errors (mostly gpt-oss output truncated at `max_tokens`). **Slice mix is skewed**: 186 easy / 84 hard / 30 not_in_list, because the skipped cases were disproportionately hard; the simulator targets about 50% hard. 17 extractions had no mentions. No scientific-notation amounts, no `CLI-`/`PRD-` ids. Carlos has not yet reviewed 30 rows for realism (spec §5.3 item 5), so the regeneration count `k` is not recorded;
+  - Finalize (`finalize --promote`): **logreg chosen**, dev hard-slice top-1 0.917 vs LightGBM 0.833, temperature **1.337**; dev ECE 0.168 (logreg), nil AUC 0.873. Artifact and `MODEL_CARD.md` in `src/bankagent/resolver/artifacts/v1/`. LightGBM stays a resolver-group dependency;
+  - Jev on dev (1 run each, 300 calls per system, 0 errors): `resolver/runs/jev/dev/{B2,P}_r1.jsonl`;
+  - Tune (≤ 2% dev wrong-action): B1 τ=0.62 φ=0.30 (coverage 0.637, resolved-in-one-step 0.853); B2 t=0.59 m=0.18 (0.747, 0.910); **P t=0.74 m=0.48** (0.767, 0.947). `decisions/thresholds.v2.yaml` written; figures `dev_coverage_curve.png` and `dev_reliability.png`. These are dev numbers, not the adoption decision: that is unit 39 on the frozen test set;
+  - Bugs fixed on the way, with tests: the dev writer is now a plain-text call (the model returned `{ {"message": ...}` 9 times out of 10 in JSON mode) and writes amounts in plain digits (`:g` produced `3.39847e+07`); `call_json` now accepts a bare doubled opening brace `{ {` (no content dropped; a restart after content stays rejected, unit 25's regression test still passes). The same doubled brace made the production `extract` fail about 70% of the time on `openai.gpt-oss-20b`, so this also helps the agent. Open: `extract` still hits `truncated output` on roughly 20% of calls at `max_tokens: 1024`;
+  - Tests: agent suite 245 passed.
+
 ## In Progress
 
 - None.
@@ -188,7 +197,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
 | 12–25 | Agent core | **done**; 25 ran and recorded the definition-of-done run | none (16 uses a synthetic fixture; 23 uses the local drop) |
-| 26–39 | Transaction resolver | 26–37 **done**; 38–39 are `[live]` and wait for the owner's approval | 12, 16 |
+| 26–39 | Transaction resolver | 26–38 **done**; 39 is `[live]` and waits for Andrés and the owner's approval | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
 | 77–90 | Deployment | not started; Terraform `bootstrap`, `platform` and the `app` web shell already exist | 77 has none; the rest follow the agent core and UI |
