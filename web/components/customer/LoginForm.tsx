@@ -92,7 +92,7 @@ export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = f
 
   return (
     <main className="font-customer min-h-dvh bg-b-fog text-b-ink flex justify-center">
-      <div className="flex w-full max-w-md flex-col bg-b-surface sm:my-6 sm:min-h-0 sm:overflow-hidden sm:rounded-card sm:border sm:border-b-line">
+      <div className="flex min-h-dvh w-full max-w-md flex-col bg-b-surface sm:my-6 sm:min-h-0 sm:overflow-hidden sm:rounded-card sm:border sm:border-b-line">
         <header className="relative overflow-hidden rounded-b-card bg-b-cobalt px-6 pb-14 pt-8 text-b-surface">
           <span aria-hidden className="absolute -right-10 -top-10 size-40 rounded-full bg-b-sun" />
           <span aria-hidden className="absolute -bottom-12 right-16 size-32 rounded-full bg-b-leaf" />
@@ -100,7 +100,7 @@ export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = f
           <h1 className="relative mt-6 max-w-[16ch] text-3xl font-extrabold leading-tight">{d.loginTitle}</h1>
         </header>
 
-        <form className="-mt-8 mx-4 flex flex-1 flex-col gap-4 rounded-card border border-b-line bg-b-surface p-5"
+        <form className="relative z-10 -mt-8 mx-4 flex flex-col gap-4 rounded-card border border-b-line bg-b-surface p-5"
           onSubmit={(e) => { e.preventDefault(); void (ticket ? submitOtp() : submitCredentials()); }}>
           <div role="radiogroup" aria-label={d.language} className="flex rounded-full bg-b-mist p-1">
             {(["es", "pt"] as const).map((l) => (
@@ -143,7 +143,7 @@ export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = f
           {error && <p role="alert" className="rounded-control bg-b-sun-tint px-3 py-2 text-sm text-b-ink">{d.loginFailed}</p>}
         </form>
 
-        <p className="px-6 py-6 text-center text-xs text-b-muted">{d.demoFooter}</p>
+        <p className="mt-auto px-6 py-6 text-center text-xs text-b-muted">{d.demoFooter}</p>
       </div>
     </main>
   );
