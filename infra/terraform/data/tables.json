@@ -1,0 +1,120 @@
+{
+  "checkpoints": {
+    "hash_key": "PK",
+    "range_key": "SK",
+    "attributes": [
+      {
+        "name": "PK",
+        "type": "S"
+      },
+      {
+        "name": "SK",
+        "type": "S"
+      }
+    ],
+    "gsis": [],
+    "ttl": "ttl",
+    "stream_view_type": null
+  },
+  "disputes": {
+    "hash_key": "transaction_id",
+    "range_key": null,
+    "attributes": [
+      {
+        "name": "transaction_id",
+        "type": "S"
+      },
+      {
+        "name": "customer_id",
+        "type": "S"
+      },
+      {
+        "name": "created_at",
+        "type": "S"
+      }
+    ],
+    "gsis": [
+      {
+        "name": "by_customer",
+        "hash_key": "customer_id",
+        "range_key": "created_at"
+      }
+    ],
+    "ttl": null,
+    "stream_view_type": null
+  },
+  "handoffs": {
+    "hash_key": "handoff_id",
+    "range_key": null,
+    "attributes": [
+      {
+        "name": "handoff_id",
+        "type": "S"
+      },
+      {
+        "name": "status",
+        "type": "S"
+      },
+      {
+        "name": "created_at",
+        "type": "S"
+      }
+    ],
+    "gsis": [
+      {
+        "name": "by_status",
+        "hash_key": "status",
+        "range_key": "created_at"
+      }
+    ],
+    "ttl": null,
+    "stream_view_type": "NEW_IMAGE"
+  },
+  "decision_records": {
+    "hash_key": "session_id",
+    "range_key": "sk",
+    "attributes": [
+      {
+        "name": "session_id",
+        "type": "S"
+      },
+      {
+        "name": "sk",
+        "type": "S"
+      }
+    ],
+    "gsis": [],
+    "ttl": "ttl",
+    "stream_view_type": "NEW_IMAGE"
+  },
+  "sessions": {
+    "hash_key": "session_id",
+    "range_key": null,
+    "attributes": [
+      {
+        "name": "session_id",
+        "type": "S"
+      }
+    ],
+    "gsis": [],
+    "ttl": null,
+    "stream_view_type": null
+  },
+  "conversation_messages": {
+    "hash_key": "session_id",
+    "range_key": "sk",
+    "attributes": [
+      {
+        "name": "session_id",
+        "type": "S"
+      },
+      {
+        "name": "sk",
+        "type": "S"
+      }
+    ],
+    "gsis": [],
+    "ttl": "ttl",
+    "stream_view_type": "NEW_IMAGE"
+  }
+}

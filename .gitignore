@@ -2,6 +2,7 @@
 .env
 .key.p8
 data/
+!infra/terraform/data/
 *.pdf
 # python / dbt build output
 .venv/
