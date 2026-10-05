@@ -99,12 +99,16 @@ describe("ChatScreen", () => {
 
   it("a 202 keeps the typing indicator until the reply arrives, then clears it", async () => {
     let history: object[] = [];
-    vi.stubGlobal("fetch", vi.fn(async (url: string) =>
-      String(url).includes("/messages") ? Response.json({ data: history }) : new Response(null, { status: 202 })));
+    let clientId = "";
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (String(url).includes("/messages")) return Response.json({ data: history });
+      clientId = JSON.parse(String(init?.body)).client_message_id;  // the server stores the question under this id
+      return new Response(null, { status: 202 });
+    }));
     render(<ChatScreen sid="s1" lang="es" embed={false} />);
     await userEvent.type(screen.getByRole("textbox"), "hola{Enter}");
     expect(await screen.findByText("El asistente está escribiendo")).toBeInTheDocument();
-    history = [msg({ id: "a1", cursor: "0009", text: "Listo" })];
+    history = [msg({ id: clientId, cursor: "0008", role: "customer", text: "hola" }), msg({ id: "a1", cursor: "0009", text: "Listo" })];
     await waitFor(() => expect(screen.getByText("Listo")).toBeInTheDocument(), { timeout: 5000 });
     expect(screen.queryByText("El asistente está escribiendo")).not.toBeInTheDocument();
   });
