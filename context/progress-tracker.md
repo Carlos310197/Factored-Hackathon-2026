@@ -453,6 +453,12 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-05: Round-two review fixes (docs = reality, required contract hash, stale-pointer log)
+
+- README: exact CI for 1/150 wrong actions (0.02–3.7 %, so ≤ 2 % is not shown; P equals B2); the resolver table says rates are 3-repeat means and the paired CI is repeat 1 only, with the paired point estimate shown; B1 vs B0 line; architecture row names Ministral extract; numeric targets (intake ≤ 5 min, 100 % complete packets, unsafe k/N with upper bound) or "set after a pilot", and the 37 h baseline flagged as a different endpoint; human-review drafts get a rationale; staff password-only login and the eval persona provider disclosed; decision records described as best-effort.
+- `serving.pointer()` now **requires** `contract_hash` (only a pre-hash `local_build` dev pointer may omit it; the local builder now writes the real hash) and logs `serving pointer is stale` when `exported_at` is over 2 days old.
+- `pipeline.yml:51` comment and the `templates.py` docstring corrected.
+
 ### 2026-10-05: Review fixes (turn budget, LLM redaction, disclosures)
 
 - **Turn budget 20 → 15 s** (`AgentService` default): the Jev client retries once at 3 s, so a closing verify can take 6 s; 15 + 6 ≈ 21 s stays under the BFF's 25 s. `test_worst_case_turn_fits_inside_the_bff_wait` encodes the arithmetic. The earlier "~23 s" claim was wrong.
