@@ -43,7 +43,7 @@ class Harness:
 
 
 def make_harness(store, serving_uri, specs, llm=None, verify=True, clock=None, recursion_limit=25,
-                 turn_budget_s=20.0, resolver=None) -> Harness:
+                 turn_budget_s=15.0, resolver=None) -> Harness:
     serving, policy = ServingData(str(serving_uri)), DisputePolicy.load()
     llm, jev = llm or FakeLLM(), FakeJev(specs, verify)
     deps = Deps(read=ReadTools(serving), write=WriteTools(store, policy), store=store, policy=policy, jev=jev,

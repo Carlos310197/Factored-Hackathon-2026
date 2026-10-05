@@ -453,6 +453,12 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-05: Review fixes (turn budget, LLM redaction, disclosures)
+
+- **Turn budget 20 → 15 s** (`AgentService` default): the Jev client retries once at 3 s, so a closing verify can take 6 s; 15 + 6 ≈ 21 s stays under the BFF's 25 s. `test_worst_case_turn_fits_inside_the_bff_wait` encodes the arithmetic. The earlier "~23 s" claim was wrong.
+- **Bedrock payloads redacted like Jev's:** compose and handoff open-questions receipts go through `decisions.verify.redact` (no `customer_id`, `product_id`, fraud fields), since inference runs through a role in account `040684487035`. Test checks every non-extract LLM call.
+- README: the egress row names the second account; limitations add the missing spend cap (public demo identities, no per-session turn limit).
+
 ### 2026-10-05: Agent hardening (timeouts, confirmation binding, alarms, capacity)
 
 - **Timeouts made true:** every LLM call passes its role's `timeout_s` (extract 10 s, compose 20 s); the client's SDK retries are off (`max_retries=0`, graph-level retries stay explicit); a compose call is capped at the turn budget's remainder and no regeneration starts once the budget is spent. With Jev at 3 s, a turn ends within about 23 s, under the BFF's 25 s.

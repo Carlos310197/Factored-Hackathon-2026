@@ -151,3 +151,15 @@ def test_confirmation_is_bound_to_the_card_the_customer_saw(ddb_store, serving_r
     r2 = h.turn("sí, confirmo")
     assert ddb_store.disputes.get(t(101)) is None
     assert r2["awaiting"] == "confirmation" and "99" in r2["reply_text"]
+
+
+def test_llm_never_sees_customer_or_product_ids(ddb_store, serving_root):
+    """Bedrock runs in a second AWS account: compose and handoff payloads get the same redaction as Jev."""
+    h = make_harness(ddb_store, serving_root, [DISPUTE_NETFLIX, {"intent": "dispute_charge", "confirmation": "confirm"}])
+    h.turn("Me cobraron dos veces Netflix, quiero disputarlo")
+    h.turn("sí, confirmo")
+    composes = [c for c, r in zip(h.llm.calls, h.llm.roles) if r != "extract"]
+    assert composes
+    for c in composes:
+        sent = json.dumps(c["messages"])
+        assert "CLI-" not in sent and "PRD-" not in sent and "fraud_score" not in sent

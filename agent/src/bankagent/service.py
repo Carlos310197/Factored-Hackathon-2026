@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class AgentService:
     """Agent service: one instance per process, holds the compiled graph."""
 
-    def __init__(self, deps: Deps, checkpointer=None, turn_budget_s: float = 20.0, recursion_limit: int = 25):
+    def __init__(self, deps: Deps, checkpointer=None, turn_budget_s: float = 15.0, recursion_limit: int = 25):
         self.deps = deps
         self.checkpointer = checkpointer or MemorySaver()
         self.turn_budget_s = turn_budget_s
