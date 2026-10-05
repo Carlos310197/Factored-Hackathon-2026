@@ -13,15 +13,23 @@ dependencies = [
   "httpx>=0.27",
   "langgraph>=1.2",
   "langgraph-checkpoint-aws>=1.2",
+  "numpy>=2.0",
   "opentelemetry-api>=1.27",
   "pydantic>=2.8",
   "pyjwt[crypto]>=2.9",
   "pyyaml>=6",
+  "rapidfuzz>=3.9",
   "uvicorn>=0.30",
 ]
 
 [dependency-groups]
 dev = ["pytest>=8", "moto[dynamodb]>=5", "python-dotenv>=1.0"]
+resolver = ["lightgbm>=4.5", "matplotlib>=3.9", "mlflow>=3.1", "scikit-learn>=1.5"]
+
+[tool.uv]
+# resolver (training/evaluation tooling) is installed for local work and tests; the runtime image uses
+# --no-default-groups, so it ships without scikit-learn, LightGBM, MLflow or matplotlib.
+default-groups = ["dev", "resolver"]
 
 [build-system]
 requires = ["hatchling"]
