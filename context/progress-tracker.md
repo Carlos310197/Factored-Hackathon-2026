@@ -180,7 +180,7 @@ Update this file whenever the current phase, the active unit or the implementati
   - 40 `analysis/` as-is project: `asis.load` (DuckDB views, backup prefix refused, no PII columns), `asis.metrics` demand/quality/satisfaction, synthetic fixture. Plan code used unchanged; `cd analysis && uv run pytest` → 6 passed. `.gitignore` now tracks `analysis/pyproject.toml`, `uv.lock`, `asis/` and `reports/` (the old profiling scripts in `analysis/` stay untracked, as before).
   - 41 `asis.metrics` capacity/disputes/digital/transcripts/fairness/`collect`, `asis.artifacts` (seven detectors + `detect_all`). Plan code unchanged; `cd analysis && uv run pytest` → 13 passed. `SHIFT_HOURS` is an assumption (the data has no schedule).
   - 42 `reconcile.py`/`.sql`, `charts.py`, `report.py`, `run.py`. Real run on the local drop (offline, about 6 min, DuckDB rescans the CSVs per query): `analysis/asis/out/asis_metrics.json`, `reports/asis-2026-10-05.md`, `reports/figures/asis-*.png`; two runs gave identical metrics. Spot checks match spec §2 (Transaccional FCR 0.9165, n 80,264; 230,196 interactions; 22,552 complaints; Portuguese agents 10.75% of 1,200; dispute first response p50 37 h). Reconciliation is **not reconciled** (no curated marts yet; `reconcile.sql` is ready for when they exist). `cd analysis && uv run pytest` → 25 passed.
-
+  - 43 `eval/` project (`evalkit`, depends on `bankagent` by path): `config`, `splits` (same rule as the resolver), `universe`, `goals` (21 groups, seeded, labels from `DisputePolicy.evaluate()`, the generator names the group it cannot fill, review sheet, `freeze`). Plan code unchanged apart from `agent.region`. `cd eval && uv run pytest` → 12 passed. The real goal sets are generated in unit 51.
 
 ## In Progress
 
