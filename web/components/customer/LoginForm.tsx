@@ -11,15 +11,19 @@ const field = "w-full rounded-control border border-b-line bg-b-surface px-3 py-
 const Spinner = () => <span aria-hidden className="mr-2 inline-block size-4 translate-y-0.5 rounded-full border-2 border-current border-r-transparent motion-safe:animate-spin" />;
 const primary = "w-full rounded-full bg-b-leaf py-3 text-base font-bold text-b-surface hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-cobalt disabled:opacity-60";
 
-export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = false }:
-  { next: string; embed: boolean; prefillUser?: string; shortTtl?: boolean; auto?: boolean }) {
+const pickFrom = (list: DemoUser[], prefillUser?: string) => list.find((u) => u.username === prefillUser) ?? list.find((u) => u.lang === "es") ?? list[0];
+
+export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = false, initialUsers = null }:
+  { next: string; embed: boolean; prefillUser?: string; shortTtl?: boolean; auto?: boolean; initialUsers?: DemoUser[] | null }) {
   const router = useRouter();
-  const [lang, setLang] = useState<Lang>("es");
-  const [users, setUsers] = useState<DemoUser[]>([]);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const first = initialUsers ? pickFrom(initialUsers, prefillUser) : undefined;
+  const [lang, setLang] = useState<Lang>(first?.lang ?? "es");
+  const [users, setUsers] = useState<DemoUser[]>(initialUsers ?? []);
+  const [username, setUsername] = useState(first?.username ?? "");
+  const [password, setPassword] = useState(first?.demo_password ?? "");
   const [ticket, setTicket] = useState<string | null>(null);
-  const [otp, setOtp] = useState("");
+  const [otp, setOtp] = useState(first?.otp ?? "");
+  const [otpFocus, setOtpFocus] = useState(false);
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
   const d = t(lang);
@@ -28,13 +32,14 @@ export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = f
 
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
-  useEffect(() => {
+  useEffect(() => {  // only when the server could not hand the users in (cold IdP)
+    if (initialUsers) return;
     fetch("/api/auth/demo-users").then(async (r) => (r.ok ? ((await r.json()).data as DemoUser[]) : [])).then((list) => {
       setUsers(list);
-      const pick = list.find((u) => u.username === prefillUser) ?? list.find((u) => u.lang === "es") ?? list[0];
+      const pick = pickFrom(list, prefillUser);
       if (pick) { setLang(pick.lang); setUsername(pick.username); setPassword(pick.demo_password); setOtp(pick.otp); }
     }).catch(() => setUsers([]));
-  }, [prefillUser]);
+  }, [prefillUser, initialUsers]);
 
   const visible = useMemo(() => users.filter((u) => u.lang === lang), [users, lang]);
   const pickUser = (u: DemoUser) => { setUsername(u.username); setPassword(u.demo_password); setOtp(u.otp); };
@@ -63,8 +68,8 @@ export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = f
     const r = await post("/api/auth/login", { username, password });
     return r.ok ? ((await r.json()).data.login_ticket as string) : null;
   }
-  async function verifyOtp(tk: string) {
-    const r = await post("/api/auth/otp", { login_ticket: tk, otp, short_ttl: shortTtl });
+  async function verifyOtp(tk: string, code = otp) {
+    const r = await post("/api/auth/otp", { login_ticket: tk, otp: code, short_ttl: shortTtl });
     if (!r.ok) return setError(true);
     notifyParent({ type: "demo:auth", step: "otp_verified" });
     notifyParent({ type: "demo:auth", step: "token_issued" });
@@ -78,7 +83,13 @@ export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = f
     const tk = await requestTicket();
     if (tk) setTicket(tk); else setError(true);
   });
-  const submitOtp = () => run(async () => { if (ticket) await verifyOtp(ticket); });
+  const submitOtp = (code = otp) => run(async () => { if (ticket) await verifyOtp(ticket, code); });
+  const typeOtp = (raw: string) => {
+    const code = raw.replace(/\D/g, "").slice(0, 6);
+    setOtp(code);
+    if (code.length === 6 && code !== otp && !busy) void submitOtp(code);  // sign in as soon as the sixth digit lands
+  };
+  const me = users.find((u) => u.username === username);
 
   useEffect(() => {  // /demo scenarios: sign in without clicks (demo users only)
     if (!auto || !username || !password || ticket) return;
@@ -105,7 +116,7 @@ export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = f
 
         <form className="relative z-10 -mt-8 mx-4 flex flex-col gap-4 rounded-card border border-b-line bg-b-surface p-5"
           onSubmit={(e) => { e.preventDefault(); void (ticket ? submitOtp() : submitCredentials()); }}>
-          <div role="radiogroup" aria-label={d.language} className="flex rounded-full bg-b-mist p-1">
+          {!ticket && <div role="radiogroup" aria-label={d.language} className="flex rounded-full bg-b-mist p-1">
             {(["es", "pt"] as const).map((l) => (
               <button key={l} type="button" role="radio" aria-checked={lang === l} tabIndex={lang === l ? 0 : -1}
                 onClick={() => chooseLang(l)} onKeyDown={onLangKey}
@@ -113,10 +124,10 @@ export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = f
                 {l === "es" ? "Español" : "Português"}
               </button>
             ))}
-          </div>
+          </div>}
 
           {!ticket ? (
-            <>
+            <div key="cred" className="flex flex-col gap-4 motion-safe:animate-[fade-in_200ms_ease-out]">
               <label className="flex flex-col gap-1.5 text-sm font-semibold">{d.identity}
                 {visible.length > 0 ? (
                   <select className={field} value={username} onChange={(e) => chooseUser(e.target.value)}>
@@ -132,16 +143,30 @@ export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = f
                 <input type="password" className={field} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
               </label>
               <button disabled={busy || !username || !password} aria-busy={busy} className={primary}>{busy && <Spinner />}{d.continue}</button>
-            </>
+            </div>
           ) : (
-            <>
-              <p className="rounded-control bg-b-sun-tint px-3 py-2 text-sm text-b-ink">{d.codeSent}</p>
-              <label className="flex flex-col gap-1.5 text-sm font-semibold">{d.code}
-                <input ref={otpInput} inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(e) => setOtp(e.target.value)}
-                  className="w-full rounded-control bg-b-mist px-3 py-3 text-center text-2xl font-extrabold tracking-[0.4em] text-b-ink focus-visible:outline-2 focus-visible:outline-b-cobalt" />
+            <div key="otp" className="flex flex-col gap-4 motion-safe:animate-[fade-in_200ms_ease-out]">
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="min-w-0 truncate text-b-muted">{d.signingInAs(me?.display_name || username)}</span>
+                <button type="button" onClick={() => { setTicket(null); setError(false); }}
+                  className="min-h-11 shrink-0 rounded-full px-3 font-bold text-b-cobalt hover:bg-b-mist focus-visible:outline-2 focus-visible:outline-b-cobalt">{d.changeUser}</button>
+              </div>
+              <p className="flex items-center gap-2 rounded-control bg-b-sun-tint px-3 py-2 text-sm text-b-ink">
+                <span aria-hidden className="size-2 shrink-0 rounded-full bg-b-sun" />{d.codeSent}
+              </p>
+              <label className="flex flex-col gap-2 text-sm font-semibold">{d.code}
+                <span className="relative grid grid-cols-6 gap-2">
+                  {Array.from({ length: 6 }, (_, i) => (
+                    <span key={i} aria-hidden className={`flex h-14 items-center justify-center rounded-control bg-b-mist text-2xl font-extrabold text-b-ink transition-shadow ${
+                      otpFocus && i === Math.min(otp.length, 5) ? "ring-2 ring-b-cobalt" : otp[i] ? "ring-1 ring-b-line" : ""}`}>{otp[i] ?? ""}</span>
+                  ))}
+                  <input ref={otpInput} aria-label={d.code} inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp}
+                    onChange={(e) => typeOtp(e.target.value)} onFocus={() => setOtpFocus(true)} onBlur={() => setOtpFocus(false)}
+                    className="absolute inset-0 w-full cursor-text bg-transparent text-transparent caret-transparent outline-none selection:bg-transparent" />
+                </span>
               </label>
-              <button disabled={busy || !otp} aria-busy={busy} className={primary}>{busy && <Spinner />}{d.enter}</button>
-            </>
+              <button disabled={busy || otp.length < 6} aria-busy={busy} className={primary}>{busy && <Spinner />}{d.enter}</button>
+            </div>
           )}
           {error && <p role="alert" className="rounded-control bg-b-sun-tint px-3 py-2 text-sm text-b-ink">{d.loginFailed}</p>}
         </form>
