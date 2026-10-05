@@ -11,7 +11,7 @@
 | Serving set | S3 parquet + `latest.json`, read with DuckDB | The agent's read-only view of the curated data |
 | Agent | Python 3.12 (uv), LangGraph + `DynamoDBSaver`, `bedrock-agentcore` | The workflow graph, tools, policy and handoff, hosted on AgentCore Runtime |
 | Decisions | Jev (`jev-1.13.0`, TypeSafe direct) | Bounded judgments: intent, target transaction, escalation flags, reply verification |
-| Language | Claude on Amazon Bedrock (Haiku 4.5 `extract`, Sonnet 5.5 `compose`) | Extraction and reply writing; no tools |
+| Language | OpenAI on Amazon Bedrock (GPT-5.6 Luna `extract`, GPT-5.6 Terra `compose`) | Extraction and reply writing; no tools |
 | Learned component | numpy + rapidfuzz at runtime; scikit-learn, LightGBM, MLflow offline | Transaction resolver (ranker) |
 | Agent state | DynamoDB | Checkpoints, disputes, handoffs, decision records, sessions, conversation messages |
 | Identity | Mock OIDC IdP (FastAPI; on AWS: Lambda + HTTP API) | Labeled test identities, RS256 JWTs, JWKS |
@@ -36,7 +36,7 @@ Decisions already taken (2026-09-26): workflow = account/payment inquiries + dis
 | Control model | Option A: **code decides the route, Jev makes the bounded judgments, Claude handles language.** No LLM ever chooses a graph edge or calls a tool. |
 | Workflow engine | LangGraph `StateGraph` with the `DynamoDBSaver` checkpointer (`langgraph-checkpoint-aws`) |
 | Hosting | Amazon Bedrock AgentCore Runtime (ARM64 container, `/invocations` + `/ping`) |
-| Language model | Claude on Amazon Bedrock, configurable per role; defaults: Haiku 4.5 for `extract`, Sonnet 5.5 (effort `low`) for `compose` |
+| Language model | OpenAI on Amazon Bedrock, configurable per role; defaults: GPT-5.6 Luna for `extract`, GPT-5.6 Terra (mid-range quality) for `compose` |
 | Decision model | Jev (TypeSafe direct, `jev-1.13.0`), key in `JEV_API_KEY` |
 | Identity | Mock OIDC identity service we own (labeled test identities) |
 | Agent state | DynamoDB |
@@ -180,7 +180,7 @@ graph/  LangGraph StateGraph + DynamoDBSaver
         uses: llm/ · decisions/ · policy/ · tools/ · handoff/
         ▼
 DynamoDB (checkpoints, disputes, handoffs, decision_records) · S3 serving parquet (DuckDB)
-Claude on Bedrock · Jev on TypeSafe · OpenTelemetry → AgentCore Observability / CloudWatch
+OpenAI on Bedrock · Jev on TypeSafe · OpenTelemetry → AgentCore Observability / CloudWatch
 ```
 
 ⏸ marks a LangGraph `interrupt()`: the graph pauses and the customer's next message resumes it with `Command(resume=…)`.
@@ -192,7 +192,7 @@ Claude on Bedrock · Jev on TypeSafe · OpenTelemetry → AgentCore Observabilit
 | `identity/` | Mock OIDC IdP: login → OTP → RS256 JWT; publishes `/.well-known/openid-configuration` and `/jwks.json`. About 20 demo users mapped to real `customer_id`s, in a versioned config file, labeled test identities. | signing key |
 | `app.py` | AgentCore entrypoint: re-verifies the JWT (signature, expiry, audience, scope), builds `SessionContext`, invokes the graph, returns the response contract (§9.2). | `identity` JWKS, `graph` |
 | `graph/` | LangGraph state, nodes and conditional edges. Nodes call units; edges read typed decisions plus policy results. | all units below |
-| `llm/` | `extract()` and `compose()` on Claude with structured outputs. No tools. Model config per role in `llm/models.yaml`. | Bedrock |
+| `llm/` | `extract()` and `compose()` on OpenAI with structured outputs. No tools. Model config per role in `llm/models.yaml`. | Bedrock |
 | `decisions/` | Jev client, versioned question sets (`decisions/questions/v1/*.yaml`) and thresholds (`decisions/thresholds/v1.yaml`), response validation, the routing function. | TypeSafe |
 | `policy/` | `dispute_policy.yaml` (labeled synthetic) plus escalation rules; pure functions returning per-rule pass/fail. | none |
 | `tools/` | Customer-scoped reads over the serving parquet (DuckDB) and dispute/handoff writes. Every tool takes `SessionContext`; none accepts a `customer_id`. | S3, DynamoDB |
@@ -214,7 +214,7 @@ Claude on Bedrock · Jev on TypeSafe · OpenTelemetry → AgentCore Observabilit
 ### Architecture · resolver §3
 
 ```
-customer message ──▶ extract (Claude, agent core §6.1)
+customer message ──▶ extract (OpenAI, agent core §6.1)
                         mentions: merchant, amount, currency, date_from/to, type_hint, channel_hint, city
                                   │
 60-day candidates ──▶ resolver.score()  (features.py → model.json)
@@ -525,7 +525,7 @@ One role per principal, least privilege, no `*` resource except where the servic
 
 ### Prompt-injection defense, in layers · agent-core §6.4
 
-1. **Structure:** `customer_id` only from the JWT; session-scoped tools; policy in code; fixed edges; Claude has no tools.
+1. **Structure:** `customer_id` only from the JWT; session-scoped tools; policy in code; fixed edges; OpenAI has no tools.
 2. **Separation:** instructions only in the system prompt; customer text sent as delimited data marked untrusted (the same labeling is used in Jev's state).
 3. **Detection:** Jev `injection_attempt` (§4.3).
 4. **Output check in code:** the reply may mention only transaction, dispute and handoff ids belonging to this session; anything else gets the safe template.
@@ -652,7 +652,7 @@ Runtime behaviour is specced in agent-core §8 and UI §10. This table covers de
 These rules come straight from the specs and the plans' global constraints. Breaking one is a bug, whatever the unit says.
 
 1. `customer_id` comes **only** from a verified JWT (`SessionContext`, or `sub` in the BFF). No tool takes a `customer_id` argument, and a transaction the customer doesn't own gives the same `not_found` as one that doesn't exist.
-2. Code decides the route, Jev makes the bounded judgments, and Claude handles language. **Claude has no tools**, and no LLM ever chooses a graph edge or calls a tool.
+2. Code decides the route, Jev makes the bounded judgments, and OpenAI handles language. **OpenAI has no tools**, and no LLM ever chooses a graph edge or calls a tool.
 3. A Jev error or invalid response is never approval. Nothing substitutes for Jev silently, and the graph never files while in `confirm`.
 4. Every write is read back, and only the read-back receipt counts as proof. A reply never claims an action that has no receipt.
 5. Every decision record stores its versions: question set, thresholds, prompt, model and policy, plus `GIT_SHA` once deployed.

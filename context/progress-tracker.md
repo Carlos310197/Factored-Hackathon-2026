@@ -4,9 +4,9 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Phase
 
-- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–19 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing). Agent core continues with units 20–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
+- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–20 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing, OpenAI on Bedrock). Agent core continues with units 21–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
 - Region: **us-east-1** for all our AWS resources and Snowflake. The organizer bucket (theirs) stays in us-east-2.
-- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04). Agent suite: `cd agent && uv run pytest` → 111 passed (2026-10-04).
+- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04). Agent suite: `cd agent && uv run pytest` → 125 passed (2026-10-04).
 - Submission deadline: **2026-10-05**.
 
 ## Current Goal
@@ -92,6 +92,17 @@ Update this file whenever the current phase, the active unit or the implementati
   - `thresholds.v1.yaml`: Labeled synthetic thresholds (not calibrated; tuned in spec 2);
   - 27 new tests in test_decisions.py and test_routing.py covering request building, alias security, candidate selection, parsing, routing logic, escalation, and edge cases;
   - All tests pass: 111/111 in agent/ (84 existing + 27 new).
+- 2026-10-04: **Unit 20: OpenAI on Bedrock** (`agent/src/bankagent/llm/`):
+  - `llm/models.yaml`: per-role model configuration (extract: Haiku 4.5 `anthropic.claude-haiku-4-5-20251001-v1:0`, compose: Sonnet 5.5 with effort=low);
+  - `llm/config.py`: `RoleConfig` dataclass and `load_models()` with environment variable overrides (LLM_EXTRACT_MODEL, LLM_COMPOSE_MODEL);
+  - `llm/client.py`: `call_json()` for structured JSON output with prompt caching (ephemeral_cache_control), timeout handling, and error mapping (LLMError, LLMRefusal);
+  - `llm/extract.py`: `extract()` function with extraction schema (language_detected, english_gloss, multi_intent, mentions, customer_statement), untrusted message wrapping in `<customer_message>` tags;
+  - `llm/compose.py`: `compose()` function with compose schema (reply_text, claims) and feedback loop support, `open_questions()` for handoff packet generation;
+  - `llm/templates.py`: ES/PT template functions for fixed reply blocks (confirmation_summary, handoff_notice, dispute_filed, auth_message, fallback_reply), money formatting (fmt_money with COP no-decimals rule), intent/reason labels;
+  - `tests/fakes.py`: `FakeLLM` test double with configurable language, multi_intent, mentions, refusal, and failure modes;
+  - `scripts/smoke_bedrock.py`: Live smoke test script for Bedrock API (requires owner approval);
+  - 14 new tests in test_llm.py and test_templates.py covering model config, extract/compose request shapes, error handling (refusal, connection errors, invalid JSON, truncation), template rendering (ES/PT), money formatting, and fallback logic;
+  - All tests pass: 125/125 in agent/ (111 existing + 14 new), 43/43 in root offline suite.
 
 ## In Progress
 
@@ -104,7 +115,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | Units | Subsystem | Status | First dependency |
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
-| 12–25 | Agent core | 12–19 **done**; 20–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
+| 12–25 | Agent core | 12–20 **done**; 21–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
 | 26–39 | Transaction resolver | not started | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
