@@ -21,3 +21,7 @@ output "publisher_name" {
 output "authorizer_name" {
   value = aws_lambda_function.authorizer.function_name
 }
+
+output "api_id" {
+  value = aws_appsync_api.this.api_id
+}

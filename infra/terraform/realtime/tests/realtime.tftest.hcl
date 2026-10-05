@@ -9,6 +9,9 @@ mock_provider "aws" {
       dns     = { HTTP = "abcd1234.appsync-api.us-east-1.amazonaws.com", REALTIME = "abcd1234.appsync-realtime-api.us-east-1.amazonaws.com" }
     }
   }
+  mock_data "aws_caller_identity" {
+    defaults = { account_id = "762197749808" }
+  }
   mock_resource "aws_iam_role" {
     defaults = { arn = "arn:aws:iam::762197749808:role/lb-demo-realtime" }
   }
@@ -141,5 +144,26 @@ run "dlq_retains_14_days_and_requires_tls" {
   assert {
     condition     = alltrue([for s in data.aws_iam_policy_document.dlq.statement : s.effect == "Deny" && length([for c in s.condition : c if c.variable == "aws:SecureTransport" && contains(c.values, "false")]) == 1])
     error_message = "queue policy denies non-TLS"
+  }
+}
+
+run "event_api_logs_handler_output_to_a_30_day_group" {
+  command = apply
+
+  assert {
+    condition     = aws_appsync_api.this.event_config[0].log_config[0].log_level == "ALL" && aws_appsync_api.this.event_config[0].log_config[0].cloudwatch_logs_role_arn == aws_iam_role.appsync_logs.arn
+    error_message = "log level ALL with the logs role"
+  }
+  assert {
+    condition     = aws_cloudwatch_log_group.appsync.name == "/aws/appsync/apis/abcd1234" && aws_cloudwatch_log_group.appsync.retention_in_days == 30
+    error_message = "declared AppSync log group, 30 days"
+  }
+  assert {
+    condition     = contains(flatten([for s in data.aws_iam_policy_document.appsync_assume.statement : [for p in s.principals : p.identifiers]]), "appsync.amazonaws.com") && !contains(flatten([for s in data.aws_iam_policy_document.publisher.statement : s.actions]), "dynamodb:ListStreams")
+    error_message = "appsync assumes the logs role; ListStreams dropped"
+  }
+  assert {
+    condition     = output.api_id == "abcd1234"
+    error_message = "api_id output"
   }
 }

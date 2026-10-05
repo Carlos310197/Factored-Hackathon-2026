@@ -131,7 +131,7 @@ data "aws_iam_policy_document" "publisher" {
     resources = ["${aws_appsync_api.this.api_arn}/channelNamespace/*"]
   }
   statement {
-    actions   = ["dynamodb:GetRecords", "dynamodb:GetShardIterator", "dynamodb:DescribeStream", "dynamodb:ListStreams"]
+    actions   = ["dynamodb:GetRecords", "dynamodb:GetShardIterator", "dynamodb:DescribeStream"]
     resources = values(local.stream_arns)
   }
   statement {

@@ -22,6 +22,11 @@ resource "aws_appsync_api" "this" {
     default_subscribe_auth_mode {
       auth_type = "AWS_LAMBDA"
     }
+    # ALL is the least verbose level that captures handler console.log (ERROR only keeps console.error).
+    log_config {
+      cloudwatch_logs_role_arn = aws_iam_role.appsync_logs.arn
+      log_level                = "ALL"
+    }
   }
 }
 
@@ -40,4 +45,41 @@ resource "aws_lambda_permission" "appsync" {
   function_name = aws_lambda_function.authorizer.function_name
   principal     = "appsync.amazonaws.com"
   source_arn    = aws_appsync_api.this.api_arn
+}
+
+# AppSync writes to /aws/appsync/apis/<api_id>; declaring the group here gives it 30-day retention.
+# The role policy uses a prefix wildcard because api_id is unknown until the API exists (avoids a cycle).
+resource "aws_cloudwatch_log_group" "appsync" {
+  name              = "/aws/appsync/apis/${aws_appsync_api.this.api_id}"
+  retention_in_days = 30
+}
+
+data "aws_iam_policy_document" "appsync_assume" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["appsync.amazonaws.com"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "appsync_logs" {
+  statement {
+    actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+    resources = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/appsync/apis/*"]
+  }
+}
+
+data "aws_caller_identity" "current" {}
+
+resource "aws_iam_role" "appsync_logs" {
+  name               = "lb-demo-realtime-appsync-logs"
+  assume_role_policy = data.aws_iam_policy_document.appsync_assume.json
+}
+
+resource "aws_iam_role_policy" "appsync_logs" {
+  name   = "logs"
+  role   = aws_iam_role.appsync_logs.id
+  policy = data.aws_iam_policy_document.appsync_logs.json
 }
