@@ -28,6 +28,7 @@ export function Console({ me, initialId, renderTab }: { me: { sub: string; name:
   const dataRef = useRef<CaseData | null>(null);
   useEffect(() => { dataRef.current = data; });
   const busy = useRef(false);
+  const [pending, setPending] = useState<CaseAction | null>(null);
   const selectedRef = useRef(selected);
   useEffect(() => { selectedRef.current = selected; });
   const seen = useRef<Set<string>>(new Set()); // ids already shown, so only truly new rows get the highlight
@@ -83,6 +84,7 @@ export function Console({ me, initialId, renderTab }: { me: { sub: string; name:
     if (!data || busy.current) return;
     const id = data.packet.handoff_id; // the case on screen, not whatever is selected now
     busy.current = true;
+    setPending(a);
     try {
       const r = await fetch(`/api/handoffs/${id}/${a}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body ?? {}) });
       setNotice(r.status === 409 ? "Someone else changed this case. It has been refreshed."
@@ -90,7 +92,7 @@ export function Console({ me, initialId, renderTab }: { me: { sub: string; name:
         : r.ok ? null : "That didn't work. Try again.");
       if (a === "takeover" && r.ok) setTab("conversation");
     } catch { setNotice("That didn't work. Try again."); }
-    finally { busy.current = false; }
+    finally { busy.current = false; setPending(null); }
     // the user may have moved to another case meanwhile; reloading A would cancel B's load
     await Promise.all([selectedRef.current === id ? loadCase(id) : null, loadRows()]);
   }
@@ -110,7 +112,7 @@ export function Console({ me, initialId, renderTab }: { me: { sub: string; name:
             : <p className="text-sm text-c-muted">{selected ? "Loading case…" : "Select a case from the queue."}</p>
           ) : (
             <>
-              <CaseHeader packet={data.packet} control={data.control} me={me} onAction={(a, b) => void act(a, b)} />
+              <CaseHeader packet={data.packet} control={data.control} me={me} onAction={(a, b) => void act(a, b)} pending={pending} />
               <div role="tablist" className="flex gap-0.5 mt-4 mb-3 border-b border-c-line">
                 {(["packet", "conversation", "trace"] as const).map((k) => (
                   <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}

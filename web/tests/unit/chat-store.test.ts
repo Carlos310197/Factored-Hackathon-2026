@@ -11,7 +11,7 @@ describe("chat store", () => {
     const s = createChatStore();
     s.getState().sendOptimistic("cm-1", "saldo");
     s.getState().applyReply("cm-1", reply());
-    expect(s.getState().messages.map((m) => [m.role, m.status])).toEqual([["customer", "sending"], ["assistant", "provisional"]]);
+    expect(s.getState().messages.map((m) => [m.role, m.status])).toEqual([["customer", "sent"], ["assistant", "provisional"]]);
     s.getState().applyEvent({ type: "message", id: "cm-1", cursor: "2026-09-30T10:00:00.000000+00:00#cm-1", role: "customer", text: "saldo", turn_id: "TRN-1", ts: "t" });
     s.getState().applyEvent({ type: "message", id: "MSG-9", cursor: "2026-09-30T10:00:01.000000+00:00#MSG-9", role: "assistant",
       text: "Tu saldo es USD 1,240.50", turn_id: "TRN-1", meta: { awaiting: "none" }, ts: "t" });

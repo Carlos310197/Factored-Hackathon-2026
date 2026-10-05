@@ -2,7 +2,9 @@ import { createStore } from "zustand/vanilla";
 import type { Stage } from "@/lib/trace/stages";
 import type { Awaiting, ChatMessage, ChatReply, SessionEvent } from "@/lib/contract";
 
-export type ViewMessage = ChatMessage & { status?: "sending" | "provisional" };
+/** "sent": the turn answered, the stored copy has not arrived yet (still never the history cursor). */
+export type ViewMessage = ChatMessage & { status?: "sending" | "sent" | "provisional" };
+const sent = (ms: ViewMessage[], id: string) => ms.map((m) => (m.id === id && m.status === "sending" ? { ...m, status: "sent" as const } : m));
 export interface ChatState {
   messages: ViewMessage[]; cursor: string | null; running: boolean; pending: string[]; awaiting: Awaiting; control: string; progress: Stage | null;
   failed: { clientId: string; text: string } | null; expired: boolean;
@@ -56,11 +58,12 @@ export function createChatStore() {
 
     applyReply: (clientId, reply) => set((s) => {
       const pending = s.pending.filter((id) => id !== clientId);
-      if (reply.awaiting === "human" || !reply.turn_id) return { running: pending.length > 0, ...(pending.length ? {} : { progress: null }), pending, ...derive(s.messages, s.control) };
+      if (reply.awaiting === "human" || !reply.turn_id) return { messages: sent(s.messages, clientId), running: pending.length > 0, ...(pending.length ? {} : { progress: null }), pending, ...derive(s.messages, s.control) };
       const id = `reply:${reply.turn_id}`;
       const q = s.messages.find((m) => m.id === clientId)?.cursor;
       const already = s.messages.some((m) => m.role === "assistant" && m.turn_id === reply.turn_id && !m.status);
-      const messages = already ? s.messages : [...s.messages.filter((m) => m.id !== id), {
+      const base = sent(s.messages, clientId);
+      const messages = already ? base : [...base.filter((m) => m.id !== id), {
         id, cursor: q ? `${q}~r` : `${PENDING}${Date.now()}#${id}`, role: "assistant" as const, text: reply.reply_text, turn_id: reply.turn_id, ts: new Date().toISOString(),
         meta: { awaiting: reply.awaiting, options: reply.options, refs: reply.refs, summary: reply.summary, data_as_of: reply.data_as_of ?? undefined },
         status: "provisional" as const }].sort((a, b) => (a.cursor < b.cursor ? -1 : a.cursor > b.cursor ? 1 : 0));

@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Lang } from "@/lib/contract";
 import { notifyParent } from "@/lib/demo/bridge";
 import { t } from "@/lib/i18n";
@@ -8,6 +8,7 @@ import { t } from "@/lib/i18n";
 type DemoUser = { username: string; demo_password: string; otp: string; lang: Lang; role: string; display_name: string; scenarios: string[] };
 
 const field = "w-full rounded-control border border-b-line bg-b-surface px-3 py-2.5 text-base text-b-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-b-cobalt";
+const Spinner = () => <span aria-hidden className="mr-2 inline-block size-4 translate-y-0.5 rounded-full border-2 border-current border-r-transparent motion-safe:animate-spin" />;
 const primary = "w-full rounded-full bg-b-leaf py-3 text-base font-bold text-b-surface hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-cobalt disabled:opacity-60";
 
 export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = false }:
@@ -22,6 +23,8 @@ export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = f
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
   const d = t(lang);
+  const otpInput = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (ticket) otpInput.current?.focus(); }, [ticket]);
 
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
@@ -128,16 +131,16 @@ export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = f
               <label className="flex flex-col gap-1.5 text-sm font-semibold">{d.password}
                 <input type="password" className={field} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
               </label>
-              <button disabled={busy || !username || !password} className={primary}>{d.continue}</button>
+              <button disabled={busy || !username || !password} aria-busy={busy} className={primary}>{busy && <Spinner />}{d.continue}</button>
             </>
           ) : (
             <>
               <p className="rounded-control bg-b-sun-tint px-3 py-2 text-sm text-b-ink">{d.codeSent}</p>
               <label className="flex flex-col gap-1.5 text-sm font-semibold">{d.code}
-                <input inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(e) => setOtp(e.target.value)}
+                <input ref={otpInput} inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(e) => setOtp(e.target.value)}
                   className="w-full rounded-control bg-b-mist px-3 py-3 text-center text-2xl font-extrabold tracking-[0.4em] text-b-ink focus-visible:outline-2 focus-visible:outline-b-cobalt" />
               </label>
-              <button disabled={busy || !otp} className={primary}>{d.enter}</button>
+              <button disabled={busy || !otp} aria-busy={busy} className={primary}>{busy && <Spinner />}{d.enter}</button>
             </>
           )}
           {error && <p role="alert" className="rounded-control bg-b-sun-tint px-3 py-2 text-sm text-b-ink">{d.loginFailed}</p>}

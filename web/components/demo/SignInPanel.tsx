@@ -24,7 +24,7 @@ export function SignInPanel({ steps, claims, claimsAt }: { steps: AuthSteps; cla
       <h2 className="text-lg font-bold mb-3">What just happened</h2>
       <ol className="flex flex-col gap-2.5">
         {items.map(([k, title, body], i) => (
-          <li key={k} data-done={steps[k]} className={`bg-c-panel rounded-[var(--radius-panel)] ring-1 ring-c-line px-4 py-3.5 grid grid-cols-[28px_1fr_auto] gap-3 transition-opacity ${steps[k] ? "" : "opacity-45"}`}>
+          <li key={k} data-done={steps[k]} className={`bg-c-panel rounded-[var(--radius-panel)] ring-1 ring-c-line px-4 py-3.5 grid grid-cols-[28px_1fr_auto] gap-3 motion-safe:transition-opacity ${steps[k] ? "" : "opacity-45"}`}>
             <span className={`size-7 rounded-full text-sm font-bold text-c-panel flex items-center justify-center ${steps[k] ? "bg-c-pass" : "bg-c-below"}`}>{i + 1}</span>
             <div className="text-[15px]"><b>{title}</b>{body}{k === "firstTurn" && (
               <ul className="mt-1.5 text-sm text-c-muted"><li>{steps.firstTurn ? "✓" : "·"} AgentCore authorizer: token accepted</li><li>{steps.firstTurn ? "✓" : "·"} Agent re-check: customer id taken from the token</li></ul>)}</div>

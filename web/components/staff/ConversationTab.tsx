@@ -1,6 +1,6 @@
 "use client";
 import { redirectToStaffLogin } from "@/lib/staff/redirect";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { syncHistory } from "@/lib/chat/api";
 import { createChatStore } from "@/lib/chat/store";
@@ -18,6 +18,11 @@ export function ConversationTab({ sid, lang, control, me }: { sid: string; lang:
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const holding = control === `human:${me.sub}`;
+  const list = useRef<HTMLOListElement>(null);
+  useEffect(() => {  // stick to the bottom unless the agent scrolled up to read
+    const el = list.current;
+    if (el && el.scrollHeight - el.scrollTop - el.clientHeight < 120) el.scrollTop = el.scrollHeight;
+  }, [messages.length]);
   const resync = useCallback(() => { void syncHistory(store, sid).then(() => { if (store.getState().expired) redirectToStaffLogin(); }); }, [store, sid]);
   useEffect(() => { resync(); }, [resync]);
   useChannel(`/session/${sid}`, (p) => { const ev = SessionEvent.safeParse(p); if (ev.success) store.getState().applyEvent(ev.data); },
@@ -39,7 +44,7 @@ export function ConversationTab({ sid, lang, control, me }: { sid: string; lang:
 
   return (
     <div className="flex flex-col gap-2 text-[13px]">
-      <ol aria-live="polite" className="bg-c-panel rounded-[var(--radius-panel)] ring-1 ring-c-line p-3 flex flex-col gap-2 max-h-[55vh] overflow-y-auto">
+      <ol ref={list} aria-live="polite" className="motion-safe:scroll-smooth bg-c-panel rounded-[var(--radius-panel)] ring-1 ring-c-line p-3 flex flex-col gap-2 max-h-[55vh] overflow-y-auto">
         {messages.length === 0 && <li className="text-c-muted">No messages yet.</li>}
         {messages.map((m) => (
           <li key={m.id} className={m.role === "system" ? "text-center text-xs text-c-muted" : ""}>
