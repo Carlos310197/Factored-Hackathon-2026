@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+/* UI spec §7. Light only. Colours are referenced ONLY through these tokens. */
+@theme {
+  --font-customer: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
+  --font-staff: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+
+  /* World B: customer */
+  --color-b-surface: #ffffff;
+  --color-b-ink: #13203a;
+  --color-b-cobalt: #1f4fd8;
+  --color-b-leaf: #0b7a4b;
+  --color-b-sun: #f2c230;
+  --color-b-sun-tint: #fff6d6;
+  --color-b-mist: #eef2fb;
+  --color-b-fog: #f4f6fa;
+  --color-b-muted: #4a5875;
+  --color-b-line: #dce2ea;
+  --color-b-receipt: #e3f4ea;
+  --color-b-receipt-ink: #0b5a37;
+
+  /* World C: staff */
+  --color-c-canvas: #f3f5f8;
+  --color-c-panel: #ffffff;
+  --color-c-ink: #1e2a38;
+  --color-c-muted: #5b6878;
+  --color-c-line: #dce2ea;
+  --color-c-track: #e8ecf1;
+  --color-c-below: #a7b1be;
+  --color-c-signal: #2f6feb;
+  --color-c-signal-tint: #eaf1fe;
+  --color-c-pass: #167a4d;
+  --color-c-alert: #b52c6c;
+  --color-c-alert-tint: #fce8f1;
+  --color-c-warn: #eda100;
+
+  --radius-bubble: 18px;
+  --radius-card: 20px;
+  --radius-control: 8px;
+  --radius-panel: 10px;
+}
+
+html, body { height: 100%; }
+body { background: var(--color-c-canvas); color: var(--color-c-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* World C numbers use tabular figures (UI spec §7.2): applies wherever font-staff does. */
+@layer utilities {
+  .font-staff { font-variant-numeric: tabular-nums; }
+}
+
+@keyframes grow { from { width: 0; } }
+/* New chat rows settle in; typing dots breathe. Both run only under motion-safe (see Architecture Decisions, UI polish). */
+@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } }
+@keyframes dot { 0%, 80%, 100% { opacity: .3; } 40% { opacity: 1; } }

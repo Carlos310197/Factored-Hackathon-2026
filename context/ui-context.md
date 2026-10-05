@@ -8,7 +8,7 @@ Read this file only for work in `web/`, or for agent changes that feed the UI (t
 - **Colours are CSS custom properties** mapped to Tailwind v4 `@theme` tokens. Components never use raw hex values or default palette classes (`zinc-*`, `blue-*`). The only exception is `lib/trace/signals.ts`, which owns the signal hex values.
 - **Component library:** assistant-ui primitives with `useExternalStoreRuntime`, styled by us, with no default assistant-ui theme. Custom message parts cover chips, the summary card, receipt chips, system lines and agent messages.
 - **Copy:** customer copy lives in the `es`/`pt` dictionaries; staff, trace and demo chrome is English. Customer quotes are always shown in the original.
-- **Motion:** only the trace block reveal, and none under `prefers-reduced-motion`.
+- **Motion:** the trace block reveal, plus short `motion-safe` entrance fades and typing dots in the customer chat (progress-tracker → Architecture Decisions, UI polish pass); none under `prefers-reduced-motion`.
 - **Planning change:** the confirmation card shows merchant, date, amount and reason. `product_last4` was dropped (see `progress-tracker.md` → Architecture Decisions, UI plan #1).
 
 ## BFF route handlers (`web/app/api/…`) · ui §6
@@ -64,8 +64,8 @@ Cool, precise and calm. The trace is the hero. Typeface: **Hanken Grotesk** (400
 | `c-track` | `#E8ECF1` | gauge track |
 | `c-below` | `#A7B1BE` | below-threshold fill |
 | `c-signal` | `#2F6FEB` | primary actions, selection |
-| `c-pass` | `#1A8F5A` | policy pass |
-| `c-alert` | `#C8337A` | policy fail, critical priority |
+| `c-pass` | `#167A4D` | policy pass |
+| `c-alert` | `#B52C6C` | policy fail, critical priority |
 | `c-warn` | `#EDA100` | high priority |
 
 - **Radii:** 8px for controls, 10px for panels.

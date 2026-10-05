@@ -20,6 +20,7 @@ dependencies = [
   "pyyaml>=6",
   "rapidfuzz>=3.9",
   "uvicorn>=0.30",
+  "mangum>=0.19",
 ]
 
 [dependency-groups]

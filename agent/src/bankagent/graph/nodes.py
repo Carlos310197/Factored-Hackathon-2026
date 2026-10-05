@@ -21,6 +21,7 @@ from bankagent.decisions.understand import (
     parse_understanding,
     select_candidates,
 )
+from bankagent.decisions.trace_payload import alias_view, confirmation_payload, thresholds_map
 from bankagent.decisions.verify import build_verify_request, parse_verify
 from bankagent.graph.deps import Deps
 from bankagent.graph.state import AgentState
@@ -262,7 +263,9 @@ class Nodes:
                 res = self.d.jev.decide(jev_state, questions)
                 u = parse_understanding(res, aliases)
                 self._log(state, config, "understand", "jev",
-                         {"answers": _answers(res), "usage": res.usage, "state_hash": res.state_hash},
+                         {"answers": _answers(res), "usage": res.usage, "state_hash": res.state_hash,
+                          "thresholds": thresholds_map(self.d.thresholds),
+                          "aliases": alias_view(aliases, candidates)},
                          {"question_set": qs["version"],
                           "thresholds": self.d.thresholds.version, "model": res.model},
                          res.latency_ms)
@@ -601,6 +604,8 @@ class Nodes:
                 "refs": _refs(receipts),
                 "data_as_of": state.get("as_of")
             }
+            if reply["awaiting"] == "confirmation" and state.get("txn"):
+                reply["summary"] = confirmation_payload(state["txn"], state.get("dispute_reason"))
             
             recent = ((state.get("recent") or []) + [{"customer": state["message"], "assistant": text}])[-2:]
             

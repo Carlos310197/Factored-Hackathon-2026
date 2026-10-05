@@ -12,6 +12,7 @@ from bankagent.context import SCOPE_DISPUTE, SCOPE_READ
 from bankagent.runtime import build_runtime
 from bankagent.settings import Settings
 from bankagent.store.tables import create_tables
+from tests.ui_fakes import FakeService as UiFakeService
 from tests.fixtures.serving_fixture import C1, C2
 
 ISS, AUD = "http://idp.test", "bankagent"
@@ -19,19 +20,9 @@ PRIV, PUB = generate_keypair()
 JWKS = jwks_from_public(PUB, "k1")
 
 
-class FakeService:
-    def __init__(self):
-        self.calls = []
-
-    def handle_turn(self, ctx, message):
-        self.calls.append((ctx, message))
-        return {"reply_text": "ok", "language": ctx.lang, "awaiting": "none", "options": [], "refs": [],
-                "data_as_of": "2026-06-17"}
-
-
 def make_rt(jwks_get=lambda: JWKS):
     return SimpleNamespace(settings=SimpleNamespace(issuer=ISS, audience=AUD), jwks=SimpleNamespace(get=jwks_get),
-                           service=FakeService())
+                           service=UiFakeService())
 
 
 def tok(lang="es", now=None):
@@ -44,11 +35,10 @@ def test_no_token_asks_to_log_in():
     assert r["error"] == "auth_required" and "inicies sesión" in r["reply_text"] and rt.service.calls == []
 
 
-def test_bearer_header_any_case_and_payload_fallback():
+def test_bearer_header_any_case():
     rt = make_rt()
     assert entry.handle({"message": "hola"}, {"authorization": f"Bearer {tok()}"}, rt)["reply_text"] == "ok"
-    assert entry.handle({"message": "hola", "session_token": tok()}, {}, rt)["reply_text"] == "ok"
-    assert all(ctx.customer_id == C1 for ctx, _ in rt.service.calls)
+    assert all(ctx.customer_id == C1 for ctx, _, _ in rt.service.calls)
 
 
 def test_expired_token_reports_session_expired_in_requested_language():

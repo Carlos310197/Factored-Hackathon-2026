@@ -6,7 +6,7 @@ INTENT_LABELS = {
            "decline_explanation": "por qué rechazaron un pago", "dispute_charge": "disputar un cargo",
            "dispute_status": "el estado de una disputa o reclamo", "unsupported": "otra solicitud"},
     "pt": {"account_info": "informações das suas contas", "transaction_status": "o status de uma transação",
-           "decline_explanation": "por que um pagamento fue recusado", "dispute_charge": "contestar uma cobrança",
+           "decline_explanation": "por que um pagamento foi recusado", "dispute_charge": "contestar uma cobrança",
            "dispute_status": "o status de uma contestação ou reclamação", "unsupported": "outra solicitação"},
 }
 REASON_LABELS = {
@@ -16,6 +16,13 @@ REASON_LABELS = {
     "pt": {"duplicate_charge": "cobrança duplicada", "wrong_amount": "valor incorreto",
            "not_received": "produto ou serviço não recebido", "cancelled_but_charged": "cancelado mas cobrado",
            "unauthorized": "cobrança não reconhecida"},
+}
+# Dataset enums are English (typed_products / typed_transactions); unknown values pass through unchanged.
+STATUS_LABELS = {
+    "es": {"Active": "Activa", "Blocked": "Bloqueada", "Closed": "Cerrada", "Suspended": "Suspendida",
+           "Approved": "Aprobada", "Declined": "Rechazada", "Pending": "Pendiente", "Reversed": "Revertida"},
+    "pt": {"Active": "Ativa", "Blocked": "Bloqueada", "Closed": "Encerrada", "Suspended": "Suspensa",
+           "Approved": "Aprovada", "Declined": "Recusada", "Pending": "Pendente", "Reversed": "Estornada"},
 }
 FALLBACK = {
     "es": {"answer": "Esto es lo que encontré:", "ask_clarification": "¿Me ayudas a precisar tu solicitud?",
@@ -34,7 +41,7 @@ FALLBACK = {
            "abstain": "Não posso ajudar com isso por este canal. Posso ajudar com suas contas, transações, "
                       "pagamentos recusados e contestações.",
            "refuse_injection": "Só posso ajudar com suas próprias contas e com as solicitações que atendo aqui.",
-           "greeting": "Olá! Como posso ajudar con sus cuentas o pagos?",
+           "greeting": "Olá! Como posso ajudar com suas contas ou pagamentos?",
            "dispute_cancelled": "Entendido, não registrei a contestação.",
            "data_unavailable": "Não consigo acessar suas informações neste momento.",
            "error": "Tive um problema ao processar sua mensagem."},
@@ -110,14 +117,18 @@ def auth_message(kind: str, lang: str) -> str:
     return AUTH[_lang(lang)][kind]
 
 
+def _status(value, lang: str):
+    return STATUS_LABELS[_lang(lang)].get(value, value)
+
+
 def _facts(receipt: dict, lang: str) -> list[str]:
     src, data = receipt["source"], receipt["data"]
     if src == "dim_product":
         return [f"{d['product_type']} ****{d['product_last4']}: {fmt_money(d['current_balance'], d['currency'])} "
-                f"({d['product_status']})" for d in data]
+                f"({_status(d['product_status'], lang)})" for d in data]
     if src == "fct_transaction" and isinstance(data, dict):
         merchant = data.get("merchant_name") or data.get("transaction_type")
-        return [f"{merchant} {str(data['process_date'])[:10]}: {data['transaction_status']}, "
+        return [f"{merchant} {str(data['process_date'])[:10]}: {_status(data['transaction_status'], lang)}, "
                 f"{fmt_money(data['amount'], data['currency'])}"]
     if src == "seed_decline_reason":
         text = data.get(f"customer_text_{lang}")
