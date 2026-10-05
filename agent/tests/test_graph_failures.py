@@ -163,8 +163,8 @@ def test_empty_jev_key_turn_clarifies_instead_of_raising(ddb_store, serving_root
 
 
 def test_compose_timeout_is_capped_by_the_remaining_turn_budget(ddb_store, serving_root):
-    """The BFF stops waiting at 25 s: a compose that starts late gets only what is left of the 20 s budget."""
-    ticks = iter([0.0] + [15.0] * 1000)  # deadline = 20; every later check sees 15 s elapsed
+    """The BFF stops waiting at 25 s: a compose that starts late gets only what is left of the 15 s budget."""
+    ticks = iter([0.0] + [10.0] * 1000)  # deadline = 15; every later check sees 10 s elapsed
     h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}], clock=lambda: next(ticks))
     h.turn("¿Mi saldo?")
     compose_call = next(c for c, r in zip(h.llm.calls, h.llm.roles) if r == "compose")
@@ -185,3 +185,14 @@ def test_template_fallback_is_logged_for_the_alarm(ddb_store, serving_root, capl
     with caplog.at_level("WARNING"):
         h.turn("¿Mi saldo?")
     assert any(r.getMessage() == "reply fell back to template" for r in caplog.records)
+
+
+def test_worst_case_turn_fits_inside_the_bff_wait():
+    """Turn budget + one Jev verify with its single retry must end before the BFF stops waiting (25 s)."""
+    import inspect
+
+    from bankagent.decisions.jev import JevClient
+    from bankagent.service import AgentService
+    budget = inspect.signature(AgentService.__init__).parameters["turn_budget_s"].default
+    jev_timeout = inspect.signature(JevClient.__init__).parameters["timeout"].default
+    assert budget + 2 * jev_timeout < 25.0, (budget, jev_timeout)

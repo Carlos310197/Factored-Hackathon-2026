@@ -152,7 +152,7 @@ leave Snowflake `RAW`, and product numbers are cut to the last four digits.
 
 | Party | Receives | Where in code |
 |---|---|---|
-| Amazon Bedrock (in our AWS account) | The customer message and the last 2 exchanges (extract); receipts as JSON (compose, handoff open questions) | `llm/extract.py:65-67`, `llm/compose.py:45-64` |
+| Amazon Bedrock, via a role in a second AWS account (`040684487035`) | The customer message and the last 2 exchanges (extract); receipts with `customer_id`, `product_id` and fraud fields removed (compose, handoff open questions) | `llm/extract.py:65-67`, `llm/compose.py` (`redact`), `llm/client.py` (`BEDROCK_ROLE_ARN`) |
 | Jev / TypeSafe (external) | `understand`: policy text, session facts, the message, and candidate transactions as aliases `c1..cN` (no transaction, customer or product id) | `decisions/understand.py:95-131` |
 | Jev / TypeSafe (external) | `verify_reply`: the reply, its claims and the receipts with `customer_id`, `product_id` and fraud fields removed | `decisions/verify.py` (`REDACTED_FIELDS`); every Jev call is checked in `test_graph_paths.py` |
 | Snowflake | The organizer drop (read from their bucket) and the curated export to our bucket; no chat data | `pipeline/load.py`, `pipeline/export.py` |
@@ -203,13 +203,17 @@ We report what we measured. We don't report numbers we haven't run.
 - **Confirmation** is Jev's reading of the customer's free-text reply (bound to the card's contents by a hash, but the
   "yes" itself is a model judgment, not a button token).
 - **Timeouts:** each LLM call uses its role's timeout from `llm/models.yaml` (extract 10 s, compose 20 s) with no hidden SDK
-  retry; a compose call is capped at what is left of the 20 s turn budget, and no regeneration starts once it is spent.
-  Jev calls time out at 3 s. A turn therefore ends within about 23 s, under the BFF's 25 s.
+  retry; a compose call is capped at what is left of the 15 s turn budget, and no regeneration starts once it is spent.
+  Jev calls time out at 3 s with one retry, so the closing verification can add up to 6 s: a turn ends within about 21 s,
+  under the BFF's 25 s (`test_worst_case_turn_fits_inside_the_bff_wait`).
 - **Data freshness:** the organizer drop ends on 2026-06-17; freshness is recorded but doesn't gate the build. Customers see
   the "data as of" date.
 - **Synthetic data:** escalation and SLA rates, wait times, CSAT and agent load are generator artifacts and are not used to
   argue for this system.
 - **Hosting:** plain HTTP, so session cookies are not `Secure`; one Fargate task.
+- **No spend cap:** the demo identities and the mock IdP are public and there is no per-session or per-customer turn
+  limit, so anyone can drive Bedrock and Jev calls (billed to the account that owns the Bedrock role). The IdP's API
+  throttle (10 req/s) and the Lambda concurrency limit are the only brakes.
 - **Audit records** (`decision_records`) are written best-effort: a failed write is logged, not retried, and does not stop
   the turn.
 - **Mock identity:** demo passwords are stored as unsalted SHA-256 hashes; staff reads of a conversation are not audited.
@@ -221,6 +225,7 @@ We report what we measured. We don't report numbers we haven't run.
 - An egress check in CI for every third-party payload (today it covers Jev in the offline suite).
 - Notifications wired to an on-call channel, a dashboard, and alarms on DynamoDB throttling and AgentCore errors.
 - A load test against the capacity limits below.
+- A per-session and per-customer turn cap, and a budget alarm on Bedrock and Jev spend.
 - A calibrated threshold set (current Jev thresholds are labeled "not calibrated").
 - Least-privilege CI roles (the deploy role is an administrator today) and branch protection on `main`.
 - Retention rules for disputes and handoffs; an audit record of staff reads.
