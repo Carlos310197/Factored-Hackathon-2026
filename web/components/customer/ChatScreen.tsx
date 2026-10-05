@@ -118,7 +118,7 @@ export function ChatScreen({ sid, lang, embed }: { sid: string; lang: Lang; embe
               {handedOver && <p className={line}>{d.humanWillContinue}</p>}
               {(busy || s.running) && (
                 <p role="status" className="self-start rounded-bubble rounded-bl-[4px] bg-b-mist px-3.5 py-2.5 tracking-[3px] text-b-muted">
-                  <span aria-hidden>•••</span><span className="sr-only">{d.typing}</span>
+                  <span aria-hidden>•••</span><span className="sr-only">{s.progress ? d.stage[s.progress] : d.typing}</span>
                 </p>
               )}
             </ThreadPrimitive.Viewport>

@@ -1,9 +1,10 @@
 import { createStore } from "zustand/vanilla";
+import type { Stage } from "@/lib/trace/stages";
 import type { Awaiting, ChatMessage, ChatReply, SessionEvent } from "@/lib/contract";
 
 export type ViewMessage = ChatMessage & { status?: "sending" | "provisional" };
 export interface ChatState {
-  messages: ViewMessage[]; cursor: string | null; running: boolean; pending: string[]; awaiting: Awaiting; control: string;
+  messages: ViewMessage[]; cursor: string | null; running: boolean; pending: string[]; awaiting: Awaiting; control: string; progress: Stage | null;
   failed: { clientId: string; text: string } | null; expired: boolean;
   sendOptimistic(clientId: string, text: string): void;
   applyReply(clientId: string, reply: ChatReply): void;
@@ -45,7 +46,7 @@ function settle(before: ViewMessage[], after: ViewMessage[], pending: string[], 
 
 export function createChatStore() {
   return createStore<ChatState>((set) => ({
-    messages: [], cursor: null, running: false, pending: [], awaiting: "none", control: "agent", failed: null, expired: false,
+    messages: [], cursor: null, running: false, pending: [], awaiting: "none", control: "agent", progress: null, failed: null, expired: false,
 
     sendOptimistic: (clientId, text) => set((s) => {
       const messages = upsert(s.messages.filter((m) => m.id !== clientId), [])
@@ -55,7 +56,7 @@ export function createChatStore() {
 
     applyReply: (clientId, reply) => set((s) => {
       const pending = s.pending.filter((id) => id !== clientId);
-      if (reply.awaiting === "human" || !reply.turn_id) return { running: pending.length > 0, pending, ...derive(s.messages, s.control) };
+      if (reply.awaiting === "human" || !reply.turn_id) return { running: pending.length > 0, ...(pending.length ? {} : { progress: null }), pending, ...derive(s.messages, s.control) };
       const id = `reply:${reply.turn_id}`;
       const q = s.messages.find((m) => m.id === clientId)?.cursor;
       const already = s.messages.some((m) => m.role === "assistant" && m.turn_id === reply.turn_id && !m.status);
@@ -63,32 +64,33 @@ export function createChatStore() {
         id, cursor: q ? `${q}~r` : `${PENDING}${Date.now()}#${id}`, role: "assistant" as const, text: reply.reply_text, turn_id: reply.turn_id, ts: new Date().toISOString(),
         meta: { awaiting: reply.awaiting, options: reply.options, refs: reply.refs, summary: reply.summary, data_as_of: reply.data_as_of ?? undefined },
         status: "provisional" as const }].sort((a, b) => (a.cursor < b.cursor ? -1 : a.cursor > b.cursor ? 1 : 0));
-      return { messages, running: pending.length > 0, pending, ...derive(messages, s.control) };
+      return { messages, running: pending.length > 0, ...(pending.length ? {} : { progress: null }), pending, ...derive(messages, s.control) };
     }),
 
     merge: (incoming) => set((s) => {
       const messages = upsert(s.messages, incoming);
       const pending = settle(s.messages, messages, s.pending, incoming);
-      return { messages, pending, running: pending.length > 0, ...derive(messages, s.control) };
+      return { messages, pending, running: pending.length > 0, ...(pending.length ? {} : { progress: null }), ...derive(messages, s.control) };
     }),
 
     applyEvent: (ev) => set((s) => {
+      if (ev.type === "progress") return s.running ? { progress: ev.stage } : {};  // turn_id unknown client-side until the reply: accept while a turn runs
       if (ev.type === "control") return { control: ev.control, ...derive(s.messages, ev.control) };
       const { type: _t, ...m } = ev;
       void _t;
       const messages = upsert(s.messages, [m]);
       const control = m.role === "system" && m.meta?.control ? m.meta.control : s.control;
       const pending = settle(s.messages, messages, s.pending, [m]);
-      return { messages, control, pending, running: pending.length > 0, ...derive(messages, control) };
+      return { messages, control, pending, running: pending.length > 0, ...(pending.length ? {} : { progress: null }), ...derive(messages, control) };
     }),
 
     fail: (clientId) => set((s) => {
       const m = s.messages.find((x) => x.id === clientId);
       const pending = s.pending.filter((id) => id !== clientId);
-      return { running: pending.length > 0, pending, failed: m ? { clientId, text: m.text } : null, messages: s.messages.filter((x) => x.id !== clientId) };
+      return { running: pending.length > 0, ...(pending.length ? {} : { progress: null }), pending, failed: m ? { clientId, text: m.text } : null, messages: s.messages.filter((x) => x.id !== clientId) };
     }),
 
-    expire: () => set({ expired: true, running: false, pending: [] }),
+    expire: () => set({ expired: true, running: false, pending: [], progress: null }),
   }));
 }
 export type ChatStore = ReturnType<typeof createChatStore>;

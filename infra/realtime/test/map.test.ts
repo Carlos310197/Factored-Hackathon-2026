@@ -40,10 +40,21 @@ describe("toEvents", () => {
   });
   it("maps decision records to slim trace events and turn_end to turn_complete", () => {
     const rec = { session_id: "S-1", sk: "TRN-1#0003", turn_id: "TRN-1", seq: 3, node: "understand", kind: "jev", payload: { big: true } };
-    expect(toEvents("decision_records", rec, "INSERT")).toEqual([{ channel: "/trace/S-1",
+    expect(toEvents("decision_records", rec, "INSERT").filter((e) => e.channel === "/trace/S-1")).toEqual([{ channel: "/trace/S-1",
       payload: { type: "record", turn_id: "TRN-1", seq: 3, node: "understand", kind: "jev" } }]);
     const end = { ...rec, node: "turn", kind: "turn_end", seq: 9 };
     expect(toEvents("decision_records", end, "INSERT").map((e) => e.payload.type)).toEqual(["record", "turn_complete"]);
+  });
+  it("emits payload-free progress stages to the customer session channel", () => {
+    const rec = (node: string, kind: string) => ({ session_id: "S-1", sk: "x", turn_id: "TRN-1", seq: 1, node, kind, payload: { secret: "4111" } });
+    const prog = (node: string, kind: string) => toEvents("decision_records", rec(node, kind), "INSERT").filter((e) => e.channel === "/session/S-1");
+    expect(prog("load_context", "state")[0].payload).toEqual({ type: "progress", turn_id: "TRN-1", stage: "understand" });
+    expect(prog("understand", "jev")[0].payload.stage).toBe("understand");
+    expect(prog("router", "route")[0].payload.stage).toBe("decide");
+    expect(prog("tools", "tool_call")[0].payload.stage).toBe("act");
+    expect(prog("reply", "jev")[0].payload.stage).toBe("verify");
+    expect(prog("turn", "turn_end")).toEqual([]);
+    expect(JSON.stringify(prog("tools", "tool_call"))).not.toContain("4111");
   });
   it("ignores removals (TTL expiry)", () => {
     expect(toEvents("handoffs", { handoff_id: "H" }, "REMOVE")).toEqual([]);

@@ -39,6 +39,7 @@ const es = {
   expiredBody: "Por seguridad, vuelve a entrar. Tu conversación sigue aquí.",
   signInAgain: "Entrar de nuevo",
   typing: "El asistente está escribiendo",
+  stage: { understand: "Entendiendo tu mensaje…", decide: "Pensando cómo ayudarte…", act: "Revisando tu cuenta…", verify: "Verificando la respuesta…" },
   reasons: {
     duplicate_charge: "Cargo duplicado", wrong_amount: "Monto incorrecto", not_received: "No recibido",
     cancelled_but_charged: "Cancelado pero cobrado", unauthorized: "No autorizado",
@@ -84,6 +85,7 @@ const pt: Dict = {
   expiredBody: "Por segurança, entre de novo. Sua conversa continua aqui.",
   signInAgain: "Entrar de novo",
   typing: "O assistente está escrevendo",
+  stage: { understand: "Entendendo sua mensagem…", decide: "Pensando em como ajudar…", act: "Verificando sua conta…", verify: "Conferindo a resposta…" },
   reasons: {
     duplicate_charge: "Cobrança duplicada", wrong_amount: "Valor incorreto", not_received: "Não recebido",
     cancelled_but_charged: "Cancelado mas cobrado", unauthorized: "Não autorizado",

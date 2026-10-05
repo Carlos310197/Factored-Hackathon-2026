@@ -42,6 +42,7 @@ export type ChatMessage = z.infer<typeof ChatMessage>;
 export const SessionEvent = z.discriminatedUnion("type", [
   ChatMessage.extend({ type: z.literal("message") }),
   z.object({ type: z.literal("control"), control: z.string(), agent_name: z.string().nullish() }),
+  z.object({ type: z.literal("progress"), turn_id: z.string(), stage: z.enum(["understand", "decide", "act", "verify"]) }),
 ]);
 export type SessionEvent = z.infer<typeof SessionEvent>;
 

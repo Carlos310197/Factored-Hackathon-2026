@@ -93,4 +93,14 @@ describe("chat store", () => {
     s.getState().applyReply("cm-1", reply());
     expect(s.getState().messages.map((m) => m.id)).toEqual(["cm-1", "reply:TRN-1", "cm-2"]);
   });
+  it("shows progress only while a turn runs and clears it when the reply lands", () => {
+    const s = createChatStore();
+    s.getState().applyEvent({ type: "progress", turn_id: "TRN-1", stage: "act" });
+    expect(s.getState().progress).toBeNull();
+    s.getState().sendOptimistic("cm-1", "saldo");
+    s.getState().applyEvent({ type: "progress", turn_id: "TRN-1", stage: "act" });
+    expect(s.getState().progress).toBe("act");
+    s.getState().applyReply("cm-1", reply());
+    expect(s.getState().progress).toBeNull();
+  });
 });

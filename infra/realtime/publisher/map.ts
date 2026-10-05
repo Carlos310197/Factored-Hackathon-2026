@@ -13,6 +13,15 @@ export function tableKind(eventSourceArn: string): TableKind | null {
 
 const s = (v: unknown) => (typeof v === "string" ? v : undefined);
 
+// Mirrors stageOf in web/lib/trace/stages.ts (separate package; keep in sync).
+function stageOf(node: string, kind: string): string | null {
+  if (kind === "turn_end") return null;
+  if (node === "reply") return "verify";
+  if (kind === "route") return "decide";
+  if (node === "load_context" || node === "understand") return "understand";
+  return "act";
+}
+
 export function toEvents(kind: TableKind, img: Image, eventName: string): OutEvent[] {
   if (eventName === "REMOVE") return [];
   if (kind === "conversation_messages") {
@@ -36,5 +45,7 @@ export function toEvents(kind: TableKind, img: Image, eventName: string): OutEve
   const out: OutEvent[] = [{ channel, payload: { type: "record", turn_id: s(img.turn_id), seq: img.seq as number,
     node: s(img.node), kind: s(img.kind) } }];
   if (img.kind === "turn_end") out.push({ channel, payload: { type: "turn_complete", turn_id: s(img.turn_id) } });
+  const stage = stageOf(String(img.node), String(img.kind));  // customer-facing progress: stage only, never record data
+  if (stage) out.push({ channel: `/session/${img.session_id}`, payload: { type: "progress", turn_id: s(img.turn_id), stage } });
   return out;
 }
