@@ -1,8 +1,17 @@
 {
   "name": "bankagent-realtime",
   "private": true,
-  "scripts": { "test": "vitest run" },
-  "dependencies": { "jose": "^5.9.0" },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aws-crypto/sha256-js": "^5.2.0",
+    "@aws-sdk/credential-provider-node": "^3.972.84",
+    "@aws-sdk/util-dynamodb": "^3.996.9",
+    "@smithy/protocol-http": "^5.6.2",
+    "@smithy/signature-v4": "^5.7.4",
+    "jose": "^5.9.0"
+  },
   "devDependencies": {
     "@aws-appsync/utils": "^1.10.0",
     "@types/aws-lambda": "^8.10.145",
