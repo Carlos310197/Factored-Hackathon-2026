@@ -96,7 +96,7 @@ Code and YAML make the decisions. Jev thresholds bound the judgments. Prompts on
 | Customer id comes only from the verified JWT `sub`, never from the message or body | Code: `agent/src/bankagent/auth/tokens.py:47-56`, `agent/src/bankagent/app.py:51-63`; BFF body schema `web/app/api/chat/route.ts:10-16` | `test_app.py::test_payload_customer_id_is_ignored`, `::test_tampered_token_rejected`, `::test_expired_token_reports_session_expired_in_requested_language` |
 | Every read is scoped to the session's customer; a foreign record and a missing one return the same `NotFound` | Code: `agent/src/bankagent/tools/read.py:20-24,51-83` | `test_read_tools.py::test_foreign_and_missing_transactions_are_indistinguishable`, `::test_accounts_only_own`, `::test_scope_required` |
 | Filing a dispute re-checks scope, ownership and the policy inside the tool | Code + YAML: `tools/write.py:52-60`, `policy/dispute_policy.yaml`, `policy/dispute.py:60-97` | `test_write_tools.py::test_foreign_transaction_is_not_found`, `::test_declined_rejected_by_policy_and_not_written`, `test_policy.py` |
-| Filing needs a confirmation (Jev p ≥ 0.90) on a summary card built in code | Jev threshold + code: `decisions/thresholds.v1.yaml:22`, `decisions/routing.py:212`, `graph/nodes.py:405` | `test_routing.py::test_confirmation_outcomes`, `test_graph_paths.py::test_dispute_confirm_file_verify` |
+| Filing needs a confirmation (Jev p ≥ 0.90) on a summary card built in code, and the "yes" is bound to that card: a hash of its contents is re-checked against the freshly read record before writing | Jev threshold + code: `decisions/thresholds.v1.yaml:22`, `decisions/routing.py:212`, `graph/nodes.py` (`_card_hash`, `file_dispute`) | `test_routing.py::test_confirmation_outcomes`, `test_graph_paths.py::test_dispute_confirm_file_verify`, `::test_confirmation_is_bound_to_the_card_the_customer_saw` |
 | No duplicate disputes; an unknown write outcome is settled by a read-back, not a blind retry | Code + DynamoDB: conditional put `store/repos.py:21`, read-back `tools/write.py:73-89` | `test_write_tools.py::test_unknown_write_outcome_resolved_by_read_back`, `test_graph_failures.py::test_duplicate_dispute_is_not_filed_twice` |
 | Replies can't mention ids the customer doesn't own; claims are verified; one regeneration, then a template | Code + Jev: `guards.py:4-8`, `graph/nodes.py:618-651`, `decisions/verify.py` | `test_graph_failures.py::test_foreign_id_in_reply_is_blocked`, `::test_unverified_claims_regenerate_once_then_template` |
 | Prompt injection is refused, then handed off; Jev only sees aliases of the customer's own candidates | Jev signal + code: `routing.py:157-180`, aliases `decisions/understand.py:94`, `routing.py:50` | `test_graph_failures.py::test_injection_refused_then_handed_off`, `test_decisions.py::test_request_uses_aliases_and_never_sends_ids` |
@@ -129,6 +129,20 @@ From `agent/tests/test_graph_failures.py`, `test_app.py` and `test_write_tools.p
 
 Not covered end to end yet: a failed write turning into a handoff, and a read-back mismatch turning into a handoff (each is
 unit-tested; the graph wiring is not).
+
+## Capacity (not load-tested)
+
+| Component | Limit we know of | Source |
+|---|---|---|
+| Web app | 1 Fargate Spot task, 0.5 vCPU / 1 GB, plain HTTP | `infra/terraform/app/ecs.tf` |
+| Agent runtime (AgentCore) | New sessions 25/s, data-plane calls 1,000/s (account quotas); each session runs in its own microVM | AWS Service Quotas, `bedrock-agentcore` |
+| LLM (Bedrock Mantle) | Not visible: the on-demand quotas listed for gpt-oss and Ministral in our account read 0, and inference runs through the Mantle endpoint (and a role in a second account), whose throughput limits Service Quotas doesn't show | AWS Service Quotas, `bedrock` |
+| Jev (TypeSafe) | No published rate limit; 3 s timeout per call, 2–3 calls per turn | `decisions/jev.py` |
+| Identity (mock IdP) | API Gateway throttle 10 req/s (burst 20); the account's Lambda concurrency is 10 in total, shared with the realtime authorizer and publisher | `infra/terraform/identity/api.tf`, AWS account settings |
+| DynamoDB | On-demand capacity, no provisioned limit | `infra/terraform/data/tables.tf` |
+
+A demo with a handful of concurrent users fits these limits; a judge panel testing at once may hit the Lambda limit first
+(a throttled login asks the user to retry). We have not measured where the system saturates.
 
 ## Data handling
 
@@ -175,7 +189,7 @@ All DynamoDB tables have point-in-time recovery and deletion protection.
 | Agent end-to-end check | All 8 scenarios against real Jev and Bedrock on 2026-10-05 (`agent/docs/smoke-results.md`) |
 | Evaluation harness (`eval/`) | Code done and tested offline; **no live evaluation run yet**, so no resolution, containment or cost metrics are reported |
 | Transaction resolver | Code done and tested; **no trained artifact, dev results or model card committed yet**. The human-written test sheet is complete (150 rows) |
-| Monitoring and alarms | Not built: logs (30 days) and decision records exist; no alarms or dashboards |
+| Monitoring and alarms | Three CloudWatch alarms on the agent's log lines (turn failures, template fallbacks, decision-record write failures; `infra/terraform/agent/alarms.tf`), optional email via SNS; no dashboard |
 
 We report what we measured. We don't report numbers we haven't run.
 
@@ -186,9 +200,11 @@ We report what we measured. We don't report numbers we haven't run.
   support is conversational; PT test cases are written by the team, with no native-speaker review.
 - **Human-review disputes** (over 500 USD, high fraud score, unauthorized) are recorded as `pending_review` for an agent
   without asking the customer to confirm first.
-- **Confirmation** is Jev's reading of the customer's reply to the card, not a token bound to the card's contents.
-- **Timeouts:** the LLM client uses 30 s with one retry, not the per-role values in `llm/models.yaml`; the BFF gives up at
-  25 s, so a stalled turn can show the customer an error while the agent finishes.
+- **Confirmation** is Jev's reading of the customer's free-text reply (bound to the card's contents by a hash, but the
+  "yes" itself is a model judgment, not a button token).
+- **Timeouts:** each LLM call uses its role's timeout from `llm/models.yaml` (extract 10 s, compose 20 s) with no hidden SDK
+  retry; a compose call is capped at what is left of the 20 s turn budget, and no regeneration starts once it is spent.
+  Jev calls time out at 3 s. A turn therefore ends within about 23 s, under the BFF's 25 s.
 - **Data freshness:** the organizer drop ends on 2026-06-17; freshness is recorded but doesn't gate the build. Customers see
   the "data as of" date.
 - **Synthetic data:** escalation and SLA rates, wait times, CSAT and agent load are generator artifacts and are not used to
@@ -203,8 +219,8 @@ We report what we measured. We don't report numbers we haven't run.
 **Before production**
 - A real identity provider, HTTPS, and `Secure` cookies.
 - An egress check in CI for every third-party payload (today it covers Jev in the offline suite).
-- Alarms on fallback rate, turn failures and DynamoDB throttling; a capacity statement (AgentCore concurrency, Bedrock
-  tokens per minute, Jev rate limit).
+- Notifications wired to an on-call channel, a dashboard, and alarms on DynamoDB throttling and AgentCore errors.
+- A load test against the capacity limits below.
 - A calibrated threshold set (current Jev thresholds are labeled "not calibrated").
 - Least-privilege CI roles (the deploy role is an administrator today) and branch protection on `main`.
 - Retention rules for disputes and handoffs; an audit record of staff reads.

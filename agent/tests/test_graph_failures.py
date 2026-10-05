@@ -177,3 +177,11 @@ def test_no_second_compose_draft_once_the_budget_is_spent(ddb_store, serving_roo
     h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}], llm=llm, verify=False, clock=clock)
     r = h.turn("¿Mi saldo?")
     assert llm.roles.count("compose") == 1 and r["reply_text"].startswith("Esto es lo que encontré:")
+
+
+def test_template_fallback_is_logged_for_the_alarm(ddb_store, serving_root, caplog):
+    """CloudWatch counts this line (metric filter TemplateFallback): a spike means the LLM or Jev path is failing."""
+    h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}], llm=FakeLLM(fail={"compose"}))
+    with caplog.at_level("WARNING"):
+        h.turn("¿Mi saldo?")
+    assert any(r.getMessage() == "reply fell back to template" for r in caplog.records)

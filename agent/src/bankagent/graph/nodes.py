@@ -607,6 +607,7 @@ class Nodes:
             if text is None:
                 text = fallback_reply(goal, receipts, lang)
                 self._log(state, config, "reply", "template", {"goal": goal.get("kind")})
+                logger.warning("reply fell back to template", extra={"goal": goal.get("kind")})  # CloudWatch alarm
             
             if goal.get("fixed_block"):
                 text = f"{text}\n\n{goal['fixed_block']}"
