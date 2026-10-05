@@ -83,13 +83,14 @@ def validate_answers(questions: dict, body: dict) -> dict[str, ChoiceAnswer | No
 class JevClient:
     def __init__(self, api_key: str, url: str = "https://api.typesafe.ai/v1/systemone", model: str = "jev-1.13.0",
                  timeout: float = 3.0, transport: httpx.BaseTransport | None = None):
-        if not api_key:
-            raise ValueError("JEV_API_KEY is empty")
+        self.api_key = api_key  # empty (secret unreadable): built anyway, decide() raises JevError so the graph clarifies
         self.url, self.model = url, model
         self._http = httpx.Client(timeout=timeout, transport=transport,
                                   headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
 
     def decide(self, state, questions: dict) -> JevResult:
+        if not self.api_key:
+            raise JevError("JEV_API_KEY is empty")
         payload = {"model": self.model, "state": state, "questions": questions}
         start = time.monotonic()
         body = self._post_with_one_retry(payload)

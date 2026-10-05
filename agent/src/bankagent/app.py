@@ -10,7 +10,7 @@ from bedrock_agentcore import BedrockAgentCoreApp, RequestContext
 from bankagent.auth.tokens import AuthError, verify_token
 from bankagent.ids import new_id
 from bankagent.llm.templates import auth_message, fallback_reply
-from bankagent.settings import Settings
+from bankagent.settings import load_settings
 
 MAX_MESSAGE_CHARS = 2000
 MESSAGE_ID_HEADER = "x-amzn-bedrock-agentcore-runtime-custom-message-id"  # the prefix AgentCore passes through
@@ -86,7 +86,8 @@ def handle(payload: dict, headers: dict, rt) -> dict:
         log.exception("turn failed session=%s turn=%s", sid, turn_id)
         reply = {**_error(fallback_reply({"kind": "error"}, [], ctx.lang), ctx.lang, "turn_failed"), "turn_id": turn_id}
     store.log.append(sid, turn_id, "turn", "turn_end",
-                     {"duration_ms": int((time.monotonic() - start) * 1000), "awaiting": reply.get("awaiting", "none")})
+                     {"duration_ms": int((time.monotonic() - start) * 1000), "awaiting": reply.get("awaiting", "none"),
+                      "language": reply.get("language", ctx.lang)})
     store.messages.store_reply(sid, message_id, reply)
     return reply
 
@@ -95,7 +96,7 @@ def runtime():
     global _runtime
     if _runtime is None:
         from bankagent.runtime import build_runtime
-        _runtime = build_runtime(Settings.from_env())
+        _runtime = build_runtime(load_settings())
     return _runtime
 
 

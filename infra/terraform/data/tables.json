@@ -97,7 +97,7 @@
       }
     ],
     "gsis": [],
-    "ttl": null,
+    "ttl": "ttl",
     "stream_view_type": null
   },
   "conversation_messages": {

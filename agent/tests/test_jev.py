@@ -109,6 +109,6 @@ def test_timeout_is_retried_once():
     assert len(calls) == 2
 
 
-def test_empty_key_rejected():
-    with pytest.raises(ValueError):
-        JevClient("")
+def test_empty_key_builds_but_decide_raises_jev_error():
+    with pytest.raises(JevError, match="empty"):
+        JevClient("").decide({}, Q)
