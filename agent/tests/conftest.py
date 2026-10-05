@@ -18,3 +18,15 @@ def serving_root(tmp_path_factory):
 def history_serving(tmp_path_factory):
     from tests.fixtures.resolver_serving import build_history_serving
     return build_history_serving(tmp_path_factory.mktemp("history_serving"))
+  
+@pytest.fixture
+def ddb_store():
+    import boto3
+    from moto import mock_aws
+
+    from bankagent.store.repos import Store
+    from bankagent.store.tables import create_tables
+
+    with mock_aws():
+        create_tables(boto3.client("dynamodb", region_name="us-east-2"), "t")
+        yield Store.connect("t", "us-east-2")
