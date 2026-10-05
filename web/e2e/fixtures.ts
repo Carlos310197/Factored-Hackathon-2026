@@ -22,6 +22,8 @@ export async function mockApi(page: Page, handler: Handler) {
   });
 }
 export async function noSeriousA11y(page: Page) {
+  // entrance fades would be measured mid-way as low contrast: wait for finite animations to settle (typing dots loop forever)
+  await page.waitForFunction(() => document.getAnimations().every((x) => x.playState !== "running" || x.effect?.getTiming().iterations === Infinity));
   const r = await new AxeBuilder({ page }).analyze();
   const bad = r.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
   expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => `${n.target} ${n.any[0]?.message ?? ""}`).join(" | ")}`)).toEqual([]);

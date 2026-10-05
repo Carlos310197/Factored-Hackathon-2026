@@ -14,24 +14,27 @@ export function TraceList({ sid, mode, refreshKey = 0, running = false, onTurnCo
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [live, setLive] = useState<{ turnId: string; lit: Stage[]; current: Stage | null } | null>(null);
   const [announce, setAnnounce] = useState("");
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const current = useRef(sid);
   useEffect(() => { current.current = sid; });
 
   const load = useCallback(async (reveal: boolean) => {
     try {
       const r = await fetch(`/api/trace/${encodeURIComponent(sid)}`, { cache: "no-store" });
-      if (!r.ok || current.current !== sid) return; // stale: another case is open now
+      if (current.current !== sid) return; // stale: another case is open now
+      if (!r.ok) { setState((s) => (s === "ready" ? s : "error")); return; }
       const data = (await r.json()).data as TraceTurn[];
       if (current.current !== sid) return; // the body can arrive after a case switch too
       setTurns(data);
+      setState("ready");
       // a resync after a missed turn_complete: the live turn is finished once its turn_end duration exists
       if (!reveal) setLive((l) => (l && data.find((t) => t.turnId === l.turnId)?.durationMs != null ? null : l));
       if (reveal && data[0]) { setRevealed(data[0].turnId); setAnnounce(`Turn ${data.length}: route ${data[0].route.next}`); }
-    } catch { /* keep what is shown; the next event or resync retries */ }
+    } catch { if (current.current === sid) setState((s) => (s === "ready" ? s : "error")); }  // keep what is shown; the next event or resync retries
   }, [sid]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setTurns([]); setRevealed(null); setLive(null); void load(false); }, [load]); // reset per sid
+  useEffect(() => { setTurns([]); setRevealed(null); setLive(null); setState("loading"); void load(false); }, [load]); // reset per sid
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (refreshKey > 0) { setLive(null); void load(true); } }, [refreshKey, load]);
   useEffect(() => {
@@ -64,7 +67,9 @@ export function TraceList({ sid, mode, refreshKey = 0, running = false, onTurnCo
     <div>
       <p className="sr-only" aria-live="polite">{announce}</p>
       {showAnalysing && <AnalysingCard turnNumber={turns.length + 1} lit={live?.lit ?? []} current={live?.current ?? null} />}
-      {turns.length === 0 && !showAnalysing && <p className="text-sm text-c-muted">No turns yet: send a message to see the first decision.</p>}
+      {turns.length === 0 && !showAnalysing && (state === "loading" ? <p className="text-sm text-c-muted">Loading trace…</p>
+        : state === "error" ? <p role="alert" className="text-sm text-c-alert">Couldn&apos;t load the trace. It retries on the next turn.</p>
+        : <p className="text-sm text-c-muted">No turns yet: send a message to see the first decision.</p>)}
       {turns.map((t, i) => {
         const collapsed = mode === "demo" ? i > 0 && !expanded.has(t.turnId) : false;
         return <TraceTurnView key={t.turnId} turn={t} reveal={t.turnId === revealed} collapsed={collapsed}

@@ -7,7 +7,7 @@ import { ConfirmCard } from "./ConfirmCard";
 import { Receipt } from "./Receipt";
 
 export interface MessageCustom { role: "customer" | "assistant" | "agent" | "system"; text: string; meta?: MessageMeta | null;
-  author?: string | null; status?: "sending" | "provisional" }
+  author?: string | null; status?: "sending" | "sent" | "provisional" }
 
 /** Control lines come from the system message's meta (takeover/return), never from its stored text. */
 export function systemLine(c: Pick<MessageCustom, "text" | "meta" | "author">, lang: Lang): string {
@@ -27,11 +27,11 @@ export function MessageView({ lang, busy, latestAssistantId, onSend }:
   const { role, text, meta } = custom;
   const latest = id === latestAssistantId;
   return (
-    <MessagePrimitive.Root className="flex flex-col gap-2">
+    // Only rows born in this view animate; their stored copies replace them in place, so nothing flashes twice.
+    <MessagePrimitive.Root className={`flex flex-col gap-2 ${custom.status ? "motion-safe:animate-[fade-in_220ms_ease-out]" : ""}`}>
       {role === "customer" && (
         <>
           <p className="max-w-[84%] self-end whitespace-pre-wrap rounded-bubble rounded-br-[4px] bg-b-cobalt px-3.5 py-2.5 text-b-surface">{text}</p>
-          {custom.status === "sending" && <span className="self-end text-xs text-b-muted">{d.sending}</span>}
         </>
       )}
       {role === "assistant" && (

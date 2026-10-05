@@ -53,3 +53,6 @@ body { background: var(--color-c-canvas); color: var(--color-c-ink); }
 }
 
 @keyframes grow { from { width: 0; } }
+/* New chat rows settle in; typing dots breathe. Both run only under motion-safe (see Architecture Decisions, UI polish). */
+@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } }
+@keyframes dot { 0%, 80%, 100% { opacity: .3; } 40% { opacity: 1; } }

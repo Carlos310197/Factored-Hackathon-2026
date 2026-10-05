@@ -9,11 +9,11 @@ const OUTCOME: Record<ResolutionCode, string> = { resolved_by_agent: "Resolved b
 const STATUS_WORD = { open: "open", claimed: "claimed", in_takeover: "in takeover", returned: "returned to assistant", resolved: "resolved" } as const;
 const MARK = { critical: "bg-c-alert", high: "bg-c-warn", medium: "bg-c-below" } as const;
 const opened = (iso: string) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" }).format(new Date(iso)) + " UTC";
-const btn = "rounded-control px-3.5 py-2 text-xs font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c-signal";
+const btn = "inline-flex items-center gap-1.5 rounded-control px-3.5 py-2 text-xs font-bold transition-opacity disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c-signal";
 const field = "border border-c-line rounded-control px-2.5 py-2 bg-c-panel focus-visible:outline-2 focus-visible:outline-c-signal";
 
-export function CaseHeader({ packet, control, me, onAction }: { packet: HandoffPacket; control: string; me: { sub: string; name: string };
-  onAction: (a: CaseAction, body?: { code: ResolutionCode; note: string }) => void }) {
+export function CaseHeader({ packet, control, me, onAction, pending = null }: { packet: HandoffPacket; control: string; me: { sub: string; name: string };
+  onAction: (a: CaseAction, body?: { code: ResolutionCode; note: string }) => void; pending?: CaseAction | null }) {
   const [resolving, setResolving] = useState(false);
   const [code, setCode] = useState<ResolutionCode>("resolved_by_agent");
   const [note, setNote] = useState("");
@@ -53,11 +53,13 @@ export function CaseHeader({ packet, control, me, onAction }: { packet: HandoffP
       </div>
       <div className="flex gap-1.5 shrink-0">
         {actions.filter((a) => a !== "resolve").map((a, i) => (
-          <button key={a} onClick={() => onAction(a, undefined)}
-            className={`${btn} ${i === 0 ? "bg-c-signal text-c-panel hover:opacity-90" : "bg-c-track hover:bg-c-line"}`}>{ACTION_LABEL[a]}</button>
+          <button key={a} onClick={() => onAction(a, undefined)} disabled={pending !== null} aria-busy={pending === a}
+            className={`${btn} ${i === 0 ? "bg-c-signal text-c-panel hover:opacity-90" : "bg-c-track hover:bg-c-line"}`}>
+            {pending === a && <span aria-hidden className="size-3 rounded-full border-2 border-current border-r-transparent motion-safe:animate-spin" />}
+            {ACTION_LABEL[a]}</button>
         ))}
         {actions.includes("resolve") && (
-          <button ref={opener} onClick={openResolve} className={`${btn} bg-c-track hover:bg-c-line`}>{ACTION_LABEL.resolve}</button>
+          <button ref={opener} onClick={openResolve} disabled={pending !== null} aria-busy={pending === "resolve"} className={`${btn} bg-c-track hover:bg-c-line`}>{ACTION_LABEL.resolve}</button>
         )}
       </div>
       {resolving && (

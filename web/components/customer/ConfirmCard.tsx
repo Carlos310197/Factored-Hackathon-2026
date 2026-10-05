@@ -17,7 +17,7 @@ export function ConfirmCard({ summary, lang, disabled, onConfirm, onChange }:
     [d.reason, reason],
   ];
   return (
-    <section aria-labelledby={titleId} className="max-w-[92%] self-start overflow-hidden rounded-card border border-b-sun bg-b-sun-tint">
+    <section aria-labelledby={titleId} className="max-w-[92%] self-start overflow-hidden rounded-card border border-b-sun bg-b-sun-tint motion-safe:animate-[fade-in_220ms_ease-out]">
       <h2 id={titleId} className="flex items-center gap-2 px-4 pt-3 text-base font-extrabold">
         <span aria-hidden className="size-2.5 rounded-full bg-b-sun" />{d.confirmTitle}
       </h2>
@@ -30,9 +30,9 @@ export function ConfirmCard({ summary, lang, disabled, onConfirm, onChange }:
       </dl>
       <div className="flex flex-wrap gap-2 px-4 pb-4 pt-2">
         <button type="button" disabled={disabled} onClick={onConfirm}
-          className="min-h-11 rounded-full bg-b-leaf px-4 text-sm font-bold text-b-surface hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-cobalt disabled:opacity-60">{d.confirm}</button>
+          className="min-h-11 rounded-full bg-b-leaf px-4 text-sm font-bold text-b-surface transition-transform duration-150 hover:opacity-90 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-cobalt disabled:opacity-60">{d.confirm}</button>
         <button type="button" disabled={disabled} onClick={onChange}
-          className="min-h-11 rounded-full border-[1.5px] border-b-ink bg-b-surface px-4 text-sm font-bold text-b-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-cobalt disabled:opacity-60">{d.change}</button>
+          className="min-h-11 rounded-full border-[1.5px] border-b-ink bg-b-surface px-4 text-sm font-bold text-b-ink transition-transform duration-150 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-cobalt disabled:opacity-60">{d.change}</button>
       </div>
     </section>
   );
