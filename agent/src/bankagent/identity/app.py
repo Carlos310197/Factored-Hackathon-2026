@@ -1,4 +1,5 @@
 """Mock OIDC identity service. Issues RS256 JWTs for demo users."""
+import os
 import secrets
 import time
 from typing import Optional
@@ -7,7 +8,7 @@ from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
 
 from bankagent.auth.tokens import generate_keypair, issue_token, jwks_from_public
-from bankagent.identity.users import DemoUser, hash_password
+from bankagent.identity.users import DemoUser, hash_password, load_users
 
 
 class LoginRequest(BaseModel):
@@ -88,21 +89,20 @@ def create_app(users: dict[str, DemoUser], private_pem: str, public_pem: str, ki
     return app
 
 
+def create_app_from_env(env=None) -> FastAPI:
+    """Build the IdP from the environment: DEMO_USERS (the labeled test identities file), IDP_ISSUER,
+    IDP_AUDIENCE and IDP_KID. This is what `python -m bankagent.identity.app` (the container) runs."""
+    e = os.environ if env is None else env
+    private_pem, public_pem = generate_keypair()
+    return create_app(users=load_users(e.get("DEMO_USERS", "config/demo_users.yaml")),
+                      private_pem=private_pem,
+                      public_pem=public_pem,
+                      kid=e.get("IDP_KID", "idp-local"),
+                      issuer=e.get("IDP_ISSUER", "http://localhost:8081"),
+                      audience=e.get("IDP_AUDIENCE", "bankagent"))
+
+
 if __name__ == "__main__":
     import uvicorn
-    from bankagent.settings import Settings
 
-    settings = Settings.from_env()
-    private_pem, public_pem = generate_keypair()
-    users = {}  # In production, load from config file
-
-    app = create_app(
-        users=users,
-        private_pem=private_pem,
-        public_pem=public_pem,
-        kid=settings.issuer.split("/")[-1] if "/" in settings.issuer else "default",
-        issuer=settings.issuer,
-        audience=settings.audience
-    )
-
-    uvicorn.run(app, host="0.0.0.0", port=8081)
+    uvicorn.run(create_app_from_env(), host="0.0.0.0", port=8081)
