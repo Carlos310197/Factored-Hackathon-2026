@@ -4,9 +4,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 import boto3
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 
+from bankagent.ids import new_id
 from bankagent.store.codec import from_dynamo, to_dynamo
 from bankagent.store.tables import table_name
 
@@ -87,15 +88,94 @@ class DecisionLog:
             kwargs["ExclusiveStartKey"] = r["LastEvaluatedKey"]
 
 
+def _iso(ts: float) -> str:
+    return datetime.fromtimestamp(ts, timezone.utc).isoformat(timespec="microseconds")
+
+
+class SessionRepo:
+    """One item per conversation (UI spec §4.1). `control` is changed only by the BFF's takeover/return."""
+
+    def __init__(self, table, clock=time.time):
+        self.t, self.clock = table, clock
+
+    def ensure(self, session_id: str, customer_id: str, lang: str) -> dict:
+        item = {"session_id": session_id, "customer_id": customer_id, "language": lang, "control": "agent",
+                "created_at": _iso(self.clock())}
+        try:
+            _conditional_put(self.t, item, "session_id")
+        except AlreadyExists:
+            pass
+        return self.get(session_id)
+
+    def get(self, session_id: str) -> dict | None:
+        r = self.t.get_item(Key={"session_id": session_id}, ConsistentRead=True)
+        return from_dynamo(r["Item"]) if "Item" in r else None
+
+    def control(self, session_id: str) -> str:
+        return (self.get(session_id) or {}).get("control", "agent")
+
+
+class MessageLog:
+    """The conversation transcript (UI spec §4.2) plus idempotency markers (`~idem#<message_id>`, kind=idem)."""
+    TTL_DAYS = 90
+    IDEM = "~idem#"
+
+    def __init__(self, table, clock=time.time):
+        self.t, self.clock = table, clock
+
+    def _ttl(self) -> int:
+        return int(self.clock()) + self.TTL_DAYS * 86400
+
+    def claim(self, session_id: str, message_id: str) -> dict | None:
+        item = {"session_id": session_id, "sk": f"{self.IDEM}{message_id}", "kind": "idem", "message_id": message_id,
+                "state": "running", "ttl": self._ttl()}
+        try:
+            _conditional_put(self.t, item, "sk")
+            return None
+        except AlreadyExists:
+            r = self.t.get_item(Key={"session_id": session_id, "sk": item["sk"]}, ConsistentRead=True)
+            return from_dynamo(r["Item"])
+
+    def store_reply(self, session_id: str, message_id: str, reply: dict) -> None:
+        self.t.update_item(Key={"session_id": session_id, "sk": f"{self.IDEM}{message_id}"},
+                           UpdateExpression="SET #s = :done, reply = :r",
+                           ExpressionAttributeNames={"#s": "state"},
+                           ExpressionAttributeValues={":done": "done", ":r": to_dynamo(reply)})
+
+    def append(self, session_id: str, role: str, text: str, *, message_id: str | None = None,
+               turn_id: str | None = None, author: str | None = None, meta: dict | None = None) -> dict:
+        ts, mid = _iso(self.clock()), message_id or new_id("MSG")
+        item = {"session_id": session_id, "sk": f"{ts}#{mid}", "kind": "message", "message_id": mid, "role": role,
+                "text": text, "turn_id": turn_id, "author": author, "meta": meta, "ts": ts, "ttl": self._ttl()}
+        self.t.put_item(Item=to_dynamo(item))
+        return {k: v for k, v in item.items() if v is not None}
+
+    def list(self, session_id: str, after: str | None = None) -> list[dict]:
+        cond = Key("session_id").eq(session_id)
+        if after:
+            cond = cond & Key("sk").gt(after)
+        items, kwargs = [], {"KeyConditionExpression": cond, "FilterExpression": Attr("kind").eq("message")}
+        while True:
+            r = self.t.query(**kwargs)
+            items += [from_dynamo(i) for i in r["Items"]]
+            if "LastEvaluatedKey" not in r:
+                return items
+            kwargs["ExclusiveStartKey"] = r["LastEvaluatedKey"]
+
+
 @dataclass
 class Store:
     disputes: DisputeRepo
     handoffs: HandoffRepo
     log: DecisionLog
+    sessions: SessionRepo | None = None
+    messages: MessageLog | None = None
 
     @classmethod
     def connect(cls, prefix: str, region: str, endpoint: str | None = None) -> "Store":
         res = boto3.resource("dynamodb", region_name=region, endpoint_url=endpoint)
         return cls(DisputeRepo(res.Table(table_name(prefix, "disputes"))),
                    HandoffRepo(res.Table(table_name(prefix, "handoffs"))),
-                   DecisionLog(res.Table(table_name(prefix, "decision_records"))))
+                   DecisionLog(res.Table(table_name(prefix, "decision_records"))),
+                   SessionRepo(res.Table(table_name(prefix, "sessions"))),
+                   MessageLog(res.Table(table_name(prefix, "conversation_messages"))))
