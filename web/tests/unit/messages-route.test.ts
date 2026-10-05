@@ -28,6 +28,12 @@ describe("GET history", () => {
     expect(res.status).toBe(404);
     expect(m.listMessages).not.toHaveBeenCalled();
   });
+  it("is 401 (not 404) with neither a customer nor a staff session", async () => {
+    m.customerFrom.mockResolvedValue(null);
+    m.staffFrom.mockResolvedValue(null);
+    const { GET } = await import("@/app/api/sessions/[sid]/messages/route");
+    expect((await GET(get("S-1"), params("S-1"))).status).toBe(401);
+  });
   it("a customer asking for another sid than their token's is not_found", async () => {
     m.customerFrom.mockResolvedValue({ sub: "CLI-A", sid: "S-1" });
     m.staffFrom.mockResolvedValue(null);

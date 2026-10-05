@@ -56,7 +56,7 @@ export async function takeover(id: string, agent: string, agentName: string): Pr
       UpdateExpression: "SET #s = :tk", ExpressionAttributeNames: { "#s": "status" },
       ExpressionAttributeValues: { ":claimed": "claimed", ":returned": "returned", ":a": agent, ":tk": "in_takeover" } } },
     { Update: { TableName: tableName("sessions"), Key: { session_id: p.session_id }, UpdateExpression: "SET control = :c",
-      ConditionExpression: "attribute_exists(session_id)", ExpressionAttributeValues: { ":c": control } } },
+      ConditionExpression: "attribute_exists(session_id) AND control = :agent", ExpressionAttributeValues: { ":c": control, ":agent": "agent" } } },
     systemMessage(p.session_id, t(p.language).agentJoined(agentName), { control, agent_name: agentName }),
   ] })));
   return mustGet(id);
@@ -68,8 +68,8 @@ export async function returnToAssistant(id: string, agent: string): Promise<Hand
     { Update: { TableName: H(), Key: { handoff_id: id }, ConditionExpression: "#s = :tk AND claimed_by = :a",
       UpdateExpression: "SET #s = :ret", ExpressionAttributeNames: { "#s": "status" },
       ExpressionAttributeValues: { ":tk": "in_takeover", ":a": agent, ":ret": "returned" } } },
-    { Update: { TableName: tableName("sessions"), Key: { session_id: p.session_id }, UpdateExpression: "SET control = :c", ConditionExpression: "attribute_exists(session_id)",
-      ExpressionAttributeValues: { ":c": "agent" } } },
+    { Update: { TableName: tableName("sessions"), Key: { session_id: p.session_id }, UpdateExpression: "SET control = :c", ConditionExpression: "control = :mine",
+      ExpressionAttributeValues: { ":c": "agent", ":mine": `human:${agent}` } } },
     systemMessage(p.session_id, t(p.language).backToAssistant, { control: "agent" }),
   ] })));
   return mustGet(id);
@@ -80,9 +80,9 @@ export async function resolve(id: string, agent: string, code: ResolutionCode, n
   const resolution = { code, note, by: agent, at: new Date().toISOString() };
   const items: NonNullable<ConstructorParameters<typeof TransactWriteCommand>[0]["TransactItems"]> = [
     { Update: { TableName: H(), Key: { handoff_id: id },
-      ConditionExpression: "#s = :prev AND claimed_by = :a", // the read status decides the session reset, so a stale read conflicts
+      ConditionExpression: "#s = :prev AND #s <> :resolved AND claimed_by = :a", // the read status decides the session reset, so a stale read conflicts
       UpdateExpression: "SET #s = :res, resolution = :r", ExpressionAttributeNames: { "#s": "status" },
-      ExpressionAttributeValues: { ":prev": p.status, ":a": agent, ":res": "resolved", ":r": resolution } } },
+      ExpressionAttributeValues: { ":prev": p.status, ":a": agent, ":res": "resolved", ":resolved": "resolved", ":r": resolution } } },
   ];
   if (p.status === "in_takeover") {
     items.push({ Update: { TableName: tableName("sessions"), Key: { session_id: p.session_id }, UpdateExpression: "SET control = :c",

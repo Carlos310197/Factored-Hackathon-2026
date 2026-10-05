@@ -1,4 +1,5 @@
 "use client";
+import { redirectToStaffLogin } from "@/lib/staff/redirect";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isDemoMessage } from "@/lib/demo/bridge";
 import { SCENARIOS, type Scenario } from "@/lib/demo/scenarios";
@@ -32,7 +33,7 @@ export function DemoStage() {
   const prefill = useCallback((text: string) => phone.current?.contentWindow?.postMessage({ type: "demo:prefill", text }, window.location.origin), []);
 
   useEffect(() => {
-    void fetch("/api/auth/demo-users").then(async (r) => { if (r.ok) setUsers((await r.json()).data); else throw new Error(); }).catch(() => setNotice("Could not load demo identities: scenarios are unavailable. Reload to retry."));
+    void fetch("/api/auth/demo-users").then(async (r) => { if (r.status === 401) redirectToStaffLogin(); else if (r.ok) setUsers((await r.json()).data); else throw new Error(); }).catch(() => setNotice("Could not load demo identities: scenarios are unavailable. Reload to retry."));
     const onMsg = (e: MessageEvent) => {
       if (!isDemoMessage(e)) return;
       const m = e.data;

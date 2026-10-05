@@ -5,7 +5,8 @@ import { AuthFailure, verifier, type CustomerSession, type StaffSession } from "
 
 // SECURITY: this accepts forged unsigned cookies. E2E_MOCK must NEVER be set in any deployment (the demo
 // deployment runs with DEMO_MODE=1, so DEMO_MODE alone must not enable it). Local Playwright webServer only.
-const e2e = () => process.env.E2E_MOCK === "1" && process.env.DEMO_MODE === "1";
+// Fargate always sets ECS_CONTAINER_METADATA_URI_V4, so the forged path is also refused on any ECS task.
+const e2e = () => process.env.E2E_MOCK === "1" && process.env.DEMO_MODE === "1" && !process.env.ECS_CONTAINER_METADATA_URI_V4;
 function e2eCustomer(tok: string): CustomerSession | null {
   if (!e2e() || !tok.startsWith("e2e.customer.")) return null;
   const [, , sub, sid, lang] = tok.split(".");
@@ -42,9 +43,12 @@ export async function staffFromCookies(): Promise<StaffSession | null> {
   return tok ? e2eStaff(tok) ?? safe(() => verifier().staff(tok)) : null;
 }
 
+/** Secure cookies need HTTPS; the plain-HTTP ECS deployment sets COOKIE_SECURE=0. Default: secure in production. */
+const cookieSecure = () => (process.env.COOKIE_SECURE ?? (process.env.NODE_ENV === "production" ? "1" : "0")) === "1";
+
 export function setSessionCookie(res: NextResponse, name: string, token: string, maxAge: number) {
-  res.cookies.set(name, token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge });
+  res.cookies.set(name, token, { httpOnly: true, secure: cookieSecure(), sameSite: "lax", path: "/", maxAge });
 }
 export function clearSessionCookie(res: NextResponse, name: string) {
-  res.cookies.set(name, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
+  res.cookies.set(name, "", { httpOnly: true, secure: cookieSecure(), sameSite: "lax", path: "/", maxAge: 0 });
 }

@@ -1,4 +1,4 @@
-import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { GetCommand, PutCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTables } from "../helpers/tables";
 
@@ -103,6 +103,30 @@ run("DynamoDB access", () => {
     spy.mockRestore();
     expect((await s.getSession("S-1"))?.control).toBe("human:agent.ana");
     expect((await h.getHandoff("H1"))?.status).toBe("in_takeover");
+  });
+
+  it("takeover and return are conditioned on sessions.control", async () => {
+    await d.doc().send(new PutCommand({ TableName: d.tableName("handoffs"), Item: PACKET("H1") }));
+    await h.claim("H1", "agent.ana");
+    await d.doc().send(new UpdateCommand({ TableName: d.tableName("sessions"), Key: { session_id: "S-1" },
+      UpdateExpression: "SET control = :c", ExpressionAttributeValues: { ":c": "human:agent.luis" } }));
+    await expect(h.takeover("H1", "agent.ana", "Ana R.")).rejects.toBeInstanceOf(d.ConflictError);
+    expect((await h.getHandoff("H1"))?.status).toBe("claimed");
+    await d.doc().send(new UpdateCommand({ TableName: d.tableName("sessions"), Key: { session_id: "S-1" },
+      UpdateExpression: "SET control = :c", ExpressionAttributeValues: { ":c": "agent" } }));
+    await h.takeover("H1", "agent.ana", "Ana R.");
+    await d.doc().send(new UpdateCommand({ TableName: d.tableName("sessions"), Key: { session_id: "S-1" },
+      UpdateExpression: "SET control = :c", ExpressionAttributeValues: { ":c": "human:agent.luis" } }));
+    await expect(h.returnToAssistant("H1", "agent.ana")).rejects.toBeInstanceOf(d.ConflictError);
+    expect((await h.getHandoff("H1"))?.status).toBe("in_takeover");
+  });
+
+  it("resolving an already resolved case conflicts", async () => {
+    await d.doc().send(new PutCommand({ TableName: d.tableName("handoffs"), Item: PACKET("H1") }));
+    await h.claim("H1", "agent.ana");
+    await h.resolve("H1", "agent.ana", "resolved_by_agent", "a");
+    await expect(h.resolve("H1", "agent.ana", "no_action_needed", "b")).rejects.toBeInstanceOf(d.ConflictError);
+    expect((await h.getHandoff("H1"))?.resolution?.note).toBe("a");
   });
 
   it("lists decision records for a turn", async () => {

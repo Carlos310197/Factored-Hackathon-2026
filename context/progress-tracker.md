@@ -324,6 +324,10 @@ Each is checked in plan task 1, with the fallback chosen in advance.
 - **Small n.** 120 goals give wide intervals on rare classes; zero unsafe outcomes observed does not establish zero risk, and the report says so.
 - **Jev alpha endpoint** on run day (§7).
 
+### Session Note: UI final-review fixes (2026-10-05)
+
+Fixed in `web/`: C1 HandoffPacket now matches `packet.py` (decision `value` string or number, `p`, policy `detail`); I1 `COOKIE_SECURE`; I2 ECS guard on forged cookies; I3 Summary amount/currency/reason_code are nullish; M1 takeover/return condition on `sessions.control`; M2 resolve refuses an already resolved case; M4 history GET is 401 without any session (404 kept for a non-owner); M5 staff 401s in Console, ConversationTab and the demo stage go to `/login?staff=1&next=...`; M61 `<html lang>` follows the customer's language (en for staff). Tests: `tests/unit/review-fixes.test.ts` plus additions to ddb, messages-route and console tests.
+
 ## Architecture Decisions
 
 Decisions that change or settle the copied spec text. **They take precedence over the spec text in `context/` and `feature-specs/`.** Numbering follows each plan, so feature specs cite them as "agent-core plan #2", "UI plan #1", and so on.
@@ -364,6 +368,11 @@ Bedrock Mantle chat-completions endpoint, not the `openai.gpt-5-6-luna` / `opena
 `LLM_COMPOSE_MODEL` still override per role, and `test_model_defaults_and_env_override` pins the defaults. The
 gpt-oss models occasionally emit malformed JSON (decoder restarts / split values); `llm/client.py` rejects it and
 the reply falls back to the fixed template (unit 25 findings, tests in `tests/test_llm.py`).
+
+### 2026-10-05: Web session cookies and the E2E guard (final-review fixes)
+
+- `COOKIE_SECURE` drives the `Secure` flag on session cookies (default "1" in production, "0" disables). The current deployment is plain HTTP on the ECS public IP, so it must be set to 0 there until an ALB with TLS exists.
+- The forged E2E cookie path (`E2E_MOCK` + `DEMO_MODE`) is also refused whenever `ECS_CONTAINER_METADATA_URI_V4` is set (Fargate always sets it).
 
 ### Agent-core plan (2026-09-29)
 

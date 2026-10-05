@@ -6,8 +6,8 @@ export const Awaiting = z.enum(["none", "clarification", "confirmation", "human"
 export type Awaiting = z.infer<typeof Awaiting>;
 
 export const Summary = z.object({
-  merchant: z.string(), date: z.string(), amount: z.number().nullable(),
-  currency: z.string().nullable(), reason_code: z.string().nullable(),
+  merchant: z.string(), date: z.string(), amount: z.number().nullish(),
+  currency: z.string().nullish(), reason_code: z.string().nullish(), // the agent store drops None keys
 });
 export type Summary = z.infer<typeof Summary>;
 
@@ -77,8 +77,8 @@ export const HandoffPacket = z.object({
   customer_request: z.object({ original: z.string(), en: z.string() }),
   verified_facts: z.array(z.object({ fact: z.string(), receipt_id: z.string() })),
   actions_taken: z.array(z.object({ action: z.string(), result: z.string(), receipt_id: z.string().nullish() })),
-  decisions: z.array(z.object({ question: z.string(), value: z.number(), question_set: z.string(), thresholds: z.string() })),
-  policy_checks: z.array(z.object({ rule: z.string(), passed: z.boolean() })),
+  decisions: z.array(z.object({ question: z.string(), value: z.union([z.string(), z.number()]), p: z.number().nullish(), question_set: z.string(), thresholds: z.string() })),
+  policy_checks: z.array(z.object({ rule: z.string(), passed: z.boolean(), detail: z.string().nullish() })),
   open_questions: z.array(z.string()).max(3),
   transcript_ref: z.string(),
 });

@@ -4,6 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Console } from "@/components/staff/Console";
 
+const redirect = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/staff/redirect", () => ({ redirectToStaffLogin: redirect }));
 vi.mock("@/lib/realtime/useChannel", () => ({ useChannel: () => "polling" }));
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
@@ -14,6 +16,12 @@ const packet = (id: string) => ({ schema_version: "handoff.v1", handoff_id: id, 
 const me = { sub: "agent.ana", name: "Ana R." };
 
 describe("Console", () => {
+  it("sends an expired staff session to the staff login", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ error: { code: "unauthorized", message: "x" } }, { status: 401 })));
+    render(<Console me={me} />);
+    await waitFor(() => expect(redirect).toHaveBeenCalled());
+  });
+
   it("says so when the case does not exist", async () => {
     vi.stubGlobal("fetch", vi.fn(async (u: string) => u.startsWith("/api/handoffs?") ? Response.json({ data: [] })
       : Response.json({ error: { code: "not_found", message: "x" } }, { status: 404 })));

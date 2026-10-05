@@ -13,7 +13,7 @@ export function ConfirmCard({ summary, lang, disabled, onConfirm, onChange }:
   const rows: [string, string | null][] = [
     [d.merchant, summary.merchant || null],
     [d.date, summary.date ? fmtDate(summary.date, lang) : null],
-    [d.amount, summary.amount !== null && summary.currency ? fmtMoney(summary.amount, summary.currency, lang) : null],
+    [d.amount, summary.amount != null && summary.currency ? fmtMoney(summary.amount, summary.currency, lang) : null],
     [d.reason, reason],
   ];
   return (

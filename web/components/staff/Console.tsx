@@ -1,4 +1,5 @@
 "use client";
+import { redirectToStaffLogin } from "@/lib/staff/redirect";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HandoffPacket, HandoffRow, QueueEvent, type ResolutionCode } from "@/lib/contract";
 import { useChannel } from "@/lib/realtime/useChannel";
@@ -36,6 +37,7 @@ export function Console({ me, initialId, renderTab }: { me: { sub: string; name:
     const seq = ++rowsSeq.current; // a slow response for an old filter must not overwrite the current one
     try {
       const r = await fetch(`/api/handoffs?filter=${filter}`, { cache: "no-store" });
+      if (r.status === 401) return redirectToStaffLogin();
       if (r.ok && seq === rowsSeq.current) {
         const list = HandoffRow.array().parse((await r.json()).data);
         list.forEach((x) => seen.current.add(x.handoff_id));
@@ -48,6 +50,7 @@ export function Console({ me, initialId, renderTab }: { me: { sub: string; name:
     try {
       const r = await fetch(`/api/handoffs/${id}`, { cache: "no-store" });
       if (seq !== caseSeq.current) return;
+      if (r.status === 401) return redirectToStaffLogin();
       if (!r.ok) { setData(null); return setCaseState(r.status === 404 ? "missing" : "error"); }
       const d = (await r.json()).data;
       const packet = HandoffPacket.parse(d.packet);

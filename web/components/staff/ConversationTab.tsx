@@ -1,4 +1,5 @@
 "use client";
+import { redirectToStaffLogin } from "@/lib/staff/redirect";
 import { useCallback, useEffect, useState } from "react";
 import { useStore } from "zustand";
 import { syncHistory } from "@/lib/chat/api";
@@ -17,7 +18,7 @@ export function ConversationTab({ sid, lang, control, me }: { sid: string; lang:
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const holding = control === `human:${me.sub}`;
-  const resync = useCallback(() => { void syncHistory(store, sid); }, [store, sid]);
+  const resync = useCallback(() => { void syncHistory(store, sid).then(() => { if (store.getState().expired) redirectToStaffLogin(); }); }, [store, sid]);
   useEffect(() => { resync(); }, [resync]);
   useChannel(`/session/${sid}`, (p) => { const ev = SessionEvent.safeParse(p); if (ev.success) store.getState().applyEvent(ev.data); },
     { as: "staff", onResync: resync });
@@ -29,6 +30,7 @@ export function ConversationTab({ sid, lang, control, me }: { sid: string; lang:
     setSending(true);
     try {
       const r = await fetch(`/api/sessions/${encodeURIComponent(sid)}/messages`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: body }) });
+      if (r.status === 401) return redirectToStaffLogin();
       if (r.ok) { setText(""); setError(null); resync(); }
       else { setError(r.status === 409 ? "You no longer hold this conversation." : "Message not sent. Try again."); if (r.status === 409) resync(); }
     } catch { setError("Message not sent. Try again."); }

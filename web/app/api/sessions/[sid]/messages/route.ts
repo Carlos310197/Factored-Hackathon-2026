@@ -10,6 +10,7 @@ type Ctx = { params: Promise<{ sid: string }> };
 export async function GET(req: NextRequest, { params }: Ctx) {
   const { sid } = await params;
   const [customer, staff] = [await customerFrom(req), await staffFrom(req)];
+  if (!customer && !staff) return fail("unauthorized", "Sign-in required", 401);
   const session = await getSession(sid);
   const ownerOk = customer && session && customer.sid === sid && session.customer_id === customer.sub;
   if (!session || (!ownerOk && !staff)) return fail("not_found", "Not found", 404);  // same answer as a missing session
