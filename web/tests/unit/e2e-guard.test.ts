@@ -18,4 +18,11 @@ describe("E2E cookies", () => {
     expect(await customerFrom(req("cust_session=e2e.customer.CLI-A.S-1.es"))).toMatchObject({ sub: "CLI-A", sid: "S-1", lang: "es" });
     expect(await staffFrom(req("staff_session=e2e.staff.agent.ana.Ana R."))).toMatchObject({ sub: "agent.ana", name: "Ana R." });
   });
+
+  it("DEMO_MODE=1 alone (the demo deployment) never honours them", async () => {
+    process.env.DEMO_MODE = "1";
+    const { customerFrom, staffFrom } = await import("@/lib/server/session");
+    expect(await customerFrom(req("cust_session=e2e.customer.CLI-A.S-1.es"))).toBeNull();
+    expect(await staffFrom(req("staff_session=e2e.staff.agent.ana.Ana R."))).toBeNull();
+  });
 });

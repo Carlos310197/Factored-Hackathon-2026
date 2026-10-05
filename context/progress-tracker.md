@@ -406,6 +406,9 @@ the reply falls back to the fixed template (unit 25 findings, tests in `tests/te
 
 ### UI plan (2026-09-30)
 
+- 2026-10-05, unit 75: **contrast tokens.** axe `color-contrast` (serious) failed on `c-pass` text (#1A8F5A on white, 4.1:1) and `c-alert` on `c-alert-tint` (#C8337A on #FCE8F1, 4.26:1). New values `c-pass` #167A4D (5.35:1 on white) and `c-alert` #B52C6C (5.07:1 on the tint); `context/ui-context.md` §7 updated. The pending customer bubble shows a muted "enviando…" label instead of `opacity-80` (4.38:1).
+- 2026-10-05, unit 75: **deployment note.** The E2E cookie bypass in `web/lib/server/session.ts` works when `E2E_MOCK=1` and `DEMO_MODE=1`. The demo deployment runs with `DEMO_MODE=1`, so `E2E_MOCK` must never appear in the ECS task environment, Terraform variables or any deployed `.env`. It is for the local Playwright webServer only.
+
 **Spec adjustments found while planning:**
 1. **`summary.product_last4` is dropped** (§4.7). The graph's `txn` has `product_id`, not a card number, and adding a product lookup to the confirm path isn't worth it. The card shows merchant, date, amount and reason.
 2. **`turn_end` payload** is `{duration_ms, awaiting}` (§4.6). The route comes from the turn's existing `understand`/`route` record, so it isn't duplicated.

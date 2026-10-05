@@ -29,7 +29,10 @@ export function MessageView({ lang, busy, latestAssistantId, onSend }:
   return (
     <MessagePrimitive.Root className="flex flex-col gap-2">
       {role === "customer" && (
-        <p className={`max-w-[84%] self-end whitespace-pre-wrap rounded-bubble rounded-br-[4px] bg-b-cobalt px-3.5 py-2.5 text-b-surface`}>{text}</p>
+        <>
+          <p className="max-w-[84%] self-end whitespace-pre-wrap rounded-bubble rounded-br-[4px] bg-b-cobalt px-3.5 py-2.5 text-b-surface">{text}</p>
+          {custom.status === "sending" && <span className="self-end text-xs text-b-muted">{d.sending}</span>}
+        </>
       )}
       {role === "assistant" && (
         <>

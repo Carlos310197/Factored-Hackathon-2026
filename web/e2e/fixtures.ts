@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 export const BASE = "http://localhost:3200";
 export async function signInCustomer(ctx: BrowserContext, lang: "es" | "pt" = "es") {
@@ -9,11 +9,14 @@ export async function signInStaff(ctx: BrowserContext) {
   await ctx.addCookies([{ name: "staff_session", value: "e2e.staff.agent.ana.Ana R.", url: BASE }]);
 }
 type Handler = (req: { method: string; url: URL; body: unknown }) => { status?: number; json: unknown } | undefined;
+const unmatched: string[] = [];
+test.afterEach(() => { const u = unmatched.splice(0); expect(u, "unmocked /api calls").toEqual([]); });
 export async function mockApi(page: Page, handler: Handler) {
   await page.context().route("**/api/**", async (route) => {
     const r = route.request();
     const url = new URL(r.url());
     const res = handler({ method: r.method(), url, body: r.postDataJSON?.() ?? null });
+    if (!res) unmatched.push(`${r.method()} ${url.pathname}`);
     if (!res) return route.fulfill({ status: 404, json: { error: { code: "not_found", message: url.pathname } } });
     return route.fulfill({ status: res.status ?? 200, json: res.json });
   });

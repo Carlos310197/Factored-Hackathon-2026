@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import type { NextRequest, NextResponse } from "next/server";
 import { AuthFailure, verifier, type CustomerSession, type StaffSession } from "./jwt";
 
+// SECURITY: this accepts forged unsigned cookies. E2E_MOCK must NEVER be set in any deployment (the demo
+// deployment runs with DEMO_MODE=1, so DEMO_MODE alone must not enable it). Local Playwright webServer only.
 const e2e = () => process.env.E2E_MOCK === "1" && process.env.DEMO_MODE === "1";
 function e2eCustomer(tok: string): CustomerSession | null {
   if (!e2e() || !tok.startsWith("e2e.customer.")) return null;

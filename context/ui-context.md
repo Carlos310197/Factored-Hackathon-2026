@@ -64,8 +64,8 @@ Cool, precise and calm. The trace is the hero. Typeface: **Hanken Grotesk** (400
 | `c-track` | `#E8ECF1` | gauge track |
 | `c-below` | `#A7B1BE` | below-threshold fill |
 | `c-signal` | `#2F6FEB` | primary actions, selection |
-| `c-pass` | `#1A8F5A` | policy pass |
-| `c-alert` | `#C8337A` | policy fail, critical priority |
+| `c-pass` | `#167A4D` | policy pass |
+| `c-alert` | `#B52C6C` | policy fail, critical priority |
 | `c-warn` | `#EDA100` | high priority |
 
 - **Radii:** 8px for controls, 10px for panels.
