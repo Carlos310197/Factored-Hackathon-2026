@@ -1,0 +1,15 @@
+{
+  "name": "bankagent-realtime",
+  "private": true,
+  "scripts": { "test": "vitest run" },
+  "dependencies": { "jose": "^5.9.0" },
+  "devDependencies": {
+    "@aws-appsync/utils": "^1.10.0",
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.24.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
