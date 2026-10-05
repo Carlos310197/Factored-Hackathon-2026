@@ -453,6 +453,12 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-05: Evidence and targets in the docs
+
+- README: a "What success looks like" table (dispute intake vs the 37 h baseline, unsafe k/N, complete handoff packets, safe automated resolution with CI, wrong-transaction disputes ≤ 2 %), each mapped to the metric that measures it; more limitations (best-effort decision records, unsalted demo password hashes, no audit of staff reads, pipeline re-export and RAW growth).
+- `docs/data-pipeline.md`: live run evidence for `37378614273-1` (RAW = STAGING = exported row counts, quarantine 0, dbt 77/3/0, the 3 warnings named, manifest 3,293 files) and a "limitations of the pipeline" list. Read-only Snowflake queries approved by the owner.
+- `pipeline.yml` keeps dbt `manifest.json` and `run_results.json` as a workflow artifact per run (`dbt-lineage-<run_id>`, 90 days; `actions/upload-artifact` pinned to v7.0.1).
+
 ### 2026-10-05: Self-describing serving pointer and contract parity
 
 - `latest.json` now also carries `git_sha` (`GITHUB_SHA`), `contract_hash` (SHA-256 of the exported columns, in order, canonical JSON) and `dq_summary` (META.DQ_RESULTS counts by status for the run). Older keys unchanged.
