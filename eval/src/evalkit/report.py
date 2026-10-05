@@ -132,6 +132,8 @@ def render(d: dict, date: str, figures: list[str]) -> str:
           f"| Reply regenerations / template fallbacks (turns) | {h['regeneration_turns']} / {h['template_fallback_turns']} |",
           f"| Cost status | {c['status']}{' (missing: ' + ', '.join(c.get('missing_prices', [])) + ')' if c['status'] != 'ok' else ''} |",
           f"| Cost per attempted case (USD) | {c.get('per_attempted_case')} |",
+          *([f"| Priced models only, per attempted case (USD, lower bound) | {c['priced_per_attempted_case']} |"]
+            if c.get("priced_per_attempted_case") is not None else []),
           f"| Cost per successful automated resolution (USD) | {c.get('per_successful_resolution') if c.get('per_successful_resolution') is not None else 'not defined'} |",
           "", f"Variability across repetitions: outcome agreement {_r(d['variability']['agreement'])}; ranges {d['variability']['range']}."]
     L += ["", "## 3. Legacy vs new (shared metrics)", "", f"Every row: *{LABEL}*.", "",
