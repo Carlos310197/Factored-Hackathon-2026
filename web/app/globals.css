@@ -46,3 +46,8 @@ body { background: var(--color-c-canvas); color: var(--color-c-ink); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* World C numbers use tabular figures (UI spec §7.2): applies wherever font-staff does. */
+@layer utilities {
+  .font-staff { font-variant-numeric: tabular-nums; }
+}
