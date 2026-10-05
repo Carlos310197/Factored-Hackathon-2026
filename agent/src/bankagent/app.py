@@ -2,14 +2,20 @@
 AgentCore's CUSTOM_JWT authorizer checks the token first and forwards Authorization (requestHeaderAllowlist);
 this code re-verifies it anyway. customer_id comes only from the token, never from the payload."""
 import logging
+import re
+import time
 
 from bedrock_agentcore import BedrockAgentCoreApp, RequestContext
 
 from bankagent.auth.tokens import AuthError, verify_token
+from bankagent.ids import new_id
 from bankagent.llm.templates import auth_message, fallback_reply
 from bankagent.settings import Settings
 
 MAX_MESSAGE_CHARS = 2000
+MESSAGE_ID_HEADER = "x-amzn-bedrock-agentcore-runtime-custom-message-id"  # the prefix AgentCore passes through
+MESSAGE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
+META_KEYS = ("awaiting", "options", "refs", "summary", "data_as_of")
 log = logging.getLogger(__name__)
 app = BedrockAgentCoreApp()
 _runtime = None
@@ -27,10 +33,22 @@ def _bearer(headers: dict) -> str | None:
     return None
 
 
+def _header(headers: dict, name: str) -> str | None:
+    for key, value in (headers or {}).items():
+        if key.lower() == name and isinstance(value, str):
+            return value
+    return None
+
+
+def _message_id(payload: dict, headers: dict) -> str:
+    raw = _header(headers, MESSAGE_ID_HEADER) or payload.get("client_message_id")
+    return raw if isinstance(raw, str) and MESSAGE_ID_RE.match(raw) else new_id("MSG")
+
+
 def handle(payload: dict, headers: dict, rt) -> dict:
     payload = payload if isinstance(payload, dict) else {}
     lang = payload.get("lang") if payload.get("lang") in ("es", "pt") else "es"
-    token = _bearer(headers) or payload.get("session_token")
+    token = _bearer(headers)  # header only: no token in the payload
     if not isinstance(token, str) or not token:
         return _error(auth_message("auth_required", lang), lang, "auth_required")
     try:
@@ -46,7 +64,27 @@ def handle(payload: dict, headers: dict, rt) -> dict:
     message = payload.get("message")
     if not isinstance(message, str) or not message.strip() or len(message) > MAX_MESSAGE_CHARS:
         return _error(auth_message("invalid_message", ctx.lang), ctx.lang, "invalid_message")
-    return rt.service.handle_turn(ctx, message.strip())
+    text, sid, store = message.strip(), ctx.session_id, rt.service.deps.store
+    store.sessions.ensure(sid, ctx.customer_id, ctx.lang)
+    message_id = _message_id(payload, headers)
+    prior = store.messages.claim(sid, message_id)
+    if prior is not None:  # a retry or double send of the same message: never run the turn twice
+        return prior.get("reply") or {**_error("", ctx.lang, "duplicate_in_progress"), "turn_id": None}
+    if store.sessions.control(sid) != "agent":  # a human holds the conversation
+        store.messages.append(sid, "customer", text, message_id=message_id)
+        reply = {"reply_text": "", "language": ctx.lang, "awaiting": "human", "options": [], "refs": [],
+                 "data_as_of": None, "turn_id": None}
+        store.messages.store_reply(sid, message_id, reply)
+        return reply
+    turn_id, start = new_id("TRN"), time.monotonic()
+    store.messages.append(sid, "customer", text, message_id=message_id, turn_id=turn_id)
+    reply = rt.service.handle_turn(ctx, text, turn_id=turn_id)
+    store.messages.append(sid, "assistant", reply.get("reply_text", ""), turn_id=turn_id,
+                          meta={k: reply.get(k) for k in META_KEYS if reply.get(k) is not None})
+    store.log.append(sid, turn_id, "turn", "turn_end",
+                     {"duration_ms": int((time.monotonic() - start) * 1000), "awaiting": reply.get("awaiting", "none")})
+    store.messages.store_reply(sid, message_id, reply)
+    return reply
 
 
 def runtime():

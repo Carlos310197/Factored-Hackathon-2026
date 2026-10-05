@@ -10,6 +10,7 @@ DISPUTE_NETFLIX = {"intent": "dispute_charge", "target": "Netflix", "reason": "d
 def test_account_inquiry_es(ddb_store, serving_root):
     h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}])
     r = h.turn("¿Cuál es el saldo de mi tarjeta?")
+    assert r.pop("turn_id").startswith("TRN")
     assert r == {"reply_text": "[answer]", "language": "es", "awaiting": "none", "options": [], "refs": [],
                  "data_as_of": "2026-06-17"}
     assert [x["source"] for x in h.state()["receipts"]] == ["dim_product"]

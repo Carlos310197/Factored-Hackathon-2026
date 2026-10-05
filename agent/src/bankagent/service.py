@@ -25,9 +25,9 @@ class AgentService:
         self.recursion_limit = recursion_limit
         self.graph: CompiledStateGraph = build_graph(deps, self.checkpointer)
 
-    def handle_turn(self, ctx: SessionContext, message: str) -> dict:
+    def handle_turn(self, ctx: SessionContext, message: str, turn_id: str | None = None) -> dict:
         """Process one customer turn. Returns the reply dict."""
-        turn_id = new_id("turn")
+        turn_id = turn_id or new_id("TRN")
         config: RunnableConfig = {
             "configurable": {
                 "thread_id": ctx.session_id,
@@ -51,10 +51,11 @@ class AgentService:
                 "awaiting": "none",
                 "options": [],
                 "refs": [],
-                "data_as_of": None
+                "data_as_of": None,
+                "turn_id": turn_id,
             }
 
-        return result["reply"]
+        return {**result["reply"], "turn_id": turn_id}
 
     def state(self, ctx: SessionContext) -> dict[str, Any]:
         """Get the current graph state for a session."""
