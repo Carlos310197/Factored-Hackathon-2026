@@ -46,6 +46,16 @@ takes a dispute from the first message to a filed, read-back-verified record in 
 structured handoff packet when a human must decide. Transaction inquiries are in scope because a dispute needs them: you
 can't dispute a charge you can't find.
 
+**What success looks like.** Measurable targets, each tied to a metric the evaluation reports with its denominator:
+
+| Target | Today | Measured by |
+|---|---|---|
+| Dispute intake: from first message to a filed, read-back-verified record in one conversation | 37 h median to a first response | `decision_records`: time from the first turn to `verify:tool` |
+| Unsafe outcomes: 0, reported as k/N, never as "zero risk" | — | eval classifier, unsafe outcomes over all in-scope cases |
+| Every human handoff arrives as a complete `handoff.v1` packet (request, verified facts, actions, evidence, open questions) | free-text complaints | packet schema validation + eval judge |
+| Safe automated resolution of in-scope inquiries and eligible disputes, with the rate and its CI | — | eval, safe automated resolution over all in-scope cases |
+| Wrong-transaction disputes ≤ 2 % at the resolver's threshold | — | resolver evaluation on the frozen human-written test set |
+
 **What we don't claim.** That customers want chat (85 % of contacts are phone today), any savings figure, or improvement
 over the legacy process. Those need a pilot.
 
@@ -150,7 +160,7 @@ All DynamoDB tables have point-in-time recovery and deletion protection.
 | Judged area | Look at |
 |---|---|
 | Rationale and docs | This README, [`reports/asis-2026-10-05.md`](reports/asis-2026-10-05.md), `context/` (specs and decisions), `context/progress-tracker.md` → Architecture Decisions |
-| Data engineering | [`docs/data-pipeline.md`](docs/data-pipeline.md): contracts, quarantine with a 1 % gate, lineage manifest, fixture drop proof (`tests/test_fixture_drop.py`), atomic serving pointer (`tests/test_export.py`) |
+| Data engineering | [`docs/data-pipeline.md`](docs/data-pipeline.md): contracts, quarantine with a 1 % gate, lineage manifest, fixture drop proof (`tests/test_fixture_drop.py`), atomic self-describing serving pointer (`tests/test_export.py`), contract parity with the agent (`tests/test_contract_parity.py`), and the live run evidence (row counts per layer, 77 pass / 3 warn / 0 error) |
 | Data analytics | [`reports/asis-2026-10-05.md`](reports/asis-2026-10-05.md) and `analysis/asis/` (synthetic-artifact detectors, every number with n) |
 | AI engineering | The control matrix and failure table above; live trace at `/trace/<session>`; `agent/docs/smoke-results.md` (all 8 scenarios against real Jev and Bedrock, 2026-10-05) |
 | ML | Transaction resolver in `agent/resolver/`: simulated training cases, customer-disjoint splits, B0 (production filter) and B2 (Jev only) baselines fixed before the test run, and a human-written ES/PT test sheet (`agent/resolver/data/`). See status below. |
@@ -184,6 +194,11 @@ We report what we measured. We don't report numbers we haven't run.
 - **Synthetic data:** escalation and SLA rates, wait times, CSAT and agent load are generator artifacts and are not used to
   argue for this system.
 - **Hosting:** plain HTTP, so session cookies are not `Secure`; one Fargate task.
+- **Audit records** (`decision_records`) are written best-effort: a failed write is logged, not retried, and does not stop
+  the turn.
+- **Mock identity:** demo passwords are stored as unsalted SHA-256 hashes; staff reads of a conversation are not audited.
+- **Pipeline:** the daily run re-exports even when nothing new loaded, and RAW is never purged (details in
+  [`docs/data-pipeline.md`](docs/data-pipeline.md)).
 
 **Before production**
 - A real identity provider, HTTPS, and `Secure` cookies.

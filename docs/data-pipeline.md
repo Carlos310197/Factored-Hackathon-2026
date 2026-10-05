@@ -46,6 +46,23 @@ and `pipeline-runner` → `PIPELINE_SVC` (the Python steps and dbt, `authenticat
 can assume either role. The organizer keys are kept in SSM and in the Snowflake stage. Snowflake writes to our bucket through
 the storage integration `SI_SERVING` (IAM role `snowflake-serving`).
 
+### Run evidence (live, 2026-10-05)
+
+Run `37378614273-1` (commit `57b728f`), read back from Snowflake and the serving bucket:
+
+| Table | RAW rows (files) | STAGING rows | Quarantined | Exported |
+|---|---|---|---|---|
+| transactions | 4,425,008 (1,097 daily files) | 4,425,008 | 0 | 4,425,008 (`fct_transaction`) |
+| customers | 150,000 (1 file) | 150,000 | 0 | 150,000 (`dim_customer`) |
+| products | 400,000 (1 file) | 400,000 | 0 | 400,000 (`dim_product`) |
+| complaints | 67,095 (1,097 daily files) | 67,095 | 0 | 67,095 (`fct_complaint`) |
+| interactions | 686,296 (1,097 daily files) | 686,296 | 0 | not exported (not used by the agent) |
+
+- **dbt build:** 80 nodes, 77 pass, 3 warn, 0 error. `META.DQ_RESULTS` for the run: 58 tests (53 error-severity, all pass; 5 warn-severity, 3 of them warned).
+- **The 3 warnings** are source nulls that are allowed by design: complaints `claimed_amount` (45,344 rows), interactions `duration_seconds` (96,234) and `customer_detected_accent` (204,750).
+- **Quarantine is empty** on the organizer drop: no cast failures, contract nulls or bad enums. The fixture drop is what proves quarantine and the 1 % gate work.
+- **Lineage:** `META.RUN_MANIFEST` holds 3,293 files and 5,728,399 rows, all loaded as `new` by the initial run; later runs skipped every file (same ETag) and wrote no rows. From now on each run also keeps dbt's `manifest.json` and `run_results.json` as a workflow artifact (`dbt-lineage-<run_id>`, 90 days), and `latest.json` names the commit, the contract hash and the DQ summary.
+
 ### Limitations found in the data
 - Counts are below the documented totals: 686k interactions vs 800k, and 67k complaints vs 80k.
 - `data_backup_20260831/` is a different synthetic generation and is ignored.
@@ -54,6 +71,12 @@ the storage integration `SI_SERVING` (IAM role `snowflake-serving`).
 - For 25–33% of rows, the event timestamp falls on the day after the partition date (a timezone offset), so tools query by event time.
 - Timestamps arrive as `YYYY-MM-DD HH24:MI:SS`, and integers as `"9.0"`; staging parses both (pinned by dbt unit tests).
 - The current drop has no duplicates and no schema changes; the fixture drop proves that both are handled.
+
+### Limitations of the pipeline itself
+- The daily run re-exports every table under a new `run_id` even when nothing new was loaded (the pointer still moves).
+- RAW only grows: a restated file is loaded again and staging keeps the newest load, but the old RAW rows are never purged;
+  a restatement under a new file name leaves the old file's rows in place.
+- Curated marts are rebuilt in full each run (no incremental models); fine at this size (4.4M transactions).
 
 ### Reproduce
 1. One-time bootstrap (AWS SSO profile `hackathon-sso`, snow CLI connection `sbx`): `infra/terraform/bootstrap/apply.sh`, then merge to `main` and let `infra.yml` apply `infra/terraform/platform`.
