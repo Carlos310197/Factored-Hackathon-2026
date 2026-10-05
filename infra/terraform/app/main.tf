@@ -1,6 +1,5 @@
-# App: the web UI (Next.js BFF) on ECS Fargate Spot. Applied only by GitHub Actions as gha-deploy.
-# ponytail: no ALB until demo day (saves ~$16/mo); tasks get a public IP and the security group admits
-# only the team's IPs. Demo day: add an ALB + HTTPS and switch to FARGATE (on-demand).
+# App: the web UI (Next.js BFF) on ECS Fargate Spot behind a public ALB (stable URL). Applied only by GitHub Actions
+# as gha-deploy. HTTP only: there is no domain, so no certificate (cookies are not Secure; disclosed in the README).
 terraform {
   required_version = ">= 1.10"
   required_providers {
@@ -16,12 +15,6 @@ terraform {
 
 provider "aws" {
   region = "us-east-1"
-}
-
-variable "allowed_cidrs" {
-  description = "Team IPs allowed to reach the app (curl checkip.amazonaws.com)"
-  type        = list(string)
-  default     = ["181.67.2.219/32", "38.25.85.60/32"] # Andrés, Carlos
 }
 
 variable "image" {
@@ -104,6 +97,11 @@ data "aws_subnets" "public" {
     name   = "availability-zone"
     values = ["us-east-1a", "us-east-1b", "us-east-1c", "us-east-1d", "us-east-1f"]
   }
+}
+
+output "url" {
+  description = "Stable public URL of the web app"
+  value       = "http://${aws_lb.web.dns_name}"
 }
 
 output "cluster" {

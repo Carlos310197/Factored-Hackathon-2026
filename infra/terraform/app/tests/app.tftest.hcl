@@ -1,4 +1,10 @@
 mock_provider "aws" {
+  mock_resource "aws_lb" {
+    defaults = { arn = "arn:aws:elasticloadbalancing:us-east-1:762197749808:loadbalancer/app/latam-bank-web/abc", dns_name = "latam-bank-web-123.us-east-1.elb.amazonaws.com" }
+  }
+  mock_resource "aws_lb_target_group" {
+    defaults = { arn = "arn:aws:elasticloadbalancing:us-east-1:762197749808:targetgroup/latam-bank-web/abc" }
+  }
   mock_data "aws_caller_identity" {
     defaults = { account_id = "762197749808" }
   }
@@ -50,31 +56,32 @@ override_data {
   values = { outputs = { http_domain = "abc.appsync-api.us-east-1.amazonaws.com" } }
 }
 
-run "only_allowed_ips_reach_the_app_port" {
+run "public_alb_and_the_task_only_reachable_through_it" {
   command = apply
 
   assert {
-    condition     = toset(aws_vpc_security_group_ingress_rule.app[*].cidr_ipv4) == toset(["181.67.2.219/32", "38.25.85.60/32"])
-    error_message = "ingress must be exactly the allowed /32s"
+    condition     = aws_lb.web.internal == false && aws_lb.web.load_balancer_type == "application" && length(aws_lb.web.subnets) >= 2
+    error_message = "internet-facing ALB across at least two public subnets"
   }
 
   assert {
-    condition     = alltrue([for r in aws_vpc_security_group_ingress_rule.app : r.from_port == 3000 && r.to_port == 3000 && r.ip_protocol == "tcp"])
-    error_message = "ingress only on tcp/3000"
-  }
-}
-
-run "spot_only_public_ip_no_load_balancer" {
-  command = apply
-
-  assert {
-    condition     = length(aws_ecs_service.web.capacity_provider_strategy) == 1 && one(aws_ecs_service.web.capacity_provider_strategy).capacity_provider == "FARGATE_SPOT"
-    error_message = "service must run on FARGATE_SPOT only"
+    condition     = aws_vpc_security_group_ingress_rule.alb_http.cidr_ipv4 == "0.0.0.0/0" && aws_vpc_security_group_ingress_rule.alb_http.from_port == 80
+    error_message = "the ALB is public on port 80 (no domain, so no certificate)"
   }
 
   assert {
-    condition     = aws_ecs_service.web.network_configuration[0].assign_public_ip && length(aws_ecs_service.web.load_balancer) == 0
-    error_message = "public IP, no load balancer (until demo day)"
+    condition     = aws_vpc_security_group_ingress_rule.app.referenced_security_group_id == aws_security_group.alb.id && aws_vpc_security_group_ingress_rule.app.from_port == 3000 && aws_vpc_security_group_ingress_rule.app.cidr_ipv4 == null
+    error_message = "the task port admits only the ALB's security group, no CIDR (no home IPs)"
+  }
+
+  assert {
+    condition     = aws_lb_target_group.web.target_type == "ip" && aws_lb_target_group.web.port == 3000 && aws_lb_target_group.web.health_check[0].path == "/login"
+    error_message = "IP target group on 3000, health-checked on /login"
+  }
+
+  assert {
+    condition     = one(aws_ecs_service.web.load_balancer).container_port == 3000 && one(aws_ecs_service.web.load_balancer).container_name == "web"
+    error_message = "the service registers its task with the target group"
   }
 
   assert {

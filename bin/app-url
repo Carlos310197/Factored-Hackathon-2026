@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
-# Print the web app's current URL. The public IP changes on every deploy or Spot interruption (no ALB until demo day).
+# Print the web app's stable URL (the public ALB in front of the ECS service).
 set -euo pipefail
 export AWS_PROFILE="${AWS_PROFILE:-hackathon-sso}" AWS_REGION=us-east-1
-task=$(aws ecs list-tasks --cluster latam-bank --service-name latam-bank-web --desired-status RUNNING --query 'taskArns[0]' --output text)
-[ "$task" = "None" ] && { echo "no running task" >&2; exit 1; }
-eni=$(aws ecs describe-tasks --cluster latam-bank --tasks "$task" \
-  --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value" --output text)
-ip=$(aws ec2 describe-network-interfaces --network-interface-ids "$eni" --query 'NetworkInterfaces[0].Association.PublicIp' --output text)
-echo "http://$ip:3000"
+dns=$(aws elbv2 describe-load-balancers --names latam-bank-web --query 'LoadBalancers[0].DNSName' --output text)
+echo "http://$dns"
