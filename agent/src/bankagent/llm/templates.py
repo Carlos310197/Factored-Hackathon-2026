@@ -1,5 +1,5 @@
 """Fixed ES/PT texts inserted verbatim (confirmation summary, handoff notice, auth messages) and the deterministic
-fallback reply used when Claude or the reply verification fails. No model writes these."""
+fallback reply used when the LLM or the reply verification fails. No model writes these."""
 
 INTENT_LABELS = {
     "es": {"account_info": "información de tus cuentas", "transaction_status": "el estado de una transacción",

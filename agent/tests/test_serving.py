@@ -54,5 +54,26 @@ def test_pointer_with_a_different_contract_is_refused(serving_root):
     p.write_text(json.dumps(good | {"contract_hash": "0" * 64}))
     with pytest.raises(ServingError, match="contract"):  # columns drifted: refuse rather than misread
         ServingData(str(serving_root)).pointer()
-    p.write_text(json.dumps(good))  # no hash (older pointers): still served
-    assert ServingData(str(serving_root)).pointer().run_id == RUN_ID
+    p.write_text(json.dumps({k: v for k, v in good.items() if k != "contract_hash"}))
+    with pytest.raises(ServingError, match="contract"):  # a pointer that doesn't name its columns is refused too
+        ServingData(str(serving_root)).pointer()
+    p.write_text(json.dumps(good))  # serving_root is shared by the session: leave it as found
+
+
+def test_stale_pointer_is_logged_for_the_alarm(serving_root, caplog):
+    """The daily pipeline moves latest.json; an export older than 2 days means it stopped (alarm: StalePointer)."""
+    import json
+    from datetime import datetime, timedelta, timezone
+
+    p = serving_root / "latest.json"
+    good = json.loads(p.read_text())
+    fresh = (datetime.now(timezone.utc) - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    p.write_text(json.dumps(good | {"exported_at": fresh}))
+    with caplog.at_level("WARNING"):
+        ServingData(str(serving_root)).pointer()
+    assert not any("stale" in r.getMessage() for r in caplog.records)
+    p.write_text(json.dumps(good | {"exported_at": "2026-06-18T06:00:00Z"}))
+    with caplog.at_level("WARNING"):
+        ServingData(str(serving_root)).pointer()
+    assert any(r.getMessage() == "serving pointer is stale" for r in caplog.records)
+    p.write_text(json.dumps(good))

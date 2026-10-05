@@ -3,7 +3,8 @@
 Factored AI & Data Hackathon 2026. One workflow, built end to end: **account and payment inquiries plus transaction-dispute
 intake**, in Spanish and Portuguese, for a synthetic LATAM bank. Code decides every route and enforces identity, permissions
 and the dispute policy. Typed judgments (Jev) decide the bounded questions. A language model only turns text into JSON and
-writes the reply. Every action, refusal and handoff leaves a decision record you can open in the trace view.
+writes the reply. Each step of a turn (tool call, judgment, policy check, action, refusal, handoff) is written as a
+decision record you can open in the trace view; the write is best-effort (see Limitations).
 
 > This is a deployed workflow prototype with inspectable controls, not a production system. Identity is a mock IdP, the
 > resolver is trained on simulated cases, and bank integration and operational validation remain (see
@@ -50,11 +51,11 @@ can't dispute a charge you can't find.
 
 | Target | Today | Measured by |
 |---|---|---|
-| Dispute intake: from first message to a filed, read-back-verified record in one conversation | 37 h median to a first response | `decision_records`: time from the first turn to `verify:tool` |
-| Unsafe outcomes: 0, reported as k/N, never as "zero risk" | — | eval classifier, unsafe outcomes over all in-scope cases |
-| Every human handoff arrives as a complete `handoff.v1` packet (request, verified facts, actions, evidence, open questions) | free-text complaints | packet schema validation + eval judge |
-| Safe automated resolution of in-scope inquiries and eligible disputes, with the rate and its CI | — | eval, safe automated resolution over all in-scope cases |
-| Wrong-transaction disputes ≤ 2 % at the resolver's threshold (**measured: 0.7 %, 1 of 150, 95 % CI 0–2 %**) | — | resolver evaluation on the frozen human-written test set |
+| Dispute intake: median ≤ 5 min from the customer's first message to a filed, read-back-verified record, in one conversation | 37 h median to a *first response* (a different endpoint: today nothing is filed by then) | `decision_records`: time from the first turn to `verify:tool` |
+| Unsafe outcomes: 0 observed, reported as k/N with the upper confidence bound, never as "zero risk" | — | eval classifier, unsafe outcomes over all in-scope cases |
+| 100 % of human handoffs arrive as a complete `handoff.v1` packet (request, verified facts, actions, evidence, open questions) | free-text complaints | packet schema validation + eval judge |
+| Safe automated resolution of in-scope inquiries and eligible disputes: target set after a pilot; we report the rate with its CI | — | eval, safe automated resolution over all in-scope cases |
+| Wrong-transaction disputes ≤ 2 % at the resolver's threshold (**measured: 1 of 150 = 0.7 %, exact 95 % CI 0.02–3.7 %, so ≤ 2 % is not yet shown; P equals B2 on this**) | — | resolver evaluation on the frozen human-written test set |
 
 **What we don't claim.** That customers want chat (85 % of contacts are phone today), any savings figure, or improvement
 over the legacy process. Those need a pilot.
@@ -73,7 +74,7 @@ over the legacy process. Those need a pilot.
 | Layer | What | Where |
 |---|---|---|
 | Data | Organizer S3 drop → Snowflake `RAW` → dbt `STAGING` (typed, deduplicated, quarantined) → `CURATED` (enforced contracts) → versioned parquet + `latest.json` pointer | [`docs/data-pipeline.md`](docs/data-pipeline.md), `dbt/`, `pipeline/`, [`docs/diagrams/pipeline.svg`](docs/diagrams/pipeline.svg) |
-| Agent | LangGraph workflow on Amazon Bedrock AgentCore Runtime (JWT authorizer). LLM: `openai.gpt-oss-20b` (extract) and `gpt-oss-120b` (compose) on Bedrock. Typed decisions: Jev (`jev-1.13.0`) | `agent/`, [`docs/diagrams/agent-core.svg`](docs/diagrams/agent-core.svg) |
+| Agent | LangGraph workflow on Amazon Bedrock AgentCore Runtime (JWT authorizer). LLM: `mistral.ministral-3-14b-instruct` (extract) and `openai.gpt-oss-120b` (compose) on Bedrock. Typed decisions: Jev (`jev-1.13.0`) | `agent/`, [`docs/diagrams/agent-core.svg`](docs/diagrams/agent-core.svg) |
 | State | DynamoDB: checkpoints, disputes, handoffs, decision records, sessions, conversation messages | `infra/terraform/data/` |
 | Web | Next.js customer chat, staff console, trace view and demo stage; the BFF holds the token in an httpOnly cookie | `web/`, [`docs/diagrams/ui-architecture.svg`](docs/diagrams/ui-architecture.svg) |
 | Realtime | AppSync Events: per-session channels, the handoff queue and live trace stages; a Lambda authorizer allows a customer only their own session | `infra/realtime/` |
@@ -154,7 +155,8 @@ leave Snowflake `RAW`, and product numbers are cut to the last four digits.
 |---|---|---|
 | Amazon Bedrock, via a role in a second AWS account (`040684487035`) | The customer message and the last 2 exchanges (extract); receipts with `customer_id`, `product_id` and fraud fields removed (compose, handoff open questions) | `llm/extract.py:65-67`, `llm/compose.py` (`redact`), `llm/client.py` (`BEDROCK_ROLE_ARN`) |
 | Jev / TypeSafe (external) | `understand`: policy text, session facts, the message, and candidate transactions as aliases `c1..cN` (no transaction, customer or product id) | `decisions/understand.py:95-131` |
-| Jev / TypeSafe (external) | `verify_reply`: the reply, its claims and the receipts with `customer_id`, `product_id` and fraud fields removed | `decisions/verify.py` (`REDACTED_FIELDS`); every Jev call is checked in `test_graph_paths.py` |
+| Jev / TypeSafe (external) | `verify_reply`: the reply, its claims and the receipts with `customer_id`, `product_id` and fraud fields removed | `decisions/verify.py` (`REDACTED_FIELDS`); Jev calls are checked in the inquiry and dispute flows (`test_graph_paths.py`) |
+| Evaluation persona model (OpenCode, offline eval only) | Synthetic goal cards and the simulated conversation; no customer records | `eval/src/evalkit/persona.py` |
 | Snowflake | The organizer drop (read from their bucket) and the curated export to our bucket; no chat data | `pipeline/load.py`, `pipeline/export.py` |
 | AppSync Events | Message text, control and progress events per session; handoff summaries on the staff queue; node and kind per trace step | `infra/realtime/publisher/map.ts:29-49` |
 
@@ -190,10 +192,16 @@ Jev's `target_transaction` decision, and code applies the thresholds. Model card
 **Systems compared, adoption rule fixed before the test run:** B0 = the production filter (no model), B1 = the resolver
 alone, B2 = Jev without the resolver, P = Jev with the resolver's evidence.
 
-| Test run (150 messages, 3 Jev repeats) | Wrong action, P / B2 | All cases, resolved in one step, P / B2 | Hard slice, resolved in one step, P / B2 | Paired P − B2 (hard), 95 % CI |
+| Test run (150 messages) | Wrong action, P / B2 | All cases, resolved in one step, P / B2 | Hard slice, resolved in one step, P / B2 | Paired P − B2, hard slice, repeat 1 (95 % CI) |
 |---|---|---|---|---|
-| **Run 1, pre-registered** (extract = gpt-oss-20b) | 0.7 % / 0.7 % | **93.8 % / 95.1 %** | 96.0 % / 95.6 % | −1.3 to +10.7 points (not established) |
-| Run 2, post-hoc (extract = Ministral 3 14B) | 0.7 % / 0.7 % | 96.0 % / 94.4 % | 98.7 % / 94.2 % | +1.3 to +10.7 points |
+| **Run 1, pre-registered** (extract = gpt-oss-20b) | 0.7 % / 0.7 % | **93.8 % / 95.1 %** | 96.0 % / 95.6 % | +4.0 points (−1.3 to +10.7, not established) |
+| Run 2, post-hoc (extract = Ministral 3 14B) | 0.7 % / 0.7 % | 96.0 % / 94.4 % | 98.7 % / 94.2 % | +5.3 points (+1.3 to +10.7) |
+
+Rates are means over 3 Jev repeats; the paired difference and its CI use repeat 1 only, so the two columns are not
+on the same basis. **B1 vs B0** (the learned model alone vs the production filter, run 1): B1 picks a transaction
+on its own in 43 % of cases vs 28 %, with 0 wrong actions for both, but resolves fewer cases in one step (64.7 % vs
+84.0 %), because it asks instead of guessing more often. That coverage gain is what the learned component proves on
+its own: more cases resolved without a Jev call.
 
 Decision under the fixed rule: **adopt P** in both runs. That means P met the rule written before the test (a wrong-action
 rate no higher than B2's, and a higher hard-slice point estimate); it is **not** evidence that P is better. In the
@@ -241,8 +249,10 @@ We report what we measured. We don't report numbers we haven't run.
 **Known limitations**
 - **Portuguese:** the bank has no Portuguese-speaking customers (customers are in México, Colombia and Argentina). PT
   support is conversational; PT test cases are written by the team, with no native-speaker review.
-- **Human-review disputes** (over 500 USD, high fraud score, unauthorized) are recorded as `pending_review` for an agent
-  without asking the customer to confirm first.
+- **Human-review disputes** (over 500 USD, fraud score over 30, unauthorized) are recorded as `pending_review` **without**
+  asking the customer to confirm. This is deliberate: the record is a draft for a specialist, not a filed dispute; no
+  money moves, the customer is told a specialist will review it, and the specialist resolves the case from the
+  console. The cost is a draft the customer never approved.
 - **Confirmation** is Jev's reading of the customer's free-text reply (bound to the card's contents by a hash, but the
   "yes" itself is a model judgment, not a button token).
 - **Timeouts:** each LLM call uses its role's timeout from `llm/models.yaml` (extract 10 s, compose 20 s) with no hidden SDK
@@ -259,6 +269,8 @@ We report what we measured. We don't report numbers we haven't run.
   throttle (10 req/s) and the Lambda concurrency limit are the only brakes.
 - **Audit records** (`decision_records`) are written best-effort: a failed write is logged, not retried, and does not stop
   the turn.
+- **Staff login** is a password only (no second factor, no lockout beyond the IdP's 10 req/s throttle); staff
+  credentials are not published.
 - **Mock identity:** demo passwords are stored as unsalted SHA-256 hashes; staff reads of a conversation are not audited.
 - **Pipeline:** the daily run re-exports even when nothing new loaded, and RAW is never purged (details in
   [`docs/data-pipeline.md`](docs/data-pipeline.md)).
@@ -267,7 +279,7 @@ We report what we measured. We don't report numbers we haven't run.
 - A real identity provider, HTTPS, and `Secure` cookies.
 - An egress check in CI for every third-party payload (today it covers Jev in the offline suite).
 - Notifications wired to an on-call channel, a dashboard, and alarms on DynamoDB throttling and AgentCore errors.
-- A load test against the capacity limits below.
+- A load test against the capacity limits above.
 - A per-session and per-customer turn cap, and a budget alarm on Bedrock and Jev spend.
 - A calibrated threshold set (current Jev thresholds are labeled "not calibrated").
 - Least-privilege CI roles (the deploy role is an administrator today) and branch protection on `main`.
