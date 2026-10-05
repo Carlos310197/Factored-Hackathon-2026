@@ -22,10 +22,11 @@ resource "aws_appsync_api" "this" {
     default_subscribe_auth_mode {
       auth_type = "AWS_LAMBDA"
     }
-    # ALL is the least verbose level that captures handler console.log (ERROR only keeps console.error).
+    # ALL captures handler console.log but can write customer message text to CloudWatch: use it only for
+    # the unit-53 identity probe (-var appsync_log_level=ALL) and revert afterwards.
     log_config {
       cloudwatch_logs_role_arn = aws_iam_role.appsync_logs.arn
-      log_level                = "ALL"
+      log_level                = var.appsync_log_level
     }
   }
 }

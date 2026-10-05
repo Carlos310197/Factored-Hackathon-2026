@@ -151,8 +151,8 @@ run "event_api_logs_handler_output_to_a_30_day_group" {
   command = apply
 
   assert {
-    condition     = aws_appsync_api.this.event_config[0].log_config[0].log_level == "ALL" && aws_appsync_api.this.event_config[0].log_config[0].cloudwatch_logs_role_arn == aws_iam_role.appsync_logs.arn
-    error_message = "log level ALL with the logs role"
+    condition     = aws_appsync_api.this.event_config[0].log_config[0].log_level == "ERROR" && aws_appsync_api.this.event_config[0].log_config[0].cloudwatch_logs_role_arn == aws_iam_role.appsync_logs.arn
+    error_message = "default log level ERROR with the logs role"
   }
   assert {
     condition     = aws_cloudwatch_log_group.appsync.name == "/aws/appsync/apis/abcd1234" && aws_cloudwatch_log_group.appsync.retention_in_days == 30
