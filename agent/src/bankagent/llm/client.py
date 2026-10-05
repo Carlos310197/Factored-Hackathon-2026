@@ -116,7 +116,22 @@ def call_json(client, cfg: RoleConfig, system: str, user: str, schema: dict) -> 
     # Extract JSON object using brace counting to find complete JSON
     # OSS models often add text before/after, or have nested structures
     text = text.strip()
-    
+
+    def _unique(pairs):
+        # A duplicated key means the model split or rewrote a value mid-object; the silent last-wins
+        # drop produced replies missing their first clause. Malformed output is an error, never a reply.
+        obj = {}
+        for k, v in pairs:
+            if k in obj:
+                raise ValueError(f"duplicate key: {k!r}")
+            obj[k] = v
+        return obj
+
+    def _load(candidate):
+        return json.loads(candidate, object_pairs_hook=_unique)
+
+    first_brace = text.find("{")
+
     # Try to find complete JSON by counting braces
     for start_idx in range(len(text)):
         if text[start_idx] != '{':
@@ -133,13 +148,17 @@ def call_json(client, cfg: RoleConfig, system: str, user: str, schema: dict) -> 
                     # Found complete JSON object
                     candidate = text[start_idx:end_idx + 1]
                     try:
-                        data = json.loads(candidate)
-                        # Successfully parsed!
-                        text = candidate
-                        break
+                        data = _load(candidate)
                     except (TypeError, ValueError):
                         # Not valid JSON, continue searching
                         continue
+                    if start_idx != first_brace:
+                        # The output started an object that never parsed and a later fragment did:
+                        # a decoder restart. Never reply from a salvaged fragment.
+                        raise LLMError(f"ambiguous JSON output: {text[:200]}")
+                    # Successfully parsed!
+                    text = candidate
+                    break
         else:
             # No matching } found for this {, try next
             continue
@@ -152,7 +171,7 @@ def call_json(client, cfg: RoleConfig, system: str, user: str, schema: dict) -> 
             text = text[start_idx:end_idx + 1]
 
     try:
-        data = json.loads(text)
+        data = _load(text)
     except (TypeError, ValueError) as e:
         raise LLMError(f"invalid JSON output: {text[:200]}") from e
 
