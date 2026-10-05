@@ -1,0 +1,8 @@
+.venv
+.serving
+.serving-fixture
+.pytest_cache
+__pycache__
+tests
+docs
+config

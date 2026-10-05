@@ -1,5 +1,53 @@
+# Local stack: DynamoDB Local + table init + mock IdP + agent. Real Jev and Bedrock are called by the agent:
+# start it only with the owner's approval. JEV_API_KEY comes from the shell (never from a committed file):
+#   export JEV_API_KEY="$(grep '^JEV_API_KEY=' ../.env | cut -d= -f2-)"
+# The agent builds its Bedrock client from your AWS profile (mounted ~/.aws; botocore also writes its
+# refreshed SSO token into ~/.aws/sso/cache):
+#   AWS_PROFILE=hackathon-sso docker compose up
 services:
   dynamodb:
     image: amazon/dynamodb-local:latest
     command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
     ports: ["8000:8000"]
+  init-tables:
+    build: .
+    command: ["uv", "run", "--frozen", "--no-default-groups", "python", "scripts/create_tables.py"]
+    environment:
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+      DYNAMODB_ENDPOINT: http://dynamodb:8000
+      TABLE_PREFIX: bankagent-dev
+    depends_on: [dynamodb]
+  identity:
+    build: .
+    command: ["uv", "run", "--frozen", "--no-default-groups", "python", "-m", "bankagent.identity.app"]
+    environment:
+      IDP_ISSUER: http://identity:8081
+      IDP_AUDIENCE: bankagent
+      IDP_KID: idp-local
+      DEMO_USERS: /app/config/demo_users.yaml
+    volumes: ["./config:/app/config:ro"]
+    ports: ["8081:8081"]
+  agent:
+    build: .
+    environment:
+      AWS_REGION: us-east-1
+      AWS_PROFILE: ${AWS_PROFILE:-default}
+      SERVING_URI: /serving
+      DYNAMODB_ENDPOINT: http://dynamodb:8000
+      TABLE_PREFIX: bankagent-dev
+      JEV_API_KEY: ${JEV_API_KEY:?export JEV_API_KEY first (see the comment at the top)}
+      IDP_ISSUER: http://identity:8081
+      IDP_AUDIENCE: bankagent
+      IDP_JWKS_URL: http://identity:8081/jwks.json
+    volumes:
+      - "${SERVING_DIR:-./.serving}:/serving:ro"
+      # ~/.aws is read-only except the SSO token cache: botocore refreshes the SSO token on use and writes it back.
+      - "${HOME}/.aws:/root/.aws:ro"
+      - "${HOME}/.aws/sso/cache:/root/.aws/sso/cache"
+    ports: ["8080:8080"]
+    depends_on:
+      dynamodb: {condition: service_started}
+      init-tables: {condition: service_completed_successfully}
+      identity: {condition: service_started}
