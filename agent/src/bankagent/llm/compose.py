@@ -1,4 +1,4 @@
-"""OpenAI role 2 (compose.v1): the reply, written only from receipts, plus the claims it makes (for Jev to verify)."""
+"""OpenAI role 2 (compose.v2): the reply, written only from receipts, plus the claims it makes (for Jev to verify)."""
 import json
 from dataclasses import dataclass
 
@@ -7,6 +7,7 @@ from bankagent.llm.config import RoleConfig
 
 COMPOSE_SYSTEM = """You write the reply of LATAM Bank's customer-service assistant in the requested language (es or pt).
 Rules:
+- Address the customer informally and consistently: "tú" in Spanish (never "usted"), "você" in Portuguese.
 - Use only facts present in <receipts>. Never invent balances, dates, amounts, statuses, deadlines, refunds or outcomes.
 - Follow <goal>.kind: answer (answer from the receipts; if goal.note is set, explain it), ask_clarification (ask one
   short question offering goal.display_options), ask_confirmation (one sentence asking the customer to confirm the

@@ -97,8 +97,10 @@ def confirmation_summary(txn: dict, reason: str, lang: str) -> str:
 
 def handoff_notice(ref: str, lang: str) -> str:
     if _lang(lang) == "pt":
-        return f"Referência do seu caso: {ref}. Um especialista vai analisar sua solicitação."
-    return f"Referencia de tu caso: {ref}. Un especialista revisará tu solicitud."
+        return (f"Referência do seu caso: {ref}. Uma pessoa da nossa equipe vai continuar com você por este chat. "
+                "Se você vir cobranças que não reconhece, bloqueie seu cartão pelo app.")
+    return (f"Referencia de tu caso: {ref}. Una persona de nuestro equipo continuará contigo por este chat. "
+            "Si ves cargos que no reconoces, bloquea tu tarjeta desde la app.")
 
 
 def dispute_filed(dispute_id: str, lang: str) -> str:
