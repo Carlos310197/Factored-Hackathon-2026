@@ -41,4 +41,10 @@ describe("chat store", () => {
     s.getState().merge([msg({ id: "b", role: "assistant", cursor: "2" }), msg({ id: "a", role: "customer", cursor: "1" })]);
     expect(s.getState().messages.map((m) => m.id)).toEqual(["a", "b"]);
   });
+  it("keeps a pending send after stored history", () => {
+    const s = createChatStore();
+    s.getState().merge([msg({ id: "a", role: "customer", cursor: "2026-09-30T10:00:00.000000+00:00#a" })]);
+    s.getState().sendOptimistic("cm-3", "nuevo");
+    expect(s.getState().messages.map((m) => m.id)).toEqual(["a", "cm-3"]);
+  });
 });

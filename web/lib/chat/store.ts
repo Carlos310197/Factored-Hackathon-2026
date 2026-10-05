@@ -28,7 +28,7 @@ function upsert(current: ViewMessage[], incoming: ChatMessage[]): ViewMessage[] 
     byId.set(m.id, { ...m, status: undefined });
     if (m.role === "assistant" && m.turn_id) byId.delete(`reply:${m.turn_id}`);  // drop the provisional POST copy
   }
-  return [...byId.values()].sort((a, b) => a.cursor.localeCompare(b.cursor));
+  return [...byId.values()].sort((a, b) => (a.cursor < b.cursor ? -1 : a.cursor > b.cursor ? 1 : 0));
 }
 
 export function createChatStore() {
