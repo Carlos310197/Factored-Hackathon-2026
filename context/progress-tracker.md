@@ -443,6 +443,12 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-05: System README and honest claims
+
+- Root `README.md` is now the system README (dispute-pain story from the as-is report, what it does, architecture, control matrix with file:line and tests, failure table, egress and retention tables, evidence map, status, limitations, before-production list, run commands). The pipeline README moved verbatim to `docs/data-pipeline.md`. `{{APP_URL}}` is filled in at submission (ALB).
+- Pipeline claims made true: freshness is recorded but does not gate (static drop); a broken FK fails the daily build through dbt `relationships` tests, and the fixture proof does not exercise it.
+- As-is report: the agents' `total_monthly_interactions` (453) is tagged synthetic artifact next to the logged load (16.0 contacts per agent per month, evidence); flat hourly demand is a synthetic artifact; the per-shift load is labeled not evidence. `reports/asis-2026-10-05.md` was edited to match the renderer (the full drop `data/data/` isn't cached locally); `analysis/asis` tests cover the renderer.
+
 ### 2026-10-05: Judge-panel blockers (staff credentials, stale Bedrock key, IdP first login)
 
 - **Staff credentials are never published.** `GET /auth/demo-users` (IdP) and `/api/auth/demo-users` (BFF) return customer identities only; `?role=agent` returns `[]`. Staff sign in by typing credentials, which go in the submission text. Closes the chain public staff password → staff token → subscribe to every `/session/*` and `/trace/*` (judge review D1).
