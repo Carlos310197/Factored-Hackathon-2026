@@ -25,6 +25,9 @@ async function call<S extends z.ZodTypeAny>(path: string, schema: S, init: Reque
   return parsed.data;
 }
 
+// ponytail: demo users are fixed per deploy, so one fetch per process; a failure is not cached (the IdP may be cold)
+let demoUsersOnce: Promise<DemoUser[]> | null = null;
+
 export const idp = {
   login: (username: string, password: string) =>
     call("/auth/login", z.object({ login_ticket: z.string() }), { method: "POST", body: JSON.stringify({ username, password }) }),
@@ -37,5 +40,5 @@ export const idp = {
   realtimeToken: (bearer: string) =>
     call("/auth/realtime-token", z.object({ token: z.string(), expires_in: z.number() }),
       { method: "POST", headers: { authorization: `Bearer ${bearer}` } }),
-  demoUsers: () => call("/auth/demo-users", z.array(DemoUser)),
+  demoUsers: () => (demoUsersOnce ??= call("/auth/demo-users", z.array(DemoUser)).catch((e) => { demoUsersOnce = null; throw e; })),
 };
