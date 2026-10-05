@@ -130,6 +130,13 @@ Update this file whenever the current phase, the active unit or the implementati
   - 14 comprehensive tests covering: accent-insensitive merchant matching, amount error calculation with local vs USD fallback, date range handling (including reversed ranges), hint matching (type/channel/city with case/whitespace tolerance), degenerate amounts (0, negative, boolean, string), customer split determinism and distribution, anchor date non-overlap, hard-slice rules;
   - All tests pass: 138/138 in agent/ (124 existing + 14 new);
   - Followed TDD: tests written first, all initially failing with ModuleNotFoundError, then implementation added to make them pass.
+- 2026-10-05: **Unit 27: Resolver History Sampler** (`agent/src/bankagent/resolver/histories.py`):
+  - `resolver/histories.py`: Deterministic history sampler that pulls customer 60-day candidate windows from a pinned serving run; `History(split, customer_id, anchor, candidates)` dataclass; `TransactionSource(serving_dir)` wraps a serving directory with `.run_id`, `.customers(split)` (filtered by `customer_split`) and `.windows(pairs)` (DuckDB join over fct_transaction, TXN_FIELDS only, newest-first order matching `ReadTools.list_transactions`); `sample_histories(source, split, n, seed, min_candidates=2)` returns n histories with at least 2 candidates in the window, deterministic for a given seed (random seeded with `f"{seed}:{split}"`, distinct (customer, anchor) pairs, up to 10 batches);
+  - `tests/fixtures/resolver_serving.py`: Labeled synthetic fixture with `RUN_ID = "resolver-fixture-1"`, 200 customers `CLI-HIST%08d` from 2023-07-01 to 2026-06-17 (~one txn every 9 days per customer), six merchants, weighted transaction types, multiple currencies (USD/COP/ARS);
+  - `tests/conftest.py`: appends the `history_serving` session-scoped fixture;
+  - 2 tests: `test_histories_respect_split_window_and_order` (verifies split membership, anchor within split range, candidates newest-first, 60-day inclusive window, scope and field shape); `test_histories_are_deterministic_and_splits_disjoint` (verifies determinism, disjoint customer sets across splits, and JSON-safe amount types);
+  - All tests pass: 140/140 in agent/ (138 existing + 2 new);
+  - Followed TDD: tests written first, all initially failing with `ModuleNotFoundError`, then implementation added to make them pass.
 
 ## In Progress
 
@@ -143,7 +150,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
 | 12–25 | Agent core | 12–22 **done**; 23–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
-| 26–39 | Transaction resolver | 26 **done** (features and splits) | 12, 16 |
+| 26–39 | Transaction resolver | 26–27 **done** (features, splits, history sampler) | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
 | 77–90 | Deployment | not started; Terraform `bootstrap`, `platform` and the `app` web shell already exist | 77 has none; the rest follow the agent core and UI |
