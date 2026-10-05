@@ -176,6 +176,9 @@ Update this file whenever the current phase, the active unit or the implementati
   - 37 `Deps.resolver` / `Deps.understand_qs_scored` (default `None`), `Settings.resolver_artifact` / `thresholds_file` (default off), `runtime.load_resolver` (never raises), `kind: model` decision records, and fallback to `understand.v1` with one `kind: error` record on any resolver failure. The Dockerfile needed no change: `--no-default-groups` already keeps lightgbm, scikit-learn, mlflow and matplotlib out of the image;
   - Tests: agent suite 242 passed (195 → 242), root offline suite 43 passed. Not run: units 38 and 39 (`[live]`), which need the owner's approval for each Bedrock/Jev run.
 
+- 2026-10-05: **Units 40–50: evaluation, offline code** (one worktree `worktree-evaluation`, branch `feature/40-50-evaluation`, built while resolver units 38–39 run; each unit committed alone; units 51–52 are `[live]` and wait for 39's adoption decision):
+  - 40 `analysis/` as-is project: `asis.load` (DuckDB views, backup prefix refused, no PII columns), `asis.metrics` demand/quality/satisfaction, synthetic fixture. Plan code used unchanged; `cd analysis && uv run pytest` → 6 passed. `.gitignore` now tracks `analysis/pyproject.toml`, `uv.lock`, `asis/` and `reports/` (the old profiling scripts in `analysis/` stay untracked, as before).
+
 ## In Progress
 
 - None.

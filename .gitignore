@@ -18,7 +18,14 @@ fixtures/out/
 .superpowers/
 .claude/
 .agents/
-analysis/
+# analysis/: the pre-existing profiling scripts stay local; the as-is project (evaluation units 40-42) is tracked
+analysis/*
+!analysis/pyproject.toml
+!analysis/uv.lock
+!analysis/asis/
+!analysis/reports/
+analysis/asis/**/__pycache__/
+analysis/.venv/
 # worktree isolation for features
 .worktree/
 .worktrees/
