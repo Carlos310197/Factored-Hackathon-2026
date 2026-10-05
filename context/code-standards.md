@@ -159,9 +159,9 @@ Quality metrics (automated resolution, containment, escalation quality, unsafe o
 
 - Python `>=3.12`; the project lives in `agent/` with its own `pyproject.toml` and `uv.lock`. Commands run from `agent/` unless stated.
 - `customer_id` comes **only** from a verified JWT (`SessionContext`). No tool takes a `customer_id` argument, and a transaction that isn't owned gives the same `not_found` as one that doesn't exist.
-- **Claude has no tools.** Both calls (`extract`, `compose`) are input-to-JSON with `output_config.format`. No LLM chooses a graph edge.
+- **OpenAI has no tools.** Both calls (`extract`, `compose`) are input-to-JSON with `response_format`. No LLM chooses a graph edge.
 - **Jev:** TypeSafe `POST https://api.typesafe.ai/v1/systemone`, model `jev-1.13.0`, key `JEV_API_KEY`; 3-second timeout; one retry on timeouts and 5xx only; invalid responses are errors, never approval; no model substitution.
-- **Claude defaults:** `extract` = `anthropic.claude-haiku-4-5` (thinking off, no effort); `compose` = `anthropic.claude-sonnet-5-5`, effort `low`; overridable via `LLM_EXTRACT_MODEL` / `LLM_COMPOSE_MODEL`.
+- **OpenAI defaults:** `extract` = `openai.gpt-5-6-luna` (fast, efficient for structured extraction); `compose` = `openai.gpt-5-6-terra` (mid-range quality for nuanced text generation); overridable via `LLM_EXTRACT_MODEL` / `LLM_COMPOSE_MODEL`.
 - **Dispute policy** `dispute-policy.v1` (labeled synthetic):
   - only `Approved`; types `Purchase, Withdrawal, Payment, Transfer`;
   - 60-day window before `max_process_date`;

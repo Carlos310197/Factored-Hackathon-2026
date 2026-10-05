@@ -87,7 +87,7 @@ The agent-core spec deferred "the customer UI, the human-agent queue UI" and the
 The UI has two audiences:
 
 - **Customers of the synthetic LATAM Bank.** They talk to the assistant in Spanish or Portuguese about accounts, payments and disputed charges.
-- **Hackathon judges, watching a live demo.** They must see the three required paths (normal resolution, clarify/abstain, human handoff) and *why* each decision was taken: code decides the route, Jev makes bounded judgments, Claude writes the language.
+- **Hackathon judges, watching a live demo.** They must see the three required paths (normal resolution, clarify/abstain, human handoff) and *why* each decision was taken: code decides the route, Jev makes bounded judgments, OpenAI writes the language.
 
 A third audience, **human agents**, receive handoffs, read the packet, and can take over the conversation live.
 

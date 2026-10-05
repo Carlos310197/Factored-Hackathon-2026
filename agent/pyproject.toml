@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "LATAM Bank customer-service agent core (spec: docs/superpowers/specs/2026-09-29-agent-core-design.md)"
 requires-python = ">=3.12"
 dependencies = [
-  "anthropic[bedrock]>=1.9",
+  "openai>=1.0",
   "bedrock-agentcore>=1.24",
   "boto3>=1.35",
   "duckdb>=1.1",

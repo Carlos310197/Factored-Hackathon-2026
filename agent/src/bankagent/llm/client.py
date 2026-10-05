@@ -1,9 +1,10 @@
-"""Claude on Bedrock, JSON-only calls. Claude has no tools here: input text in, schema-valid JSON out."""
+"""OpenAI on Bedrock, JSON-only calls. OpenAI has no tools here: input text in, schema-valid JSON out."""
 import json
+import os
 import time
 from dataclasses import dataclass
 
-import anthropic
+import openai
 
 from bankagent.llm.config import RoleConfig
 
@@ -26,30 +27,44 @@ class LLMCall:
 
 
 def make_bedrock_client(region: str):
-    from anthropic import AnthropicBedrockMantle
-    return AnthropicBedrockMantle(aws_region=region, max_retries=1)  # one retry on 408/429/5xx/connection errors
+    """Create an OpenAI client configured for Bedrock's OpenAI-compatible endpoint."""
+    base_url = os.environ.get("OPENAI_BASE_URL", f"https://bedrock-runtime.{region}.amazonaws.com/models")
+    api_key = os.environ.get("OPENAI_API_KEY", "bedrock")
+    return openai.OpenAI(base_url=base_url, api_key=api_key, timeout=30.0, max_retries=1)
 
 
 def call_json(client, cfg: RoleConfig, system: str, user: str, schema: dict) -> LLMCall:
-    output_config = {"format": {"type": "json_schema", "schema": schema}}
-    if cfg.effort:
-        output_config["effort"] = cfg.effort
     start = time.monotonic()
     try:
-        resp = client.messages.create(
-            model=cfg.model, max_tokens=cfg.max_tokens,
-            system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-            messages=[{"role": "user", "content": user}], output_config=output_config, timeout=cfg.timeout_s)
-    except anthropic.APIError as e:
+        resp = client.chat.completions.create(
+            model=cfg.model,
+            max_tokens=cfg.max_tokens,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            response_format={"type": "json_schema", "json_schema": {"name": "response", "schema": schema}},
+        )
+    except openai.APIError as e:
         raise LLMError(f"{type(e).__name__}: {e}") from e
-    if resp.stop_reason == "refusal":
-        raise LLMRefusal(cfg.model)
-    if resp.stop_reason == "max_tokens":
+    except openai.APIConnectionError as e:
+        raise LLMError(f"Connection error: {e}") from e
+    except openai.RateLimitError as e:
+        raise LLMError(f"Rate limit: {e}") from e
+    except openai.AuthenticationError as e:
+        raise LLMError(f"Auth error: {e}") from e
+
+    if resp.choices[0].finish_reason == "length":
         raise LLMError("truncated output")
-    text = next((b.text for b in resp.content if getattr(b, "type", None) == "text"), None)
+
+    text = resp.choices[0].message.content
     try:
         data = json.loads(text)
     except (TypeError, ValueError) as e:
         raise LLMError("invalid JSON output") from e
-    usage = {"input_tokens": resp.usage.input_tokens, "output_tokens": resp.usage.output_tokens}
+
+    usage = {
+        "input_tokens": resp.usage.prompt_tokens if resp.usage else 0,
+        "output_tokens": resp.usage.completion_tokens if resp.usage else 0,
+    }
     return LLMCall(data, cfg.model, cfg.prompt_version, usage, int((time.monotonic() - start) * 1000))

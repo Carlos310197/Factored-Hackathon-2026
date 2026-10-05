@@ -1,20 +1,18 @@
-"""Test doubles for Claude (Bedrock) and, from Task 10, Jev."""
+"""Test doubles for OpenAI (Bedrock) and, from Task 10, Jev."""
 import json
 import re
 from types import SimpleNamespace
 
-import anthropic
-import httpx
 
-
-class _FakeMessages:
+class _FakeChatCompletions:
     def __init__(self, owner: "FakeLLM"):
         self.o = owner
 
     def create(self, **kw):
         self.o.calls.append(kw)
-        props = kw["output_config"]["format"]["schema"]["properties"]
-        user = kw["messages"][0]["content"]
+        schema = kw["response_format"]["json_schema"]["schema"]
+        props = schema["properties"]
+        user = kw["messages"][1]["content"] if len(kw["messages"]) > 1 else kw["messages"][0]["content"]
         if "english_gloss" in props:
             role = "extract"
         elif "reply_text" in props:
@@ -23,14 +21,15 @@ class _FakeMessages:
             role = "open_questions"
         self.o.roles.append(role)
         if role in self.o.fail:
-            raise anthropic.APIConnectionError(request=httpx.Request("POST", "https://bedrock.test"))
-        if role in self.o.refuse:
-            return SimpleNamespace(stop_reason="refusal", content=[], usage=SimpleNamespace(input_tokens=1, output_tokens=0))
+            import openai
+            raise openai.APIConnectionError(request=SimpleNamespace(method="POST", url="https://bedrock.test"))
         data = {"extract": self.o.extraction, "compose": self.o.composition,
                 "open_questions": lambda u: {"questions": ["Which card was used?"]}}[role](user)
-        return SimpleNamespace(stop_reason="end_turn",
-                               content=[SimpleNamespace(type="text", text=json.dumps(data, ensure_ascii=False))],
-                               usage=SimpleNamespace(input_tokens=100, output_tokens=20))
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(data, ensure_ascii=False)),
+                                     finish_reason="stop")],
+            usage=SimpleNamespace(prompt_tokens=100, completion_tokens=20)
+        )
 
 
 class FakeLLM:
@@ -39,7 +38,7 @@ class FakeLLM:
         self.language, self.multi_intent, self.secondary = language, multi_intent, secondary
         self.mentions, self.fail, self.refuse, self.reply_text = mentions or {}, set(fail), set(refuse), reply_text
         self.calls, self.roles = [], []
-        self.messages = _FakeMessages(self)
+        self.chat = SimpleNamespace(completions=_FakeChatCompletions(self))
 
     def extraction(self, user: str) -> dict:
         msg = re.search(r"<customer_message>\n(.*)\n</customer_message>", user, re.S).group(1)

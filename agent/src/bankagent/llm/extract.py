@@ -1,4 +1,4 @@
-"""Claude role 1 (extract.v1): structured facts from one customer message. Does not classify intent."""
+"""OpenAI role 1 (extract.v1): structured facts from one customer message. Does not classify intent."""
 import json
 from dataclasses import dataclass
 

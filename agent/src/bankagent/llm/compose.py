@@ -1,4 +1,4 @@
-"""Claude role 2 (compose.v1): the reply, written only from receipts, plus the claims it makes (for Jev to verify)."""
+"""OpenAI role 2 (compose.v1): the reply, written only from receipts, plus the claims it makes (for Jev to verify)."""
 import json
 from dataclasses import dataclass
 
