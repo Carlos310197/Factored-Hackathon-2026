@@ -1,0 +1,74 @@
+{
+ "B1": [
+  0.62,
+  0.3
+ ],
+ "B1_summary": {
+  "point": [
+   0.62,
+   0.3
+  ],
+  "n": 300,
+  "act_correct": 185,
+  "act_wrong": 6,
+  "ask_hit": 49,
+  "ask_miss": 0,
+  "ask_nil": 2,
+  "nil_correct": 22,
+  "nil_wrong": 36,
+  "coverage": 0.6366666666666667,
+  "selective_accuracy": 0.9685863874345549,
+  "wrong_action_rate": 0.02,
+  "top3_recall_when_asking": 1.0,
+  "resolved_one_step": 0.8533333333333334,
+  "feasible": true
+ },
+ "B2": [
+  0.59,
+  0.18
+ ],
+ "B2_summary": {
+  "point": [
+   0.59,
+   0.18
+  ],
+  "n": 300,
+  "act_correct": 218,
+  "act_wrong": 6,
+  "ask_hit": 31,
+  "ask_miss": 5,
+  "ask_nil": 3,
+  "nil_correct": 24,
+  "nil_wrong": 13,
+  "coverage": 0.7466666666666667,
+  "selective_accuracy": 0.9732142857142857,
+  "wrong_action_rate": 0.02,
+  "top3_recall_when_asking": 0.8611111111111112,
+  "resolved_one_step": 0.91,
+  "feasible": true
+ },
+ "P": [
+  0.74,
+  0.48
+ ],
+ "P_summary": {
+  "point": [
+   0.74,
+   0.48
+  ],
+  "n": 300,
+  "act_correct": 224,
+  "act_wrong": 6,
+  "ask_hit": 39,
+  "ask_miss": 3,
+  "ask_nil": 5,
+  "nil_correct": 21,
+  "nil_wrong": 2,
+  "coverage": 0.7666666666666667,
+  "selective_accuracy": 0.9739130434782609,
+  "wrong_action_rate": 0.02,
+  "top3_recall_when_asking": 0.9285714285714286,
+  "resolved_one_step": 0.9466666666666667,
+  "feasible": true
+ }
+}

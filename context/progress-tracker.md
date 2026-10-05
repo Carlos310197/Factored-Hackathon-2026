@@ -239,6 +239,12 @@ Update this file whenever the current phase, the active unit or the implementati
   - `xai.grok-4.3`: listed by the Mantle endpoint, but chat-completions rejects it (`isn't supported on this route`); a one-off Responses-API probe timed out at 30 s on a trivial prompt. Not testable through the current client, so not compared;
   - Reading: the new models fix reliability (27% → 0%) at equal extraction quality on this metric. Not measured: end-to-end effect on B2/P (would need a labeled rerun of the Jev test runs), Spanish/Portuguese gloss quality, cost. Switching is `LLM_EXTRACT_MODEL=<id>`; the dev set, thresholds and test evaluation were all produced with gpt-oss-20b.
 
+- 2026-10-05: **Resolver run 2: `extract` switched to `mistral.ministral-3-14b-instruct` and the test evaluation redone** (owner-approved: 150 Bedrock + 900 Jev calls; same frozen sheet SHA-256, same artifact and thresholds; files in `agent/resolver/ministral/{data,runs,reports}`, run 1 kept untouched in `agent/resolver/{data,runs,reports}`):
+  - Extraction errors 41/150 → 1/150. Coverage rose for the non-Jev systems (B0 28% → 44%, B1 43% → 58%) because fewer messages lost their mentions; B0 and B1 each made 1 wrong action (0 in run 1);
+  - B2 and P: wrong-action 0.7% each (1 case); coverage 76.0% vs 76.7%; hard-slice resolved-within-one-step **P 98.7% vs B2 94.2%**, paired P−B2 95% interval +1.3 to +10.7 points (run 1: 96.0% vs 95.6%, interval −1.3 to +10.7); top-3 recall when asking P 98.3% vs B2 89.3%;
+  - **Adoption decision unchanged: adopt P**, now with the paired interval excluding zero on the hard slice. Caveats: the two runs share the same 150 messages, so they are not independent evidence; thresholds were tuned on gpt-oss extractions; both results are reported;
+  - `scripts/resolver.py report` now prints the extract model next to the prompt version. Docs updated (`agent/README.md`, `context/code-standards.md`, Architecture Decisions 2026-10-05).
+
 ## In Progress
 
 - None.
@@ -361,6 +367,10 @@ Each is checked in plan task 1, with the fallback chosen in advance.
 Fixed in `web/`: C1 HandoffPacket now matches `packet.py` (decision `value` string or number, `p`, policy `detail`); I1 `COOKIE_SECURE`; I2 ECS guard on forged cookies; I3 Summary amount/currency/reason_code are nullish; M1 takeover/return condition on `sessions.control`; M2 resolve refuses an already resolved case; M4 history GET is 401 without any session (404 kept for a non-owner); M5 staff 401s in Console, ConversationTab and the demo stage go to `/login?staff=1&next=...`; M61 `<html lang>` follows the customer's language (en for staff). Tests: `tests/unit/review-fixes.test.ts` plus additions to ddb, messages-route and console tests.
 
 ## Architecture Decisions
+
+### 2026-10-05: `extract` model (resolver real run)
+
+`extract` moved from `openai.gpt-oss-20b` to `mistral.ministral-3-14b-instruct` (Bedrock Mantle, same chat-completions client, `LLM_EXTRACT_MODEL` still overrides). **Why:** gpt-oss-20b failed on 41 of 150 real test messages (27%: truncated output or restarted JSON) and Ministral on 0 to 1 of 150, with equal extraction quality on a target-consistency check. **Effect:** the resolver test set was evaluated twice (run 1 gpt-oss, run 2 Ministral; both disclosed, same frozen sheet and thresholds); both adopt P. The dev set, the promoted artifact and the tuned thresholds were not rebuilt, so they still reflect gpt-oss extractions. `xai.grok-4.3` is listed by Mantle but not served on the chat-completions route.
 
 Decisions that change or settle the copied spec text. **They take precedence over the spec text in `context/` and `feature-specs/`.** Numbering follows each plan, so feature specs cite them as "agent-core plan #2", "UI plan #1", and so on.
 

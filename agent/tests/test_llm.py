@@ -20,7 +20,7 @@ def _client(finish_reason, text):
 
 
 def test_model_defaults_and_env_override():
-    assert M["extract"].model == "openai.gpt-oss-20b" and M["extract"].effort is None
+    assert M["extract"].model == "mistral.ministral-3-14b-instruct" and M["extract"].effort is None
     assert M["compose"].model == "openai.gpt-oss-120b" and M["compose"].effort == "low"
     assert M["extract"].prompt_version == "extract.v2" and M["compose"].timeout_s == 20.0
     over = load_models(env={"LLM_COMPOSE_MODEL": "openai.gpt-5-5"})
@@ -31,7 +31,7 @@ def test_extract_request_shape_and_untrusted_wrapping():
     llm = FakeLLM()
     ex, call = extract(llm, M["extract"], "hola, ¿mi saldo?", "2026-06-17", [])
     kw = llm.calls[0]
-    assert kw["model"] == "openai.gpt-oss-20b"
+    assert kw["model"] == "mistral.ministral-3-14b-instruct"
     assert kw["response_format"]["type"] == "json_schema"
     assert kw["messages"][0]["role"] == "system"
     assert "<customer_message>\nhola, ¿mi saldo?\n</customer_message>" in kw["messages"][1]["content"]

@@ -26,7 +26,7 @@ Local data (dev only, until the pipeline export exists): `uv run python scripts/
 | `RESOLVER_ARTIFACT`, `THRESHOLDS_FILE` | turn the transaction resolver on (artifact directory, thresholds file); unset, the agent runs Jev alone with `understand.v1`. The compose stack sets both (`resolver.v1`, `thresholds.v2`) |
 | `AWS_PROFILE` | credentials for Bedrock (SigV4 to the Bedrock Mantle endpoint) and the S3 serving set |
 
-Models per role live in `llm/models.yaml` (currently `openai.gpt-oss-20b` for `extract` and `openai.gpt-oss-120b`
+Models per role live in `llm/models.yaml` (currently `mistral.ministral-3-14b-instruct` for `extract` and `openai.gpt-oss-120b`
 for `compose`, over the Bedrock Mantle chat-completions endpoint). Every call is input-to-JSON with a schema;
 OpenAI has no tools.
 
@@ -49,9 +49,12 @@ input) and `scripts/smoke_serving.py` (serving read latency; local directory or 
 
 ## Transaction resolver
 A logistic-regression ranker (`resolver/artifacts/v1`, card in `MODEL_CARD.md`) scores the 60-day candidates and Jev reads the
-scores as evidence (`understand.v2`). Adopted after one evaluation on Andrés's 150 blind messages (n = 150, so differences
-inside about ±7 points are not established): wrong-action 0.7% for both B2 and P, hard-slice resolved-within-one-step 96.0% (P)
-vs 95.6% (B2). Full report: `resolver/reports/eval-2026-10-05.md`. Any resolver failure falls back to `understand.v1`.
+scores as evidence (`understand.v2`). Adopted after evaluating Andrés's 150 blind messages twice (n = 150, so differences inside about ±7 points are not
+established). Run 1 (`extract` = gpt-oss-20b, 27% of extractions failed): wrong-action 0.7% for B2 and P, hard-slice
+resolved-within-one-step P 96.0% vs B2 95.6%. Run 2, after switching `extract` to Ministral 3 14B (1 of 150 failed): wrong-action
+0.7% for both, hard-slice P 98.7% vs B2 94.2% (paired 95% interval +1.3 to +10.7 points). Thresholds and the dev set were not
+redone: they come from gpt-oss-20b extractions. Reports: `resolver/reports/eval-2026-10-05.md` (run 1) and
+`resolver/ministral/reports/eval-2026-10-05.md` (run 2). Any resolver failure falls back to `understand.v1`.
 
 ## Known limitations
 - Dispute policy and thresholds are labeled synthetic starting values, not calibrated (spec 2 tunes them).
@@ -65,5 +68,6 @@ vs 95.6% (B2). Full report: `resolver/reports/eval-2026-10-05.md`. Any resolver 
   rejects it (`llm/client.py`) and the reply falls back to the fixed template; see `tests/test_llm.py`.
 - `scripts/pick_demo_users.py` picks customers with an approved purchase and a declined payment; scenario data beyond
   that (for example a genuine double charge) needs an identity picked by query — report gaps, never fabricate.
-- `extract` (`openai.gpt-oss-20b`, `max_tokens` 1024) fails on about a quarter of real messages (truncated output or a restarted
-  JSON object) and the turn then runs without mentions; the resolver test set had 41 of 150 such rows.
+- `extract` was `openai.gpt-oss-20b`, which failed on 27% of the test messages (truncated output or a restarted JSON object);
+  it is now `mistral.ministral-3-14b-instruct` (1 failure in 150). The dev set and the tuned thresholds still come from
+  gpt-oss-20b extractions; override with `LLM_EXTRACT_MODEL`.
