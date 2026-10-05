@@ -449,6 +449,7 @@ Added in the plan's Phase C (they continue the same numbering):
 - **The Mantle token is re-minted.** `make_bedrock_client` returns a `RefreshingClient`: a new token every 30 min, and once on a 401/403 inside `call_json` (then the call is retried once). Before, the token was minted once per container and replies fell back to templates after about an hour.
 - **IdP first login:** login tickets are signed RS256 tokens (audience `login-ticket`, 2 min, spent map bounded and pruned on expiry, never accepted as access tokens) instead of an in-memory map, so login and OTP can reach different Lambda containers; a ticket is single-use per container, and across containers it can be retried until it expires. The BFF waits up to 15 s for the IdP (was 5 s) to ride out a cold start. Reserved concurrency was tried first and refused: the account's Lambda concurrency limit is 10, all of which must stay unreserved.
 - PT template "não fue recusada" → "não foi recusada".
+- Deployed 2026-10-05 ~15:50: IdP `lb-demo-identity:9761324`, agent `lb-demo-agent:3dbe926` (runtime v3), web `latam-bank-web:3dbe926` at `http://54.81.128.47:3000`. Live checks: IdP and BFF demo-users list customers only (`?role=agent` → `[]`); customer login → signed ticket → OTP 200; staff sign-in with typed credentials 200 for agent.ana/luis/bia.
 
 ### 2026-10-05: UI polish pass (unit 76, design pass part)
 
