@@ -25,15 +25,65 @@ variable "allowed_cidrs" {
 }
 
 variable "image" {
-  description = "Container image; a placeholder until web/ ships an image to ECR"
+  description = "Placeholder image for the first apply only; afterwards the SSM parameter /fh26/web/image (written by the deploy workflow) is the source of truth"
   type        = string
   default     = "public.ecr.aws/docker/library/node:22-alpine"
 }
 
 variable "command" {
-  description = "Container command; only the placeholder needs one"
+  description = "Command override, applied only while the image is still the placeholder; the real image runs its own CMD"
   type        = list(string)
   default     = ["node", "-e", "require('http').createServer((q,s)=>s.end('latam-bank web placeholder')).listen(3000)"]
+}
+
+# Other roots' outputs (read-only).
+data "terraform_remote_state" "data" {
+  backend = "s3"
+  config = {
+    bucket = "fh26-tfstate-762197749808-use1"
+    key    = "data/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
+
+data "terraform_remote_state" "identity" {
+  backend = "s3"
+  config = {
+    bucket = "fh26-tfstate-762197749808-use1"
+    key    = "identity/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
+
+# ponytail: needs the agent root (unit 83) applied first; it exports invoke_url.
+data "terraform_remote_state" "agent" {
+  backend = "s3"
+  config = {
+    bucket = "fh26-tfstate-762197749808-use1"
+    key    = "agent/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
+
+data "terraform_remote_state" "realtime" {
+  backend = "s3"
+  config = {
+    bucket = "fh26-tfstate-762197749808-use1"
+    key    = "realtime/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
+
+# The image the service runs. Created with the placeholder; the deploy workflow overwrites it with
+# <ecr_repository_url>:<git sha>, and ignore_changes keeps a later apply from rolling it back.
+resource "aws_ssm_parameter" "web_image" {
+  name  = "/fh26/web/image"
+  type  = "String"
+  value = var.image
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 data "aws_vpc" "default" {
@@ -66,4 +116,17 @@ output "service" {
 
 output "ecr_repository_url" {
   value = aws_ecr_repository.web.repository_url
+}
+
+output "task_role_arn" {
+  value = aws_iam_role.task.arn
+}
+
+output "image_parameter" {
+  value = aws_ssm_parameter.web_image.name
+}
+
+# NEXT_PUBLIC_* are inlined at build time: the deploy workflow passes this as a docker --build-arg.
+output "events_http_domain" {
+  value = data.terraform_remote_state.realtime.outputs.http_domain
 }

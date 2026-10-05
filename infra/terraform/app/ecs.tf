@@ -76,10 +76,55 @@ resource "aws_iam_role_policy_attachment" "execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# App code (the BFF). Permissions are added with the resources they need (AgentCore invoke, DynamoDB tables).
+# App code (the BFF): DynamoDB only (no InvokeAgentRuntime: it calls the agent over its HTTPS URL, no Scan, no Secrets Manager).
 resource "aws_iam_role" "task" {
   name               = "latam-bank-web-task"
   assume_role_policy = local.ecs_tasks_trust
+}
+
+locals {
+  table_arns = data.terraform_remote_state.data.outputs.table_arns
+  # TransactWriteItems has no IAM action of its own: it is authorized by the Put/UpdateItem on each item's table.
+  rw_tables = [for t in ["sessions", "conversation_messages", "handoffs"] : local.table_arns[t]]
+  ro_tables = [local.table_arns["decision_records"]]
+  # The BFF's environment. No secret belongs here (use the task definition's `secrets` from Secrets Manager).
+  web_env = {
+    PORT                           = "3000"
+    HOSTNAME                       = "0.0.0.0"
+    IDP_URL                        = data.terraform_remote_state.identity.outputs.issuer
+    IDP_ISSUER                     = data.terraform_remote_state.identity.outputs.issuer
+    IDP_AUDIENCE                   = "bankagent"
+    STAFF_AUDIENCE                 = "bankagent-staff"
+    AGENTCORE_INVOKE_URL           = data.terraform_remote_state.agent.outputs.invoke_url
+    AWS_REGION                     = "us-east-1"
+    TABLE_PREFIX                   = "lb-demo"
+    DEMO_MODE                      = "1"
+    CHAT_ASYNC                     = "0"
+    COOKIE_SECURE                  = "0"                                                      # plain HTTP on the task public IP until the demo ALB
+    NEXT_PUBLIC_EVENTS_HTTP_DOMAIN = data.terraform_remote_state.realtime.outputs.http_domain # also baked at build time (Dockerfile build arg)
+    NEXT_PUBLIC_EVENTS_REGION      = "us-east-1"
+  }
+  # The real image runs its own CMD; the placeholder needs the command override.
+  image = nonsensitive(aws_ssm_parameter.web_image.value)
+}
+
+data "aws_iam_policy_document" "task" {
+  statement {
+    sid       = "ReadWriteTables"
+    actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:PutItem", "dynamodb:UpdateItem"]
+    resources = concat(local.rw_tables, [for a in local.rw_tables : "${a}/index/*"])
+  }
+  statement {
+    sid       = "ReadDecisionRecords"
+    actions   = ["dynamodb:GetItem", "dynamodb:Query"]
+    resources = local.ro_tables
+  }
+}
+
+resource "aws_iam_role_policy" "task" {
+  name   = "dynamodb"
+  role   = aws_iam_role.task.id
+  policy = data.aws_iam_policy_document.task.json
 }
 
 resource "aws_ecs_task_definition" "web" {
@@ -96,11 +141,11 @@ resource "aws_ecs_task_definition" "web" {
   }
   container_definitions = jsonencode([{
     name         = "web"
-    image        = var.image
-    command      = var.command
+    image        = local.image
+    command      = strcontains(local.image, aws_ecr_repository.web.repository_url) ? null : var.command
     essential    = true
     portMappings = [{ containerPort = 3000, protocol = "tcp" }]
-    environment  = [{ name = "PORT", value = "3000" }, { name = "HOSTNAME", value = "0.0.0.0" }]
+    environment  = [for k, v in local.web_env : { name = k, value = v }]
     healthCheck = {
       command     = ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ >/dev/null || exit 1"]
       interval    = 30

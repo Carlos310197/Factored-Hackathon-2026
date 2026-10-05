@@ -67,6 +67,10 @@ export function TraceTurnView({ turn, reveal = false, collapsed = false, onToggl
         </>
       )}
       {strip}
+      {turn.traceUrl ? (
+        <a href={turn.traceUrl} target="_blank" rel="noreferrer"
+          className="inline-block mt-1 text-[11px] text-c-signal underline underline-offset-2">CloudWatch trace ↗</a>
+      ) : null}
     </article>
   );
 }

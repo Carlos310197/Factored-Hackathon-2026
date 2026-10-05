@@ -1,5 +1,6 @@
 import type { ChatMessage } from "@/lib/contract";
 import type { DecisionRecord } from "@/lib/server/records";
+import { xrayTraceUrl } from "./xray";
 import { BELOW_COLOR, FLAG_KEYS, FLAG_VERDICT, SIGNALS, signalColor, signalOf } from "./signals";
 
 export interface TraceBar {
@@ -12,7 +13,7 @@ export interface TraceTurn {
   folded: { count: number; highest: { label: string; value: number } | null; bars: TraceBar[] };
   replyCheck: { text: string; failed: boolean; regenerated: number; template: boolean } | null;
   errors: string[]; route: { next: string; priority: string | null; policy: { name: string; passed: boolean }[] };
-  versions: { questionSet?: string; thresholds?: string };
+  versions: { questionSet?: string; thresholds?: string }; traceUrl?: string;
 }
 
 type Answer = { label: string; probabilities: Record<string, number> } | { p: number };
@@ -129,6 +130,8 @@ export function buildTurn(records: DecisionRecord[], customer: ChatMessage | und
   const extract = recs.find((r) => r.kind === "llm" && r.payload.role === "extract");
   const gloss = (extract?.payload.output as { english_gloss?: string } | undefined)?.english_gloss ?? null;
   const end = recs.find((r) => r.kind === "turn_end");
+  const traced = recs.find((r) => typeof r.trace_id === "string" && r.trace_id);
+  const traceUrl = traced?.trace_id ? xrayTraceUrl(traced.trace_id) : null;
 
   return {
     turnId: recs[0]?.turn_id ?? customer?.turn_id ?? "",
@@ -137,6 +140,7 @@ export function buildTurn(records: DecisionRecord[], customer: ChatMessage | und
     replyCheck, errors,
     route: { next: ROUTE_LABEL[rawNext] ?? rawNext, priority: handoffTool ? String(handoffTool.payload.priority ?? "") || null : null, policy },
     versions: { questionSet: jev?.versions.question_set, thresholds: jev?.versions.thresholds },
+    ...(traceUrl ? { traceUrl } : {}),
   };
 }
 
