@@ -12,8 +12,8 @@ M = load_models(env={})
 
 
 def test_model_defaults_and_env_override():
-    assert M["extract"].model == "openai.gpt-5-6-luna" and M["extract"].effort is None
-    assert M["compose"].model == "openai.gpt-5-6-terra" and M["compose"].effort == "low"
+    assert M["extract"].model == "openai.gpt-oss-20b" and M["extract"].effort is None
+    assert M["compose"].model == "openai.gpt-oss-120b" and M["compose"].effort == "low"
     assert M["extract"].prompt_version == "extract.v1" and M["compose"].timeout_s == 20.0
     over = load_models(env={"LLM_COMPOSE_MODEL": "openai.gpt-5-5"})
     assert over["compose"].model == "openai.gpt-5-5"
@@ -23,7 +23,7 @@ def test_extract_request_shape_and_untrusted_wrapping():
     llm = FakeLLM()
     ex, call = extract(llm, M["extract"], "hola, ¿mi saldo?", "2026-06-17", [])
     kw = llm.calls[0]
-    assert kw["model"] == "openai.gpt-5-6-luna"
+    assert kw["model"] == "openai.gpt-oss-20b"
     assert kw["response_format"]["type"] == "json_schema"
     assert kw["messages"][0]["role"] == "system"
     assert "<customer_message>\nhola, ¿mi saldo?\n</customer_message>" in kw["messages"][1]["content"]
@@ -37,7 +37,7 @@ def test_compose_uses_json_schema_format_and_hides_fixed_block():
     receipts = [{"receipt_id": "RCP-1", "source": "dim_product", "as_of": "2026-06-17", "data": []}]
     out, _ = compose(llm, M["compose"], {"kind": "ask_confirmation", "fixed_block": "SUMMARY"}, receipts, "es")
     kw = llm.calls[0]
-    assert kw["response_format"]["type"] == "json_schema" and kw["model"] == "openai.gpt-5-6-terra"
+    assert kw["response_format"]["type"] == "json_schema" and kw["model"] == "openai.gpt-oss-120b"
     assert "SUMMARY" not in kw["messages"][1]["content"] and '"has_fixed_block": true' in kw["messages"][1]["content"]
     assert out.reply_text == "[ask_confirmation]" and out.claims[0]["receipt_ids"] == ["RCP-1"]
 
