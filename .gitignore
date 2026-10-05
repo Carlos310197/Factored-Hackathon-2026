@@ -43,3 +43,4 @@ worktrees/
 eval/runs/*/tmp/
 infra/realtime/node_modules/
 infra/realtime/dist/
+infra/terraform/realtime/.build/
