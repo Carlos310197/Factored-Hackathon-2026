@@ -196,3 +196,23 @@ def test_worst_case_turn_fits_inside_the_bff_wait():
     budget = inspect.signature(AgentService.__init__).parameters["turn_budget_s"].default
     jev_timeout = inspect.signature(JevClient.__init__).parameters["timeout"].default
     assert budget + 2 * jev_timeout < 25.0, (budget, jev_timeout)
+
+
+def test_session_turn_cap_stops_model_spend(ddb_store, serving_root):
+    """Public demo identities: a session gets a fixed number of turns, then a fixed reply with no Bedrock/Jev calls."""
+    h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}] * 2)
+    h.service.max_turns = 2
+    h.turn("¿Mi saldo?")
+    h.turn("¿Y el de la otra tarjeta?")
+    calls = (len(h.llm.calls), len(h.jev.calls))
+    r = h.turn("¿Y ahora?")
+    assert (len(h.llm.calls), len(h.jev.calls)) == calls  # no model or Jev call for the capped turn
+    assert "límite" in r["reply_text"] and r["awaiting"] == "none"
+
+
+def test_slow_turn_is_logged_for_the_alarm(ddb_store, serving_root, caplog):
+    ticks = iter([0.0, 0.0] + [21.0] * 1000)  # the turn takes 21 s, past the 20 s alarm line
+    h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}], clock=lambda: next(ticks), turn_budget_s=60)
+    with caplog.at_level("WARNING"):
+        h.turn("¿Mi saldo?")
+    assert any(r.getMessage() == "slow turn" for r in caplog.records)
