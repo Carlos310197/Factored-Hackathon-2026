@@ -186,6 +186,7 @@ Update this file whenever the current phase, the active unit or the implementati
   - 46 `evalkit.agent_runtime` (one table prefix per goal repetition, so a second rep never sees the first rep's dispute) and `evalkit.run` (resumable `(goal_id, rep)` pairs, run manifest with the goal-set hash, 8 workers; refuses without `--live`). Offline suite 34 passed.
   - 47 `evalkit.classify`: one class per conversation from the store diff, decision records and replies; `unsafe` overrides and records its types; the customer's own earlier `DSP-` is not a false claim; a zero-turn or never-expired conversation is `persona_discarded`. The judge never decides a class. Offline suite 50 passed.
   - 48 `evalkit.metrics` (headline, family and slice metrics, goal-clustered bootstrap, variability, cost with `incomplete`/`not defined` states) and `evalkit.compare` (legacy-vs-new rows with the different-workloads label, fairness rows, projected savings that needs every input). All nine `REQUIRED_KEYS` exist in the real `asis_metrics.json` from unit 42. Offline suite 58 passed.
+  - 49 `eval/judge_rubric.md` (judge.v1) and `evalkit.judge` (packet usefulness 0–2 ×4, reply language and faithfulness pass/fail, `human_sheet`, Cohen's κ, `validate`; the judge never decides a class). The plan's test stub was Anthropic-shaped; the agent's `call_json` now uses the OpenAI `chat.completions` shape (ADR 2026-10-05), so the stub in `test_judge.py` was adapted and the judge code is unchanged. Offline suite 62 passed. The 40-label human validation is unit 52.
 
 ## In Progress
 
