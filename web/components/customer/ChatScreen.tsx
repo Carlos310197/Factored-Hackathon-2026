@@ -23,6 +23,7 @@ export function ChatScreen({ sid, lang, embed }: { sid: string; lang: Lang; embe
   const [draft, setDraft] = useState("");
   const [inFlight, setInFlight] = useState(0);
   const [ctl, setCtl] = useState<{ control: string; agent_name?: string | null } | null>(null);
+  const asyncTurn = useRef(false);
   const queue = useRef<Promise<void>>(Promise.resolve());
 
   const resync = useCallback(() => void syncHistory(store, sid), [sid, store]);
@@ -54,9 +55,15 @@ export function ChatScreen({ sid, lang, embed }: { sid: string; lang: Lang; embe
       if (r.kind === "reply") { store.getState().applyReply(clientId, r.reply); notifyParent({ type: "demo:turn-reply", turn_id: r.reply.turn_id }); resync(); }
       else if (r.kind === "expired") store.getState().expire();
       else if (r.kind === "error") store.getState().fail(clientId);
-      else resync();  // 202: the reply arrives by push or history
+      else { asyncTurn.current = true; resync(); }  // 202: the reply arrives by push or history
     }).finally(() => setInFlight((n) => n - 1));
   }, [store, resync]);
+
+  useEffect(() => {  // 202 path: the turn ended when running cleared by a pushed reply or error line
+    if (s.running || !asyncTurn.current) return;
+    asyncTurn.current = false;
+    notifyParent({ type: "demo:turn-reply", turn_id: [...s.messages].reverse().find((m) => m.role === "assistant")?.turn_id ?? null });
+  }, [s.running, s.messages]);
 
   const busy = inFlight > 0;
   const latestAssistantId = [...s.messages].reverse().find((m) => m.role === "assistant")?.id;
@@ -69,16 +76,19 @@ export function ChatScreen({ sid, lang, embed }: { sid: string; lang: Lang; embe
     onNew: async (m) => { send(m.content.map((p) => (p.type === "text" ? p.text : "")).join("")); },
   });
 
-  // A control event without a stored system message still gets its line.
-  const hasControlMsg = (c: string) => s.messages.some((m) => m.role === "system" && m.meta?.control === c);
-  const ctlLine = ctl && !hasControlMsg(ctl.control)
+  // Hand-off lines are judged against what came after the latest assistant message (a session can hand off twice).
+  const lastAsst = s.messages.findLastIndex((m) => m.role === "assistant");
+  const controlMsgs = s.messages.filter((m) => m.role === "system" && m.meta?.control);
+  const lastControl = controlMsgs.at(-1)?.meta?.control;
+  const ctlLine = ctl && lastControl !== ctl.control
     ? (ctl.control === "agent" ? d.backToAssistant : d.agentJoined(ctl.agent_name ?? "")) : null;
-  const handedOver = s.awaiting === "human" && !s.messages.some((m) => m.role === "system" && m.meta?.control) && !ctlLine;
+  const controlAfterAsst = s.messages.some((m, i) => i > lastAsst && m.role === "system" && m.meta?.control);
+  const handedOver = s.awaiting === "human" && !controlAfterAsst && !ctlLine;
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <main className="font-customer flex min-h-dvh justify-center bg-b-fog text-b-ink">
-        <div className="relative flex h-dvh w-full max-w-md flex-col overflow-hidden bg-b-surface sm:my-6 sm:h-[calc(100dvh-3rem)] sm:rounded-card sm:border sm:border-b-line">
+        <div inert={s.expired} className="relative flex h-dvh w-full max-w-md flex-col overflow-hidden bg-b-surface sm:my-6 sm:h-[calc(100dvh-3rem)] sm:rounded-card sm:border sm:border-b-line">
           {!embed && (
             <header className="relative flex shrink-0 items-center justify-between overflow-hidden bg-b-cobalt px-5 py-4 text-b-surface">
               <span aria-hidden className="absolute -right-6 -top-10 size-24 rounded-full bg-b-sun" />
@@ -121,8 +131,8 @@ export function ChatScreen({ sid, lang, embed }: { sid: string; lang: Lang; embe
               <span aria-hidden>➤</span>
             </button>
           </form>
-          {s.expired && <ExpiredSheet lang={lang} embed={embed} />}
         </div>
+        {s.expired && <ExpiredSheet lang={lang} embed={embed} />}
       </main>
     </AssistantRuntimeProvider>
   );

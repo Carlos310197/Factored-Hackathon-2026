@@ -35,7 +35,7 @@ export function MessageView({ lang, busy, latestAssistantId, onSend }:
         <>
           {text && <p className="max-w-[84%] self-start whitespace-pre-wrap rounded-bubble rounded-bl-[4px] bg-b-mist px-3.5 py-2.5">{text}</p>}
           {latest && meta?.awaiting === "clarification" && meta.options?.length ? (
-            <Chips options={meta.options} lang={lang} disabled={busy} onPick={onSend} />
+            <Chips options={meta.options} disabled={busy} onPick={onSend} />
           ) : null}
           {latest && meta?.awaiting === "confirmation" && meta.summary ? (
             <ConfirmCard summary={meta.summary} lang={lang} disabled={busy} onConfirm={() => onSend(d.confirm)} onChange={() => onSend(d.change)} />

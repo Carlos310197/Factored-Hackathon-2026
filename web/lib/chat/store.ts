@@ -31,6 +31,10 @@ function upsert(current: ViewMessage[], incoming: ChatMessage[]): ViewMessage[] 
   return [...byId.values()].sort((a, b) => (a.cursor < b.cursor ? -1 : a.cursor > b.cursor ? 1 : 0));
 }
 
+/** A not-yet-seen assistant message (or async-failure system line) ends a turn the POST answered with 202. */
+const settles = (known: ViewMessage[], incoming: ChatMessage[]) =>
+  incoming.some((m) => (m.role === "assistant" || (m.role === "system" && m.meta?.error_code)) && !known.some((k) => k.id === m.id));
+
 export function createChatStore() {
   return createStore<ChatState>((set) => ({
     messages: [], cursor: null, running: false, awaiting: "none", control: "agent", failed: null, expired: false,
@@ -44,18 +48,18 @@ export function createChatStore() {
     applyReply: (clientId, reply) => set((s) => {
       if (reply.awaiting === "human" || !reply.turn_id) return { running: false, ...derive(s.messages, s.control) };
       const id = `reply:${reply.turn_id}`;
+      const q = s.messages.find((m) => m.id === clientId)?.cursor;
       const already = s.messages.some((m) => m.role === "assistant" && m.turn_id === reply.turn_id && !m.status);
       const messages = already ? s.messages : [...s.messages.filter((m) => m.id !== id), {
-        id, cursor: `${PENDING}${Date.now()}#${id}`, role: "assistant" as const, text: reply.reply_text, turn_id: reply.turn_id, ts: new Date().toISOString(),
+        id, cursor: q ? `${q}~r` : `${PENDING}${Date.now()}#${id}`, role: "assistant" as const, text: reply.reply_text, turn_id: reply.turn_id, ts: new Date().toISOString(),
         meta: { awaiting: reply.awaiting, options: reply.options, refs: reply.refs, summary: reply.summary, data_as_of: reply.data_as_of ?? undefined },
-        status: "provisional" as const }];
-      void clientId;
+        status: "provisional" as const }].sort((a, b) => (a.cursor < b.cursor ? -1 : a.cursor > b.cursor ? 1 : 0));
       return { messages, running: false, ...derive(messages, s.control) };
     }),
 
     merge: (incoming) => set((s) => {
       const messages = upsert(s.messages, incoming);
-      return { messages, ...derive(messages, s.control) };
+      return { messages, ...(settles(s.messages, incoming) ? { running: false } : {}), ...derive(messages, s.control) };
     }),
 
     applyEvent: (ev) => set((s) => {
@@ -64,7 +68,7 @@ export function createChatStore() {
       void _t;
       const messages = upsert(s.messages, [m]);
       const control = m.role === "system" && m.meta?.control ? m.meta.control : s.control;
-      return { messages, control, ...derive(messages, control) };
+      return { messages, control, ...(settles(s.messages, [m]) ? { running: false } : {}), ...derive(messages, control) };
     }),
 
     fail: (clientId) => set((s) => {

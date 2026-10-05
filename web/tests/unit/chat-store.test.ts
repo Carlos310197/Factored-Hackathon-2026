@@ -47,4 +47,23 @@ describe("chat store", () => {
     s.getState().sendOptimistic("cm-3", "nuevo");
     expect(s.getState().messages.map((m) => m.id)).toEqual(["a", "cm-3"]);
   });
+  it("a pushed assistant message ends a turn the POST answered with 202", () => {
+    const s = createChatStore();
+    s.getState().sendOptimistic("cm-1", "hola");
+    expect(s.getState().running).toBe(true);
+    s.getState().merge([msg({ id: "old", role: "assistant", cursor: "0" })]);  // unseen history counts too
+    expect(s.getState().running).toBe(false);
+    s.getState().sendOptimistic("cm-2", "otra");
+    s.getState().merge([msg({ id: "old", role: "assistant", cursor: "0" })]);  // already known: no change
+    expect(s.getState().running).toBe(true);
+    s.getState().applyEvent({ type: "message", id: "e1", cursor: "5", role: "system", text: "fallo", meta: { error_code: "agent_failed" }, ts: "t" });
+    expect(s.getState().running).toBe(false);
+  });
+  it("a provisional reply sorts directly after its own question", () => {
+    const s = createChatStore();
+    s.getState().sendOptimistic("cm-1", "uno");
+    s.getState().sendOptimistic("cm-2", "dos");
+    s.getState().applyReply("cm-1", reply());
+    expect(s.getState().messages.map((m) => m.id)).toEqual(["cm-1", "reply:TRN-1", "cm-2"]);
+  });
 });

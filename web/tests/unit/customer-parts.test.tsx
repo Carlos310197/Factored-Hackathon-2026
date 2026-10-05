@@ -13,12 +13,13 @@ const replace = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 class RO { observe() {} unobserve() {} disconnect() {} }
 globalThis.ResizeObserver ??= RO as unknown as typeof ResizeObserver;
+Element.prototype.scrollTo ??= () => {};
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); replace.mockReset(); });
 
 describe("customer parts", () => {
   it("chips send the option text", async () => {
     const onPick = vi.fn();
-    render(<Chips options={["Reclamar un cargo", "Pago rechazado"]} lang="es" disabled={false} onPick={onPick} />);
+    render(<Chips options={["Reclamar un cargo", "Pago rechazado"]} disabled={false} onPick={onPick} />);
     await userEvent.click(screen.getByRole("button", { name: "Pago rechazado" }));
     expect(onPick).toHaveBeenCalledWith("Pago rechazado");
   });
@@ -94,5 +95,35 @@ describe("ChatScreen", () => {
     expect(await screen.findByText("Ana, del equipo de LATAM Bank, se unió")).toBeInTheDocument();
     expect(screen.getByText("No pudimos procesar tu mensaje")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "LATAM Bank" })).not.toBeInTheDocument();  // embed hides chrome
+  });
+
+  it("a 202 keeps the typing indicator until the reply arrives, then clears it", async () => {
+    let history: object[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) =>
+      String(url).includes("/messages") ? Response.json({ data: history }) : new Response(null, { status: 202 })));
+    render(<ChatScreen sid="s1" lang="es" embed={false} />);
+    await userEvent.type(screen.getByRole("textbox"), "hola{Enter}");
+    expect(await screen.findByText("El asistente está escribiendo")).toBeInTheDocument();
+    history = [msg({ id: "a1", cursor: "0009", text: "Listo" })];
+    await waitFor(() => expect(screen.getByText("Listo")).toBeInTheDocument(), { timeout: 5000 });
+    expect(screen.queryByText("El asistente está escribiendo")).not.toBeInTheDocument();
+  });
+
+  it("the chat column is inert behind the expired sheet", async () => {
+    mockFetch([], 401);
+    const { container } = render(<ChatScreen sid="s1" lang="es" embed={false} />);
+    await screen.findByRole("dialog", { name: "Tu sesión terminó" });
+    expect(container.querySelector("[inert]")).toContainElement(screen.getByRole("textbox", { hidden: true }));
+  });
+
+  it("a second handoff shows the waiting line again", async () => {
+    mockFetch([
+      msg({ id: "a", cursor: "0001", meta: { awaiting: "human" } }),
+      msg({ id: "c1", cursor: "0002", role: "system", text: "x", meta: { control: "human:ana", agent_name: "Ana" } }),
+      msg({ id: "c2", cursor: "0003", role: "system", text: "x", meta: { control: "agent" } }),
+      msg({ id: "b", cursor: "0004", text: "de vuelta", meta: { awaiting: "human" } }),
+    ]);
+    render(<ChatScreen sid="s1" lang="es" embed={false} />);
+    expect(await screen.findByText("Una persona del equipo continuará esta conversación")).toBeInTheDocument();
   });
 });

@@ -417,6 +417,8 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 8 (queue rows):** `handoff.v1` has no top-level amount, so queue rows and `/queue` events show priority, reasons, language, age and holder. The amount appears in the packet's verified facts.
 
+**Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
+
 ### Deployment plan (2026-10-01)
 
 **Spec adjustments found while planning:**

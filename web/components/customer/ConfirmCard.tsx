@@ -30,7 +30,7 @@ export function ConfirmCard({ summary, lang, disabled, onConfirm, onChange }:
       </dl>
       <div className="flex flex-wrap gap-2 px-4 pb-4 pt-2">
         <button type="button" disabled={disabled} onClick={onConfirm}
-          className="min-h-11 rounded-full bg-b-leaf px-4 text-sm font-bold text-b-surface transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-cobalt disabled:opacity-60">{d.confirm}</button>
+          className="min-h-11 rounded-full bg-b-leaf px-4 text-sm font-bold text-b-surface hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-cobalt disabled:opacity-60">{d.confirm}</button>
         <button type="button" disabled={disabled} onClick={onChange}
           className="min-h-11 rounded-full border-[1.5px] border-b-ink bg-b-surface px-4 text-sm font-bold text-b-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-cobalt disabled:opacity-60">{d.change}</button>
       </div>
