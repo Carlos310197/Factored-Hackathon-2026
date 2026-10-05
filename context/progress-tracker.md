@@ -4,9 +4,9 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Phase
 
-- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–21 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing, OpenAI on Bedrock, LangGraph workflow and agent service). Agent core continues with units 22–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
+- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–22 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing, OpenAI on Bedrock, LangGraph workflow and agent service, AgentCore runtime entrypoint). Agent core continues with units 23–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
 - Region: **us-east-1** for all our AWS resources and Snowflake. The organizer bucket (theirs) stays in us-east-2.
-- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-05). Agent suite: `cd agent && uv run pytest` → 151 passed (2026-10-05).
+- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-05). Agent suite: `cd agent && uv run pytest` → 178 passed (2026-10-05).
 - Submission deadline: **2026-10-05**.
 
 ## Current Goal
@@ -115,6 +115,12 @@ Update this file whenever the current phase, the active unit or the implementati
   - `tests/test_graph_paths.py`: 12 scenario tests covering main conversation paths (account inquiry ES/PT, decline explanation, dispute flow with confirmation, ambiguous intent clarification, unsupported request, unrecognized charge handoff, over-limit human review, legal threat, declined payment dispute, multi-intent queue, unsupported language, run_id persistence)
   - `tests/test_graph_failures.py`: 15 failure scenario tests (Jev down once/twice, Jev down during confirmation, unclear confirmation 3x, modify during confirmation, duplicate dispute, injection refused then handed off, compose failure, unverified claims, verify outage, foreign ID blocked, serving unavailable, missing dispute scope, turn budget exhausted, extract failure, recursion limit)
   - All 27 new tests pass; total 151/151 in agent/ (124 existing + 27 new), 43/43 in root offline suite
+- 2026-10-05: **Unit 22: AgentCore Runtime Entrypoint** (`agent/src/bankagent/`):
+  - `runtime.py`: Production wiring with DynamoDBSaver checkpointer (30-day TTL), real Jev client, Claude on Bedrock, DuckDB over serving set, and DynamoDB store;
+  - `app.py`: AgentCore entrypoint with `/ping` and `/invocations` endpoints on port 8080, JWT re-verification (defence in depth), Bearer token support (Authorization header or session_token payload fallback), message validation (max 2000 chars), customer_id from JWT only (never from payload), graceful identity outage handling;
+  - `handle()` function: pure, testable request processing with error codes (auth_required, session_expired, invalid_message, identity_unavailable);
+  - 13 comprehensive tests covering token validation, message rejection, payload security, HTTP contract, and runtime wiring;
+  - All tests pass: 178/178 in agent/ (165 existing + 13 new), 43/43 in root offline suite.
 - 2026-10-05: **Unit 26: Resolver Features and Splits** (`agent/src/bankagent/resolver/`):
   - Added `numpy>=2.0` and `rapidfuzz>=3.9` as runtime dependencies;
   - Added `resolver` dependency group: `scikit-learn>=1.5`, `lightgbm>=4.5`, `mlflow>=3.1`, `matplotlib>=3.9` (offline training/evaluation only, excluded from runtime image via `--no-default-groups`);
@@ -143,7 +149,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | Units | Subsystem | Status | First dependency |
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
-| 12–25 | Agent core | 12–21 **done**; 22–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
+| 12–25 | Agent core | 12–22 **done**; 23–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
 | 26–39 | Transaction resolver | 26–27 **done** (features, splits, history sampler) | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
