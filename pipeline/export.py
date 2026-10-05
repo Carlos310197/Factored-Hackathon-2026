@@ -1,5 +1,7 @@
 """Unload curated tables as parquet to <stage>/<run_id>/<table>/ and flip <stage>/latest.json. Usage: uv run python -m pipeline.export --run-id <id>"""
 import argparse
+import hashlib
+import os
 from email.utils import parsedate_to_datetime
 import json
 import sys
@@ -22,16 +24,31 @@ def export_select(table: str, columns: list[str]) -> str:
     return f"select {cols} from CURATED.{table.upper()}{order}"
 
 
-def unload_table(cur, table: str, run_id: str, stage: str) -> int:
+def contract_hash(columns: dict[str, list[str]]) -> str:
+    """Hash of the exported columns, in order. Must match bankagent.data.contract.contract_hash (tested)."""
+    canon = json.dumps({t: [c.lower() for c in cols] for t, cols in columns.items()}, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canon.encode()).hexdigest()
+
+
+def dq_summary(cur, run_id: str) -> dict[str, int]:
+    """dbt test outcomes recorded for this run (META.DQ_RESULTS, written by pipeline.dq_results before the export)."""
+    rows = cur.execute("select lower(status), count(*) from META.DQ_RESULTS where run_id = %s group by 1", (run_id,)).fetchall()
+    return {s: int(n) for s, n in rows}
+
+
+def unload_table(cur, table: str, run_id: str, stage: str) -> tuple[int, list[str]]:
     cols = table_columns(cur, "CURATED", table)
     res = cur.execute(
         f"copy into @{stage}/{run_id}/{table}/data_ from ({export_select(table, cols)}) "
         f"file_format = (type = parquet) header = true overwrite = true max_file_size = 268435456").fetchall()
-    return sum(int(r[0]) for r in res)  # rows_unloaded per file
+    return sum(int(r[0]) for r in res), cols  # rows_unloaded per file
 
 
-def build_pointer(run_id: str, exported_at: str, max_process_date: str, tables: dict[str, int]) -> dict:
-    return {"run_id": run_id, "exported_at": exported_at, "max_process_date": max_process_date, "tables": tables}
+def build_pointer(run_id: str, exported_at: str, max_process_date: str, tables: dict[str, int],
+                  git_sha: str | None = None, contract_hash: str | None = None, dq_summary: dict | None = None) -> dict:
+    p = {"run_id": run_id, "exported_at": exported_at, "max_process_date": max_process_date, "tables": tables}
+    extra = {"git_sha": git_sha, "contract_hash": contract_hash, "dq_summary": dq_summary}
+    return p | {k: v for k, v in extra.items() if v is not None}  # a self-describing pointer
 
 
 def write_pointer(cur, pointer: dict, stage: str) -> None:
@@ -69,12 +86,14 @@ def prune_runs(cur, stage: str, keep: int = 3, live: str | None = None) -> list[
 
 def run_export(conn, run_id: str, stage: str = "RAW.SERVING_STAGE") -> dict:
     cur = conn.cursor()
-    counts = {}
+    counts, columns = {}, {}
     for t in EXPORT_TABLES:
-        counts[t] = unload_table(cur, t, run_id, stage)   # any failure raises before the pointer moves
+        counts[t], columns[t] = unload_table(cur, t, run_id, stage)   # any failure raises before the pointer moves
         print(f"unloaded {t}: {counts[t]} rows", file=sys.stderr)
     max_pd = cur.execute("select to_varchar(max(process_date), 'YYYY-MM-DD') from CURATED.FCT_TRANSACTION").fetchone()[0]
-    pointer = build_pointer(run_id, datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), max_pd, counts)
+    pointer = build_pointer(run_id, datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), max_pd, counts,
+                            git_sha=os.environ.get("GITHUB_SHA"), contract_hash=contract_hash(columns),
+                            dq_summary=dq_summary(cur, run_id))
     write_pointer(cur, pointer, stage)
     conn.commit()
     prune_runs(cur, stage, keep=3, live=run_id)  # the run latest.json points at is never removed

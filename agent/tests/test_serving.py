@@ -41,3 +41,18 @@ def test_rejects_unknown_table_and_unsafe_run_id(serving_root):
 def test_missing_run_folder_is_serving_error(serving_root):
     with pytest.raises(ServingError):
         ServingData(str(serving_root)).query("no-such-run", "fct_transaction", "1=1", [])
+
+
+def test_pointer_with_a_different_contract_is_refused(serving_root):
+    import json
+
+    from bankagent.data.contract import contract_hash
+    p = serving_root / "latest.json"
+    good = json.loads(p.read_text())
+    p.write_text(json.dumps(good | {"contract_hash": contract_hash()}))
+    assert ServingData(str(serving_root)).pointer().run_id == RUN_ID  # matching hash: served
+    p.write_text(json.dumps(good | {"contract_hash": "0" * 64}))
+    with pytest.raises(ServingError, match="contract"):  # columns drifted: refuse rather than misread
+        ServingData(str(serving_root)).pointer()
+    p.write_text(json.dumps(good))  # no hash (older pointers): still served
+    assert ServingData(str(serving_root)).pointer().run_id == RUN_ID

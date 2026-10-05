@@ -35,7 +35,7 @@ deduplicates by key (newest load, then highest row number).
 offline tests only, so code from a pull request never gets Snowflake credentials.
 
 ### Serving contract for the agent
-`s3://latam-bank-serving-762197749808-use1/serving/latest.json` → `{run_id, exported_at, max_process_date, tables}`. Read the keys by name;
+`s3://latam-bank-serving-762197749808-use1/serving/latest.json` → `{run_id, exported_at, max_process_date, tables, git_sha, contract_hash, dq_summary}`. The pointer describes its own build: the commit that produced it, a SHA-256 of the exported columns in order, and the run's dbt test outcomes by status. The agent refuses a pointer whose `contract_hash` differs from its own contract (`agent/src/bankagent/data/contract.py`), and `tests/test_contract_parity.py` proves that contract equals the dbt columns. Read the keys by name;
 Snowflake writes them in alphabetical order. Tables are under `serving/<run_id>/<table>/*.parquet` with lowercase column names,
 sorted by `customer_id` where the table has one: `dim_customer`, `dim_product`, `fct_transaction`, `fct_complaint`, `seed_decline_reason`.
 
