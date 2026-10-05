@@ -12,7 +12,7 @@ decision record you can open in the trace view; the write is best-effort (see Li
 
 ## Try it
 
-- **App:** `{{APP_URL}}` (set at submission)
+- **App:** http://latam-bank-web-1521424170.us-east-1.elb.amazonaws.com
 - **Customer chat:** `/login`. The 20 demo identities (`demo01`–`demo20`) are listed on the page, and their password and code
   are filled in for you. `demo01`–`demo08` are each tagged with a demo scenario. Portuguese speakers: `demo04`, `demo08`,
   `demo12`, `demo16`, `demo20` (pick Português on the login page).

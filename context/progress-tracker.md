@@ -455,7 +455,7 @@ Added in the plan's Phase C (they continue the same numbering):
 
 ### 2026-10-05: Public ALB (stable URL), team IPs removed
 
-- `infra/terraform/app`: internet-facing ALB `latam-bank-web` (HTTP 80, no domain so no certificate) → IP target group on 3000, health check `/login`; the task security group admits port 3000 only from the ALB's security group. `allowed_cidrs` (the two home IPs) is gone from code, tests and this tracker; the ECS service is updated in place (no replacement), still Fargate Spot. Output `url`; `bin/app-url` prints the ALB address. Applied by `infra.yml` on merge.
+- `infra/terraform/app`: internet-facing ALB `latam-bank-web` (HTTP 80, no domain so no certificate) → IP target group on 3000, health check `/login`; the task security group admits port 3000 only from the ALB's security group. `allowed_cidrs` (the two home IPs) is gone from code, tests and this tracker; the ECS service is updated in place (no replacement), still Fargate Spot. Output `url`; `bin/app-url` prints the ALB address. Applied by `infra.yml` on merge (run 37390425272: 7 added, 1 changed, 2 destroyed). Verified live: `http://latam-bank-web-1521424170.us-east-1.elb.amazonaws.com` target healthy, `/login` 200, customer login + OTP 200 and `/chat` 200 with the cookie, the task's own IP no longer answers on 3000.
 
 ### 2026-10-05: Spend cap, latency and staleness alarms, budget
 
