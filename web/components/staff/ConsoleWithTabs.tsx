@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import type { TraceTurn } from "@/lib/trace/viewModel";
 import { Console, type CaseData, type Tab } from "./Console";
+import { TraceList } from "../trace/TraceList";
 import { ConversationTab } from "./ConversationTab";
 import { PacketTab, whyBars } from "./PacketTab";
 
@@ -25,7 +26,12 @@ function Tabs({ tab, c, me }: { tab: Tab; c: CaseData; me: Me }) {
   const turns = useTrace(c.packet.session_id);
   if (tab === "packet") return <PacketTab packet={c.packet} why={whyBars(turns)} />;
   if (tab === "conversation") return <ConversationTab sid={c.packet.session_id} lang={c.packet.language} control={c.control} me={me} />;
-  return <p className="text-sm text-c-muted">Trace tab arrives in the next unit.</p>; // unit 73
+  return (
+    <div>
+      <a className="text-xs text-c-signal font-semibold" href={`/trace/${encodeURIComponent(c.packet.session_id)}`} target="_blank" rel="noreferrer">Open full trace ↗</a>
+      <TraceList key={c.packet.session_id} sid={c.packet.session_id} mode="console" />
+    </div>
+  );
 }
 
 export function ConsoleWithTabs(props: { me: Me; initialId?: string }) {
