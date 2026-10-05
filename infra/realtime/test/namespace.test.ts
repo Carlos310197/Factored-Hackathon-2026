@@ -20,6 +20,12 @@ describe("namespace channel rules", () => {
     expect(() => ns.onSubscribe(ctx({}, ["queue", "all"]))).toThrow("Unauthorized");
   });
 
+  it("onPublish refuses a Lambda-authorizer identity (browsers never publish)", () => {
+    const events = [{ id: "1", payload: {} }];
+    expect(() => ns.onPublish({ events, identity: { handlerContext: { role: "agent", sid: "x" } } })).toThrow("Unauthorized");
+    expect(() => ns.onPublish({ events, identity: { resolverContext: { role: "agent", sid: "x" } } })).toThrow("Unauthorized");
+  });
+
   it("onPublish forwards events unchanged", () => {
     const events = [{ id: "1", payload: { a: 1 } }];
     expect(ns.onPublish({ events })).toBe(events);

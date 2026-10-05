@@ -31,6 +31,14 @@ describe("verifyRealtime", () => {
     expect(await verifyRealtime(await sign({ sub: "CLI-A", sid: "S-1", role: "customer" }, "realtime", "-1m"), jwks, ISS)).toBeNull();
     expect(await verifyRealtime("nope", jwks, ISS)).toBeNull();
   });
+  it("rejects a wrong issuer, an HS256 token and an empty sid", async () => {
+    const t = await sign({ sub: "CLI-A", sid: "S-1", role: "customer" });
+    expect(await verifyRealtime(t, jwks, "http://other.test")).toBeNull();
+    const hs = await new SignJWT({ sub: "CLI-A", sid: "S-1", role: "customer" }).setProtectedHeader({ alg: "HS256", kid: "k1" })
+      .setIssuer(ISS).setAudience("realtime").setExpirationTime("5m").sign(new TextEncoder().encode("secret-secret-secret-secret-32b"));
+    expect(await verifyRealtime(hs, jwks, ISS)).toBeNull();
+    expect(await verifyRealtime(await sign({ sub: "CLI-A", sid: "", role: "customer" }), jwks, ISS)).toBeNull();
+  });
   it("rejects tokens without role or sid", async () => {
     expect(await verifyRealtime(await sign({ sub: "CLI-A", sid: "S-1" }), jwks, ISS)).toBeNull();
   });
@@ -46,6 +54,20 @@ describe("decide", () => {
     const t = await sign({ sub: "CLI-A", sid: "S-1", role: "customer" });
     const r = await decide({ authorizationToken: t, requestContext: { operation: "EVENT_SUBSCRIBE", channel: "/session/S-2" } }, jwks, ISS);
     expect(r.isAuthorized).toBe(false);
+  });
+  it("allows a customer's own channel and an agent's queue", async () => {
+    const c = await sign({ sub: "CLI-A", sid: "S-1", role: "customer" });
+    expect((await decide({ authorizationToken: c, requestContext: { operation: "EVENT_SUBSCRIBE", channel: "/session/S-1" } }, jwks, ISS)).isAuthorized).toBe(true);
+    const a = await sign({ sub: "STAFF-1", sid: "STAFF-1", role: "agent" });
+    expect((await decide({ authorizationToken: a, requestContext: { operation: "EVENT_SUBSCRIBE", channel: "/queue/all" } }, jwks, ISS)).isAuthorized).toBe(true);
+  });
+  it("refuses publish even for a valid agent token", async () => {
+    const a = await sign({ sub: "STAFF-1", sid: "STAFF-1", role: "agent" });
+    expect((await decide({ authorizationToken: a, requestContext: { operation: "EVENT_PUBLISH", channel: "/queue/all" } }, jwks, ISS)).isAuthorized).toBe(false);
+  });
+  it("refuses a malformed channel with an empty segment", async () => {
+    const a = await sign({ sub: "STAFF-1", sid: "STAFF-1", role: "agent" });
+    expect((await decide({ authorizationToken: a, requestContext: { operation: "EVENT_SUBSCRIBE", channel: "/session//S-1" } }, jwks, ISS)).isAuthorized).toBe(false);
   });
   it("refuses an invalid token", async () => {
     expect((await decide({ authorizationToken: "x" }, jwks, ISS)).isAuthorized).toBe(false);

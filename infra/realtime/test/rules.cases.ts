@@ -10,5 +10,11 @@ export const CASES: Array<[string, string[], { role: string; sid: string } | und
   ["agent unknown namespace", ["admin", "x"], { role: "agent", sid: "STAFF-1" }, false],
   ["no identity", ["session", "S-1"], undefined, false],
   ["unknown role", ["session", "S-1"], { role: "root", sid: "S-1" }, false],
+  ["empty segment", ["session", "", "S-1"], { role: "agent", sid: "STAFF-1" }, false],
+  ["empty sid segment", ["session", ""], { role: "agent", sid: "STAFF-1" }, false],
+  ["customer wildcard", ["session", "*"], { role: "customer", sid: "S-1" }, false],
+  ["agent wildcard", ["session", "*"], { role: "agent", sid: "STAFF-1" }, true],
+  ["uppercase namespace", ["SESSION", "S-1"], { role: "customer", sid: "S-1" }, false],
+  ["uppercase namespace agent", ["QUEUE", "all"], { role: "agent", sid: "STAFF-1" }, false],
   ["empty path", [], { role: "agent", sid: "STAFF-1" }, false],
 ];

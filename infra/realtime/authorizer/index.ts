@@ -10,9 +10,9 @@ export interface AuthorizerResult { isAuthorized: boolean; handlerContext?: Reco
 
 export async function verifyRealtime(token: string, getKey: JWTVerifyGetKey, issuer: string): Promise<RealtimeClaims | null> {
   try {
-    const { payload } = await jwtVerify(token, getKey, { issuer, audience: "realtime", algorithms: ["RS256"] });
+    const { payload } = await jwtVerify(token, getKey, { issuer, audience: "realtime", algorithms: ["RS256"], requiredClaims: ["exp"] });
     const { sub, sid, role } = payload as Record<string, unknown>;
-    if (typeof sub !== "string" || typeof sid !== "string" || (role !== "customer" && role !== "agent")) return null;
+    if (typeof sub !== "string" || typeof sid !== "string" || sid === "" || (role !== "customer" && role !== "agent")) return null;
     return { sub, sid, role };
   } catch {
     return null;
@@ -22,6 +22,9 @@ export async function verifyRealtime(token: string, getKey: JWTVerifyGetKey, iss
 export async function decide(event: AuthorizerEvent, getKey: JWTVerifyGetKey, issuer: string): Promise<AuthorizerResult> {
   const claims = await verifyRealtime(event.authorizationToken ?? "", getKey, issuer);
   if (!claims) return { isAuthorized: false };
+  // Publish is IAM-only; a realtime token is subscribe-only. Refuse anything but connect/subscribe.
+  const op = event.requestContext?.operation;
+  if (op !== undefined && op !== "EVENT_CONNECT" && op !== "EVENT_SUBSCRIBE") return { isAuthorized: false };
   const channel = event.requestContext?.channel;
   if (channel && !channelAllowed(segmentsOf(channel), claims)) return { isAuthorized: false };
   // ttlOverride 0: decisions depend on the channel, so they must never be cached per token.

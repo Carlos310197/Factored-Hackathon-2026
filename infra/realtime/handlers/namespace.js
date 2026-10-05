@@ -4,7 +4,7 @@ import { util } from "@aws-appsync/utils";
 const STAFF_NAMESPACES = ["session", "queue", "trace"];
 
 export function allowed(segments, c) {
-  if (!c || !segments || segments.length === 0) return false;
+  if (!c || !segments || segments.length === 0 || segments.indexOf("") !== -1) return false;
   const ns = segments[0];
   if (c.role === "agent") return STAFF_NAMESPACES.indexOf(ns) !== -1;
   if (c.role === "customer") return ns === "session" && segments.length === 2 && segments[1] === c.sid;
@@ -22,5 +22,8 @@ export function onSubscribe(ctx) {
 }
 
 export function onPublish(ctx) {
+  // Browsers (Lambda-authorizer identity) never publish; IAM publishers carry no handler/resolver context.
+  const identity = ctx.identity || {};
+  if (identity.handlerContext || identity.resolverContext) util.unauthorized();
   return ctx.events;
 }
