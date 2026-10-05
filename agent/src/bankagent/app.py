@@ -77,10 +77,14 @@ def handle(payload: dict, headers: dict, rt) -> dict:
         store.messages.store_reply(sid, message_id, reply)
         return reply
     turn_id, start = new_id("TRN"), time.monotonic()
-    store.messages.append(sid, "customer", text, message_id=message_id, turn_id=turn_id)
-    reply = rt.service.handle_turn(ctx, text, turn_id=turn_id)
-    store.messages.append(sid, "assistant", reply.get("reply_text", ""), turn_id=turn_id,
-                          meta={k: reply.get(k) for k in META_KEYS if reply.get(k) is not None})
+    try:
+        store.messages.append(sid, "customer", text, message_id=message_id, turn_id=turn_id)
+        reply = rt.service.handle_turn(ctx, text, turn_id=turn_id)
+        store.messages.append(sid, "assistant", reply.get("reply_text", ""), turn_id=turn_id,
+                              meta={k: reply.get(k) for k in META_KEYS if reply.get(k) is not None})
+    except Exception:  # never leave the marker `running`: a retry would get duplicate_in_progress until the TTL
+        log.exception("turn failed session=%s turn=%s", sid, turn_id)
+        reply = {**_error(fallback_reply({"kind": "error"}, [], ctx.lang), ctx.lang, "turn_failed"), "turn_id": turn_id}
     store.log.append(sid, turn_id, "turn", "turn_end",
                      {"duration_ms": int((time.monotonic() - start) * 1000), "awaiting": reply.get("awaiting", "none")})
     store.messages.store_reply(sid, message_id, reply)

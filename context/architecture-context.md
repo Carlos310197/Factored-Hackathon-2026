@@ -431,7 +431,7 @@ This is the audit artifact the brief requires: explanations come from these reco
 #### To spec 3 (UI and deployment) · agent-core §9.2
 
 - **Identity:** `POST /auth/login`, `POST /auth/otp`, `GET /.well-known/openid-configuration`, `GET /jwks.json`.
-- **Invocation:** request `{message, session_token?}`; response `{reply_text, language, awaiting: none|clarification|confirmation, options[], refs[], data_as_of}`.
+- **Invocation:** request `{message, client_message_id?}` (the token comes only from the `Authorization` header; no payload `session_token`); response `{reply_text, language, awaiting: none|clarification|confirmation, options[], refs[], data_as_of}`.
 - **Handoff queue:** schema `handoff.v1`, read from the `handoffs` table.
 - **Runtime needs:**
   - `JEV_API_KEY` from Secrets Manager;

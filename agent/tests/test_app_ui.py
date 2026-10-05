@@ -79,3 +79,16 @@ def test_session_is_created_with_token_identity():
     r = rt()
     entry.handle({"message": "saldo", "customer_id": "CLI-EVIL"}, auth("msg-00000005", sid="S-9"), r)
     assert r.service.deps.store.sessions.items["S-9"]["customer_id"] == "CLI-A"
+
+
+def test_failed_turn_still_ends_and_marker_is_released():
+    r = rt()
+
+    def boom(*a, **k):
+        raise RuntimeError("graph down")
+
+    r.service.handle_turn = boom
+    first = entry.handle({"message": "saldo"}, auth("msg-00000006"), r)
+    assert first["error"] == "turn_failed" and first["awaiting"] == "none"
+    assert r.service.deps.store.log.records[-1]["kind"] == "turn_end"
+    assert entry.handle({"message": "saldo"}, auth("msg-00000006"), r) == first
