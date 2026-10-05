@@ -2,6 +2,7 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { safeNext } from "@/lib/safe-next";
 import { LoginForm } from "@/components/customer/LoginForm";
 
 const replace = vi.fn();
@@ -50,4 +51,30 @@ describe("LoginForm", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Entrar" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("No pudimos verificar tus datos");
   });
+  it("clears busy and shows the error when fetch rejects", async () => {
+    const f = mockFetch();
+    vi.stubGlobal("fetch", vi.fn(async (u: string) => { if (u === "/api/auth/login") throw new Error("net"); return f(u); }));
+    render(<LoginForm next="/chat" embed={false} />);
+    const btn = await screen.findByRole("button", { name: "Continuar" });
+    await userEvent.click(btn);
+    expect(await screen.findByRole("alert")).toHaveTextContent("No pudimos verificar tus datos");
+    expect(btn).toBeEnabled();
+  });
+  it("moves language with arrow keys and clears the identity when none match", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (u: string) => u.startsWith("/api/auth/demo-users") ? Response.json({ data: [USERS[0]] }) : new Response(null, { status: 404 })));
+    render(<LoginForm next="/chat" embed={false} />);
+    const es = await screen.findByRole("radio", { name: "Español" });
+    es.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(screen.getByRole("radio", { name: "Português" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "Português" })).toHaveFocus();
+    expect(screen.getByRole("textbox")).toHaveValue("");
+  });
+});
+
+describe("safeNext", () => {
+  it.each(["//h", "/\\h", "/\t/h", "/\n/h", "https://h", "javascript:alert(1)", undefined])("rejects %s", (v) => {
+    expect(safeNext(v)).toBe("/chat");
+  });
+  it("allows same-site paths", () => { expect(safeNext("/chat?x=1")).toBe("/chat?x=1"); });
 });

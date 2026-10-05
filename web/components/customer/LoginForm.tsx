@@ -39,38 +39,53 @@ export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = f
     setLang(l);
     const first = users.find((u) => u.lang === l);
     if (first) pickUser(first);
+    else { setUsername(""); setPassword(""); setOtp(""); }
   };
   const chooseUser = (name: string) => {
     const u = users.find((x) => x.username === name);
     if (u) pickUser(u); else setUsername(name);
   };
 
-  async function submitCredentials() {
-    setBusy(true); setError(false);
-    const r = await fetch("/api/auth/login", { method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ username, password }) });
-    setBusy(false);
-    if (!r.ok) return setError(true);
-    setTicket((await r.json()).data.login_ticket);
+  const onLangKey = (e: React.KeyboardEvent) => {
+    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+    e.preventDefault();
+    const l = lang === "es" ? "pt" : "es";
+    chooseLang(l);
+    (e.currentTarget.parentElement?.querySelector(`[aria-checked="false"]`) as HTMLElement | null)?.focus();
+  };
+  async function post(url: string, body: object) {
+    return fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   }
-  async function submitOtp(tk = ticket) {
-    if (!tk) return;
-    setBusy(true); setError(false);
-    const r = await fetch("/api/auth/otp", { method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ login_ticket: tk, otp, short_ttl: shortTtl }) });
-    setBusy(false);
+  async function requestTicket(): Promise<string | null> {
+    const r = await post("/api/auth/login", { username, password });
+    return r.ok ? ((await r.json()).data.login_ticket as string) : null;
+  }
+  async function verifyOtp(tk: string) {
+    const r = await post("/api/auth/otp", { login_ticket: tk, otp, short_ttl: shortTtl });
     if (!r.ok) return setError(true);
     notifyParent({ type: "demo:auth", step: "otp_verified" });
     notifyParent({ type: "demo:auth", step: "token_issued" });
     router.replace(embed ? `${next}${next.includes("?") ? "&" : "?"}embed=1` : next);
   }
+  async function run(step: () => Promise<void>) {
+    setBusy(true); setError(false);
+    try { await step(); } catch { setError(true); } finally { setBusy(false); }
+  }
+  const submitCredentials = () => run(async () => {
+    const tk = await requestTicket();
+    if (tk) setTicket(tk); else setError(true);
+  });
+  const submitOtp = () => run(async () => { if (ticket) await verifyOtp(ticket); });
 
   useEffect(() => {  // /demo scenarios: sign in without clicks (demo users only)
     if (!auto || !username || !password || ticket) return;
     void (async () => {
-      const r = await fetch("/api/auth/login", { method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ username, password }) });
-      if (r.ok) { const tk = (await r.json()).data.login_ticket as string; setTicket(tk); await submitOtp(tk); }
+      try {
+        const tk = await requestTicket();
+        if (!tk) return setError(true);
+        setTicket(tk);
+        await verifyOtp(tk);
+      } catch { setError(true); }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auto, username, password]);
@@ -89,8 +104,9 @@ export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = f
           onSubmit={(e) => { e.preventDefault(); void (ticket ? submitOtp() : submitCredentials()); }}>
           <div role="radiogroup" aria-label={d.language} className="flex rounded-full bg-b-mist p-1">
             {(["es", "pt"] as const).map((l) => (
-              <button key={l} type="button" role="radio" aria-checked={lang === l} onClick={() => chooseLang(l)}
-                className={`flex-1 rounded-full py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-b-cobalt ${lang === l ? "bg-b-cobalt text-b-surface" : "text-b-muted"}`}>
+              <button key={l} type="button" role="radio" aria-checked={lang === l} tabIndex={lang === l ? 0 : -1}
+                onClick={() => chooseLang(l)} onKeyDown={onLangKey}
+                className={`min-h-11 flex-1 rounded-full text-sm font-semibold focus-visible:outline-2 focus-visible:outline-b-cobalt ${lang === l ? "bg-b-cobalt text-b-surface" : "text-b-muted"}`}>
                 {l === "es" ? "Español" : "Português"}
               </button>
             ))}
