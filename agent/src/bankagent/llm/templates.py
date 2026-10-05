@@ -54,7 +54,7 @@ NOTES = {
            "out_of_window": "La transacción supera el plazo de 60 días para disputas.",
            "already_disputed": "Ya existe una disputa para esa transacción.",
            "dispute_filed": "Registré tu disputa.", "not_disputable": "Esa transacción no se puede disputar."},
-    "pt": {"not_declined": "Essa transação não fue recusada.",
+    "pt": {"not_declined": "Essa transação não foi recusada.",
            "wait_pending": "A transação ainda está pendente; você poderá contestá-la quando for registrada.",
            "already_reversed": "Essa transação já foi estornada.",
            "not_disputable_type": "Esse tipo de movimentação não pode ser contestado por este canal.",

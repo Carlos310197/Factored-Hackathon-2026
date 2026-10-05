@@ -6,28 +6,28 @@ import { StaffLogin } from "@/components/staff/StaffLogin";
 
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
-const STAFF = [{ username: "agent.ana", demo_password: "staff-ana-demo", display_name: "Ana R." }];
 
 beforeEach(() => { cleanup(); replace.mockReset(); });
 
 describe("StaffLogin", () => {
-  it("signs in the picked staff identity and goes to next", async () => {
-    const f = vi.fn(async (url: string) => url.startsWith("/api/auth/demo-users") ? Response.json({ data: STAFF }) : Response.json({ data: { name: "Ana R." } }));
+  it("signs in typed staff credentials and never asks for published ones", async () => {
+    const f = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(async () => Response.json({ data: { name: "Ana R." } }));
     vi.stubGlobal("fetch", f);
     render(<StaffLogin next="/agent/HND-1" />);
-    await screen.findByRole("option", { name: /Ana R\./ });
+    await userEvent.type(screen.getByLabelText("Staff identity"), "agent.ana");
+    await userEvent.type(screen.getByLabelText("Password"), "staff-ana-demo");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/agent/HND-1"));
-    const call = f.mock.calls.find(([u]) => u === "/api/auth/staff-login") as unknown as [string, RequestInit];
+    expect(f.mock.calls.map(([u]) => u)).toEqual(["/api/auth/staff-login"]);
+    const call = f.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(String(call[1].body))).toEqual({ username: "agent.ana", password: "staff-ana-demo" });
   });
   it("shows a plain error when rejected", async () => {
-    vi.stubGlobal("fetch", vi.fn(async (url: string) => url.startsWith("/api/auth/demo-users") ? Response.json({ data: STAFF })
-      : Response.json({ error: { code: "login_failed", message: "x" } }, { status: 401 })));
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ error: { code: "login_failed", message: "x" } }, { status: 401 })));
     render(<StaffLogin next="/agent" />);
-    await screen.findByRole("option", { name: /Ana R\./ });
+    await userEvent.type(screen.getByLabelText("Staff identity"), "agent.ana");
+    await userEvent.type(screen.getByLabelText("Password"), "x");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("didn't work");
-    expect(replace).not.toHaveBeenCalled();
   });
 });

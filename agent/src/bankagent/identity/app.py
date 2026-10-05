@@ -114,7 +114,7 @@ def create_app(users: dict[str, DemoUser], private_pem: str, public_pem: str, ki
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
         return [{"username": u.username, "demo_password": u.demo_password, "otp": u.otp, "lang": u.lang,
                  "role": u.role, "display_name": u.display_name, "scenarios": list(u.scenarios)}
-                for u in users.values()]
+                for u in users.values() if u.role == "customer"]  # staff credentials are never published
 
     @app.get("/.well-known/openid-configuration")
     def openid_configuration() -> dict:

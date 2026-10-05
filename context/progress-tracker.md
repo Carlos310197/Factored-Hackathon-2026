@@ -443,6 +443,13 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-05: Judge-panel blockers (staff credentials, stale Bedrock key, IdP first login)
+
+- **Staff credentials are never published.** `GET /auth/demo-users` (IdP) and `/api/auth/demo-users` (BFF) return customer identities only; `?role=agent` returns `[]`. Staff sign in by typing credentials, which go in the submission text. Closes the chain public staff password → staff token → subscribe to every `/session/*` and `/trace/*` (judge review D1).
+- **The Mantle token is re-minted.** `make_bedrock_client` returns a `RefreshingClient`: a new token every 30 min, and once on a 401/403 inside `call_json` (then the call is retried once). Before, the token was minted once per container and replies fell back to templates after about an hour.
+- **IdP first login:** the IdP Lambda has `reserved_concurrent_executions = 1` so login and OTP reach the same container (tickets are in memory); the BFF waits up to 15 s for the IdP (was 5 s) to ride out a cold start. Known ceiling: concurrent IdP calls can throttle; upgrade path is tickets in DynamoDB.
+- PT template "não fue recusada" → "não foi recusada".
+
 ### 2026-10-05: UI polish pass (unit 76, design pass part)
 
 - Motion is widened beyond the trace reveal, still only under `motion-safe` (and the global reduced-motion rule): rows born in the customer view (optimistic message, provisional reply), chips, the confirmation card, control lines and the as-of banner fade in (`fade-in`, ~220 ms); the typing bubble has three breathing dots (`dot`); buttons scale on press. Stored copies that replace a provisional row do not animate, so nothing flashes twice.

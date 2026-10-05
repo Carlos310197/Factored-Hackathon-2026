@@ -56,7 +56,7 @@ describe("/api/auth/demo-users and debug-claims", () => {
     expect((await du.GET(req("/api/auth/demo-users"))).status).toBe(404);
     expect((await dc.GET(req("/api/auth/debug-claims"))).status).toBe(404);
   });
-  it("demo-users hides staff from the customer picker unless asked", async () => {
+  it("demo-users never lists staff, even when asked", async () => {
     idp.demoUsers.mockResolvedValue([
       { username: "ana.mx", demo_password: "p", otp: "1", lang: "es", role: "customer", display_name: "", scenarios: [] },
       { username: "agent.ana", demo_password: "s", otp: "", lang: "es", role: "agent", display_name: "Ana", scenarios: [] }]);
@@ -64,7 +64,7 @@ describe("/api/auth/demo-users and debug-claims", () => {
     const customers = (await (await GET(req("/api/auth/demo-users"))).json()).data;
     const staff = (await (await GET(req("/api/auth/demo-users?role=agent"))).json()).data;
     expect(customers.map((u: { username: string }) => u.username)).toEqual(["ana.mx"]);
-    expect(staff.map((u: { username: string }) => u.username)).toEqual(["agent.ana"]);
+    expect(staff).toEqual([]);
   });
   it("debug-claims needs a staff session and returns the customer's verified claims", async () => {
     const { GET } = await import("@/app/api/auth/debug-claims/route");

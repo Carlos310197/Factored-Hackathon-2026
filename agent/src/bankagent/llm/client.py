@@ -52,7 +52,31 @@ def _generate_bedrock_token(region: str = "us-east-1") -> str:
     return auth_header
 
 
+class RefreshingClient:
+    """Mantle bearer tokens are minted from the runtime role's session credentials, which expire (about 1 h), so a
+    token minted once per container goes stale mid-demo. Re-mint before `max_age_s`, and on demand when the endpoint
+    rejects the token (`call_json` calls `refresh()` once)."""
+
+    def __init__(self, factory, max_age_s: float = 1800, clock=time.monotonic):
+        self._factory, self._max_age, self._clock = factory, max_age_s, clock
+        self.refresh()
+
+    def refresh(self) -> None:
+        self._client, self._born = self._factory(), self._clock()
+
+    @property
+    def chat(self):
+        if self._clock() - self._born > self._max_age:
+            self.refresh()
+        return self._client.chat
+
+
 def make_bedrock_client(region: str = "us-east-1"):
+    """An OpenAI client for the Bedrock Mantle endpoint whose token is re-minted before it expires."""
+    return RefreshingClient(lambda: _mantle_client(region))
+
+
+def _mantle_client(region: str):
     """Create an OpenAI client configured for Bedrock Mantle endpoint."""
     base_url = os.environ.get("OPENAI_BASE_URL", f"https://bedrock-mantle.{region}.api.aws/v1")
     
@@ -73,16 +97,23 @@ def make_bedrock_client(region: str = "us-east-1"):
 
 def call_json(client, cfg: RoleConfig, system: str, user: str, schema: dict) -> LLMCall:
     start = time.monotonic()
+    request = dict(
+        model=cfg.model,
+        max_tokens=cfg.max_tokens,
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        response_format={"type": "json_schema", "json_schema": {"name": "response", "schema": schema}},
+    )
     try:
-        resp = client.chat.completions.create(
-            model=cfg.model,
-            max_tokens=cfg.max_tokens,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            response_format={"type": "json_schema", "json_schema": {"name": "response", "schema": schema}},
-        )
+        try:
+            resp = client.chat.completions.create(**request)
+        except (openai.AuthenticationError, openai.PermissionDeniedError):
+            if not hasattr(client, "refresh"):
+                raise
+            client.refresh()  # stale Mantle token: mint a fresh one and retry once
+            resp = client.chat.completions.create(**request)
     except openai.APIError as e:
         raise LLMError(f"{type(e).__name__}: {e}") from e
     except openai.APIConnectionError as e:
