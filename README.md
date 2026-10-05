@@ -12,8 +12,10 @@ The contract columns are declared in `dbt/models/staging/sources.yml`. The curat
 never leave RAW, and product numbers are cut to the last four digits (`product_last4`).
 
 ### Freshness policy
-Daily partitions, loaded by the scheduled workflow at 06:00 UTC. `dbt source freshness` warns after 2 days and errors after 7.
-The serving pointer carries `max_process_date`; the agent shows it to customers as "data as of".
+Daily partitions, loaded by the scheduled workflow at 06:00 UTC. `dbt source freshness` (warn after 2 days, error after 7) runs on
+every load and its result is recorded in the run log, but it does **not** gate the build: the organizer drop is static (it ends
+2026-06-17), so a gate would fail every daily run. Staleness is surfaced instead: the serving pointer carries `max_process_date`,
+and the agent shows it to customers as "data as of".
 
 ### Lineage
 `META.RUN_MANIFEST` records every loaded file: run, table, path, ETag, mode (new / restated) and row count. Every RAW row carries
@@ -22,7 +24,8 @@ its source file, row number, file timestamp and load time. `META.DQ_RESULTS` rec
 ### Quarantine policy
 Rows that fail a cast, a not-null contract column or an enum go to `STAGING.QUARANTINE`, with a reason (`cast_failed:<col>`,
 `null:<col>`, `enum:<col>`) and the raw row. If the latest load run quarantined more than 1% of the rows it loaded, the build fails.
-The rate is per run, so one bad daily partition trips the gate. A broken foreign key also fails the build.
+The rate is per run, so one bad daily partition trips the gate. A broken foreign key also fails the daily build (dbt `relationships`
+tests on the staging models, severity error); the fixture drop below does not exercise this, because it only carries transactions.
 
 ### Update correctness (fixture drop)
 `fixtures/` holds a labeled synthetic drop: a restated partition (with changed rows and one removed row), duplicate keys, a new column,

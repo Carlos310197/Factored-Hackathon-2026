@@ -29,8 +29,8 @@ def render(metrics: dict, artifacts: list[dict], recon: dict, date: str, figures
           f"{v('demand.in_scope_per_month', '{:,.0f}')} · evidence",
           f"- Phone share of all contacts: {v('demand.by_channel.Phone')} · evidence"]
     if hours:
-        L.append(f"- Contacts per hour of day range from {min(hours):,} to {max(hours):,}: demand runs around the "
-                 f"clock · evidence")
+        L.append(f"- Contacts per hour of day range from {min(hours):,} to {max(hours):,}: flat across the day and night, "
+                 f"which a real contact center doesn't show (uniform generator) · synthetic artifact")
     L += ["", "| Reason | Share of contacts |", "|---|---|"]
     L += [f"| {r} | {v(f'demand.by_reason.{r}')} |" for r in reasons]
     L += ["", "## 2. Service quality today", "",
@@ -51,11 +51,14 @@ def render(metrics: dict, artifacts: list[dict], recon: dict, date: str, figures
           f"- Surveys linked to an interaction: {v('satisfaction.link_rate')} · evidence"]
     L += ["", "## 3. Capacity", "",
           f"- Agents: {v('capacity.agents_total', '{:,}')}; listing Portuguese: {v('capacity.pt_agent_share')} · evidence",
-          f"- Mean monthly interactions per agent: {v('capacity.monthly_load_mean', '{:,.0f}')} · evidence", "",
+          f"- Agents' `total_monthly_interactions` attribute averages {v('capacity.monthly_load_mean', '{:,.0f}')} · "
+          f"synthetic artifact: it does not reconcile with the logged contacts",
+          f"- Logged contacts per agent per month: {v('capacity.observed_monthly_per_agent', '{:,.1f}')} · evidence", "",
           "| Shift (assumed hours) | Agents | Contacts per agent in the window |", "|---|---|---|"]
     L += [f"| {s} | {v(f'capacity.by_shift.{s}.agents', '{:,}')} | "
           f"{v(f'capacity.by_shift.{s}.contacts_per_agent', '{:,.1f}')} |" for s in ("Morning", "Afternoon", "Night")]
-    L += ["", "Shift hours are an assumption (Morning 06–13, Afternoon 14–21, Night 22–05); the data has no schedule."]
+    L += ["", "Shift hours are an assumption (Morning 06–13, Afternoon 14–21, Night 22–05); the data has no schedule. "
+               "The per-shift load comes from flat hourly demand and these assumed hours, so it is not evidence."]
     L += ["", "## 4. Dispute handling today", "",
           f"- Dispute complaints (Cargo no reconocido, Cobro indebido): {v('disputes.count', '{:,}')}",
           f"- Median time to first response: {v('disputes.first_response_h_p50', '{:,.1f} h')} · evidence",
