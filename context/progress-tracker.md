@@ -4,14 +4,14 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Phase
 
-- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–22 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing, OpenAI on Bedrock, LangGraph workflow and agent service, AgentCore runtime entrypoint). Agent core continues with units 23–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
+- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), **Agent core units 12–22 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing, OpenAI on Bedrock, LangGraph workflow and agent service, AgentCore runtime entrypoint) and **Transaction resolver units 26–28 complete** (features and splits, history sampler, simulator). Agent core continues with units 23–25, the resolver with units 29–39. Evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
 - Region: **us-east-1** for all our AWS resources and Snowflake. The organizer bucket (theirs) stays in us-east-2.
-- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-05). Agent suite: `cd agent && uv run pytest` → 178 passed (2026-10-05).
+- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-05). Agent suite: `cd agent && uv run pytest` → 187 passed (2026-10-05).
 - Submission deadline: **2026-10-05**.
 
 ## Current Goal
 
-- Continue the agent core at `feature-specs/22-api-contract.md`. The as-is diagnosis (`40`) can run in parallel. The UI (53+) and deployment (77+) follow the agent core.
+- Continue the transaction resolver at `feature-specs/29-resolver-agent-hooks.md` (Agent-Core Changes I: extract hints, dev writer, `understand.v2`); `31-resolver-model.md` needs only `26` and can run in parallel. Agent core `23–25` and the as-is diagnosis (`40`) can also run in parallel. The UI (53+) and deployment (77+) follow the agent core.
 
 ## Completed
 
@@ -137,6 +137,12 @@ Update this file whenever the current phase, the active unit or the implementati
   - 2 tests: `test_histories_respect_split_window_and_order` (verifies split membership, anchor within split range, candidates newest-first, 60-day inclusive window, scope and field shape); `test_histories_are_deterministic_and_splits_disjoint` (verifies determinism, disjoint customer sets across splits, and JSON-safe amount types);
   - All tests pass: 140/140 in agent/ (138 existing + 2 new);
   - Followed TDD: tests written first, all initially failing with `ModuleNotFoundError`, then implementation added to make them pass.
+- 2026-10-05: **Unit 28: Resolver Simulator** (`agent/src/bankagent/resolver/simulate.py`, `simulate.yaml`):
+  - `resolver/simulate.yaml`: `simulate.v1` style rates, documented as **assumptions** (not measurements; real-text dev/test reveal any mismatch): hard_share 0.50, not_in_list 0.10, no_detail 0.05, extract_error 0.05, merchant (purchases) exact 0.40 / noisy 0.20 / absent 0.40, amount exact 0.30 / rounded 0.30 / approx 0.15 / usd 0.05 / absent 0.20 (`amount_approx_pct` 0.10), `currency_mentioned` 0.50, date exact 0.20 / relative 0.35 / off_by_one 0.10 / absent 0.35, hints type 0.60 / channel 0.40 / city 0.40 with `hint_wrong` 0.03;
+  - `resolver/simulate.py`: deterministic case generator over `History` lists: `load_sim_config(path=DEFAULT_CONFIG)` (sha256 of the YAML, `ValueError` when a distribution doesn't sum to 1), `simulate(histories, cfg, seed)` → one case per history `{case_id, split, anchor, slice, target_id | None, target, candidates, mentions, style}` with `mentions` exactly `MENTION_KEYS` and `style` per-field plus `no_detail`, `extract_error`, `nil`, `date_label`; stratified target draw (≈50% hard), `not_in_list` drops the target (labels 0), `no_detail` empties all mentions, `extract_error` swaps one mentioned field with another candidate's value; helpers `relative_ranges(anchor)`, `relative_range(d, anchor)` (this/last week, this/last month, tightest first) and `round_significant(a)` (two significant figures);
+  - `tests/test_resolver_simulate.py`: 7 tests pinning the review focus (config hash + validation, same-seed determinism, nil excludes the target, style rates within ±2 points over 10k draws, hard oversampling ≈50%, rounding + relative ranges, relative dates carry their label);
+  - All tests pass: 187/187 in agent/ (180 existing + 7 new);
+  - Followed TDD: tests written first, all initially failing with `ModuleNotFoundError`, then implementation added to make them pass.
 
 ## In Progress
 
@@ -150,7 +156,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
 | 12–25 | Agent core | 12–22 **done**; 23–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
-| 26–39 | Transaction resolver | 26–27 **done** (features, splits, history sampler) | 12, 16 |
+| 26–39 | Transaction resolver | 26–28 **done** (features, splits, history sampler, simulator); 29 next | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
 | 77–90 | Deployment | not started; Terraform `bootstrap`, `platform` and the `app` web shell already exist | 77 has none; the rest follow the agent core and UI |
@@ -402,3 +408,4 @@ Records that the specs say to fill in at fixed points. Fill them here.
 
 - 2026-10-04: tracker brought up to date with the repo (pipeline 01–11 and Terraform infra done); specs moved to us-east-1 and ECS Fargate Spot. Offline suite 43 passed.
 - 2026-10-04: deployment specs converted to Terraform-only; Carlos added to `allowed_cidrs`. Terraform isn't installed on Carlos's laptop (a 1.15.2 binary was downloaded to a temp folder for the test run); install it (`brew install hashicorp/tap/terraform`) before Terraform units.
+- 2026-10-05: unit 28 (resolver simulator) landed in worktree `worktree-resolver-simulator`, branch `feature/28-resolver-simulator`. The simulator's rates are assumptions (simulate.yaml says so); unit 32 must generate 30,000 training and 3,000 simulated-validation cases from `sample_histories` + `simulate` (spec §5.1 sizes). Baseline at branch point was 180 agent tests; 187 with the 7 new ones.

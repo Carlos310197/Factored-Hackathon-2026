@@ -1,0 +1,14 @@
+# Transaction-resolver simulator (resolver spec §5.1). These rates are ASSUMPTIONS about how customers describe a
+# transaction, not measurements. The real-text dev and test sets show any mismatch.
+version: simulate.v1
+hard_share: 0.50            # target drawn from hard candidates when the history has any
+not_in_list: 0.10           # target removed from the candidates: no correct pick
+no_detail: 0.05             # all mentions empty
+extract_error: 0.05         # one mentioned field replaced by another candidate's value
+merchant: {exact: 0.40, noisy: 0.20, absent: 0.40}                          # purchases only
+amount: {exact: 0.30, rounded: 0.30, approx: 0.15, usd: 0.05, absent: 0.20}
+amount_approx_pct: 0.10
+currency_mentioned: 0.50
+date: {exact: 0.20, relative: 0.35, off_by_one: 0.10, absent: 0.35}
+hints: {type_hint: 0.60, channel_hint: 0.40, city: 0.40}                   # probability each hint is present
+hint_wrong: 0.03                                                             # a present hint is wrong
