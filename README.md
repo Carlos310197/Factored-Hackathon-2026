@@ -128,7 +128,7 @@ leave Snowflake `RAW`, and product numbers are cut to the last four digits.
 |---|---|---|
 | Amazon Bedrock (in our AWS account) | The customer message and the last 2 exchanges (extract); receipts as JSON (compose, handoff open questions) | `llm/extract.py:65-67`, `llm/compose.py:45-64` |
 | Jev / TypeSafe (external) | `understand`: policy text, session facts, the message, and candidate transactions as aliases `c1..cN` (no transaction, customer or product id) | `decisions/understand.py:95-131` |
-| Jev / TypeSafe (external) | `verify_reply`: the reply, its claims and **the receipts, which today still include `customer_id` and `product_id`** | `decisions/verify.py:34-38` (known gap, see limitations) |
+| Jev / TypeSafe (external) | `verify_reply`: the reply, its claims and the receipts with `customer_id`, `product_id` and fraud fields removed | `decisions/verify.py` (`REDACTED_FIELDS`); every Jev call is checked in `test_graph_paths.py` |
 | Snowflake | The organizer drop (read from their bucket) and the curated export to our bucket; no chat data | `pipeline/load.py`, `pipeline/export.py` |
 | AppSync Events | Message text, control and progress events per session; handoff summaries on the staff queue; node and kind per trace step | `infra/realtime/publisher/map.ts:29-49` |
 
@@ -172,8 +172,6 @@ We report what we measured. We don't report numbers we haven't run.
 **Known limitations**
 - **Portuguese:** the bank has no Portuguese-speaking customers (customers are in México, Colombia and Argentina). PT
   support is conversational; PT test cases are written by the team, with no native-speaker review.
-- **Jev egress:** `verify_reply` sends whole receipts, including `customer_id` and `product_id`, to TypeSafe. This breaks our
-  own invariant (`context/architecture-context.md`); the fix is to redact receipts before that call.
 - **Human-review disputes** (over 500 USD, high fraud score, unauthorized) are recorded as `pending_review` for an agent
   without asking the customer to confirm first.
 - **Confirmation** is Jev's reading of the customer's reply to the card, not a token bound to the card's contents.
@@ -187,7 +185,7 @@ We report what we measured. We don't report numbers we haven't run.
 
 **Before production**
 - A real identity provider, HTTPS, and `Secure` cookies.
-- Redacted payloads to every third party, with an egress check in CI.
+- An egress check in CI for every third-party payload (today it covers Jev in the offline suite).
 - Alarms on fallback rate, turn failures and DynamoDB throttling; a capacity statement (AgentCore concurrency, Bedrock
   tokens per minute, Jev rate limit).
 - A calibrated threshold set (current Jev thresholds are labeled "not calibrated").

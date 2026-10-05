@@ -40,6 +40,8 @@ def test_unknown_model_makes_cost_incomplete():
                        "unknown-jev": {"input_tokens": 5, "output_tokens": 0, "calls": 1}})]
     c = cost(rows, prices)
     assert c["status"] == "incomplete" and c["missing_prices"] == ["unknown-jev"]
+    # the priced part is still reported, as a lower bound per attempted case: 10 input tokens at $3/1M
+    assert c["priced_per_attempted_case"] == round(10 / 1e6 * 3.0, 6) and c["per_attempted_case"] is None
     assert cost([row()], {"m1": {"input": 3.0, "output": 15.0, "source": ""}})["status"] == "incomplete"
 
 

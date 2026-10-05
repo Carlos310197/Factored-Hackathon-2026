@@ -18,6 +18,7 @@ def test_account_inquiry_es(ddb_store, serving_root):
     assert h.jev.count("understand") == 1 and h.jev.count("verify") == 1
     sent = json.dumps(h.jev.calls[0][1])
     assert "TRX-" not in sent and "CLI-" not in sent  # Jev sees aliases, never ids
+    _assert_jev_never_sees_customer_or_product_ids(h)
 
 
 def test_decline_explanation_pt(ddb_store, serving_root):
@@ -43,6 +44,16 @@ def test_dispute_confirm_file_verify(ddb_store, serving_root):
     assert r2["awaiting"] == "none" and rec["dispute_id"] in r2["reply_text"] and r2["refs"] == [rec["dispute_id"]]
     verify = [x for x in h.state()["receipts"] if x["source"] == "disputes.verify"]
     assert verify[0]["data"]["verified"] is True
+    _assert_jev_never_sees_customer_or_product_ids(h)
+
+
+def _assert_jev_never_sees_customer_or_product_ids(h):
+    """Invariant (architecture-context): no Jev request carries customer_id, product_id or fraud fields."""
+    assert h.jev.calls and any(c[0] == "verify" for c in h.jev.calls)
+    for kind, state, questions in h.jev.calls:
+        sent = json.dumps([state, questions])
+        assert "CLI-" not in sent and "PRD-" not in sent, kind
+        assert "fraud_score" not in sent and "is_fraud" not in sent, kind
 
 
 def test_ambiguous_intent_clarifies_then_answers(ddb_store, serving_root):

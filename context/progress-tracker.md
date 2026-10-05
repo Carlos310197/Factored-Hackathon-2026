@@ -443,6 +443,16 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-05: Judge-review quick wins (eval prices, copy, Jev egress)
+
+- **Eval prices:** `eval/config.yaml` has sourced Bedrock prices for `openai.gpt-oss-20b` (0.07/0.30 USD per 1M in/out) and `openai.gpt-oss-120b` (0.15/0.60), AWS Price List API, Mantle standard tier, us-east-1, 2026-10-05. Jev has no public price, so cost stays `incomplete`; the report adds the priced part per attempted case as a lower bound.
+- **Customer copy:** the handoff fixed block now gives the case reference, the next step (a person continues in this chat) and a safety step (block the card in the app) instead of repeating the model's "a specialist will review". The compose prompt sets one register (tú / você) and is now `compose.v2`.
+- **Jev egress (closes the invariant breach):** `verify_reply` receipts are redacted of `customer_id`, `product_id`, `is_fraud` and `fraud_score` (`decisions/verify.py` `REDACTED_FIELDS`); `test_graph_paths.py` checks every Jev call in the inquiry and dispute flows.
+
+### 2026-10-05: Test sheet frozen
+
+- `agent/resolver/data/test_sheet_v1_completed.csv` (commit `b3d60a7`): 150 rows, 150 messages written, SHA-256 `1ab867754edd05bf8ed136071e9cd1326c59831119f2de06ad1b136d1f9a4bdd`. Any later change to the file invalidates the single test run (unit 39); check the hash before running it.
+
 ### 2026-10-05: System README and honest claims
 
 - Root `README.md` is now the system README (dispute-pain story from the as-is report, what it does, architecture, control matrix with file:line and tests, failure table, egress and retention tables, evidence map, status, limitations, before-production list, run commands). The pipeline README moved verbatim to `docs/data-pipeline.md`. `{{APP_URL}}` is filled in at submission (ALB).

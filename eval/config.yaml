@@ -18,9 +18,12 @@ run:
   workers: 8
 # USD per 1M tokens. A price without a source counts as missing (cost is then reported "incomplete").
 prices:
+  # AWS Price List API, AmazonBedrock us-east-1, Mantle endpoint, on-demand "standard" tier (USD per 1K × 1000).
+  openai.gpt-oss-20b: {input: 0.07, output: 0.30, source: "AWS Price List API AmazonBedrock us-east-1 USE1-openai.gpt-oss-20b-mantle-{input,output}-tokens-standard (SKU ER2U9SYS47STYZSM, XA9HDPZUK252V64N)", as_of: "2026-10-05"}
+  openai.gpt-oss-120b: {input: 0.15, output: 0.60, source: "AWS Price List API AmazonBedrock us-east-1 USE1-openai.gpt-oss-120b-mantle-{input,output}-tokens-standard (SKU K7EPD38WB9WRZSJH, UEJ6RRGVWV8HT4KC)", as_of: "2026-10-05"}
   anthropic.claude-haiku-4-5: {input: null, output: null, source: "", as_of: ""}
   anthropic.claude-sonnet-5-5: {input: null, output: null, source: "", as_of: ""}
-  jev-1.13.0: {input: null, output: null, source: "", as_of: ""}
+  jev-1.13.0: {input: null, output: null, source: "", as_of: ""}  # no public price: cost stays "incomplete", the priced part is a lower bound
 # Legacy cost per contact = cost_per_agent_hour_usd x Transaccional median handle time. Needs a cited source.
 legacy:
   cost_per_agent_hour_usd: null
