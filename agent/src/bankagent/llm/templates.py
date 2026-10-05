@@ -34,7 +34,8 @@ FALLBACK = {
            "greeting": "¡Hola! ¿En qué puedo ayudarte con tus cuentas o pagos?",
            "dispute_cancelled": "Entendido, no registré la disputa.",
            "data_unavailable": "No puedo acceder a tu información en este momento.",
-           "error": "Tuve un problema procesando tu mensaje."},
+           "error": "Tuve un problema procesando tu mensaje.",
+           "turn_limit": "Esta conversación llegó a su límite de mensajes. Para seguir, sal y vuelve a entrar."},
     "pt": {"answer": "Isto é o que encontrei:", "ask_clarification": "Pode me ajudar a detalhar sua solicitação?",
            "ask_confirmation": "Você confirma que devo registrar esta contestação?",
            "handoff_notice": "Vou transferir seu caso para um especialista.", "handoff_failed": "",
@@ -44,7 +45,8 @@ FALLBACK = {
            "greeting": "Olá! Como posso ajudar com suas contas ou pagamentos?",
            "dispute_cancelled": "Entendido, não registrei a contestação.",
            "data_unavailable": "Não consigo acessar suas informações neste momento.",
-           "error": "Tive um problema ao processar sua mensagem."},
+           "error": "Tive um problema ao processar sua mensagem.",
+           "turn_limit": "Esta conversa chegou ao limite de mensagens. Para continuar, saia e entre de novo."},
 }
 NOTES = {
     "es": {"not_declined": "Esa transacción no fue rechazada.",

@@ -215,8 +215,8 @@ run "alarms" {
   command = apply
 
   assert {
-    condition     = length(aws_cloudwatch_log_metric_filter.agent) == 3
-    error_message = "one metric filter per watched log line (turn failed, template fallback, audit write failed)"
+    condition     = length(aws_cloudwatch_log_metric_filter.agent) == 6
+    error_message = "one metric filter per watched log line (turn failed, template fallback, audit write, slow turn, stale pointer, turn cap)"
   }
   assert {
     condition     = aws_cloudwatch_log_metric_filter.agent["TemplateFallback"].pattern == "\"reply fell back to template\""
@@ -227,8 +227,8 @@ run "alarms" {
     error_message = "turn failures alarm at 3 in 5 minutes; no traffic is not an alarm"
   }
   assert {
-    condition     = length(aws_sns_topic.alarms) == 0
-    error_message = "no notification topic unless alarm_email is set"
+    condition     = length(aws_sns_topic.alarms) == 0 && length(aws_budgets_budget.account) == 0
+    error_message = "no notification topic or budget unless alarm_email is set"
   }
 }
 
@@ -240,5 +240,9 @@ run "alarms_notify_by_email" {
   assert {
     condition     = length(aws_sns_topic.alarms) == 1 && length(aws_cloudwatch_metric_alarm.agent["TurnFailed"].alarm_actions) == 1
     error_message = "with alarm_email set, every alarm notifies the topic"
+  }
+  assert {
+    condition     = length(aws_budgets_budget.account) == 1 && aws_budgets_budget.account[0].limit_amount == "100"
+    error_message = "with alarm_email set, a monthly account budget emails at 80 % actual / 100 % forecast"
   }
 }

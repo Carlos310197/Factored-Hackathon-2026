@@ -13,16 +13,20 @@ from bankagent.graph.state import AgentState
 from bankagent.ids import new_id
 
 logger = logging.getLogger(__name__)
+MAX_TURNS = 30
+SLOW_TURN_S = 20.0
 
 
 class AgentService:
     """Agent service: one instance per process, holds the compiled graph."""
 
-    def __init__(self, deps: Deps, checkpointer=None, turn_budget_s: float = 15.0, recursion_limit: int = 25):
+    def __init__(self, deps: Deps, checkpointer=None, turn_budget_s: float = 15.0, recursion_limit: int = 25,
+                 max_turns: int = MAX_TURNS):
         self.deps = deps
         self.checkpointer = checkpointer or MemorySaver()
         self.turn_budget_s = turn_budget_s
         self.recursion_limit = recursion_limit
+        self.max_turns = max_turns
         self.graph: CompiledStateGraph = build_graph(deps, self.checkpointer)
 
     def handle_turn(self, ctx: SessionContext, message: str, turn_id: str | None = None) -> dict:
@@ -37,8 +41,19 @@ class AgentService:
             "recursion_limit": self.recursion_limit,
         }
 
-        initial_state: AgentState = {"message": message, "turn_id": turn_id}
-        
+        # Spend cap: the demo identities are public, so a session gets a fixed number of turns. A capped turn makes no
+        # Bedrock or Jev call. ponytail: per session only; a per-customer cap needs a counter in the sessions table.
+        snapshot = self.graph.get_state(config)
+        turns = (snapshot.values or {}).get("turn_count", 0) if snapshot else 0
+        if turns >= self.max_turns:
+            from bankagent.llm.templates import fallback_reply
+            logger.warning("session turn cap reached", extra={"session_id": ctx.session_id})
+            return {"reply_text": fallback_reply({"kind": "turn_limit"}, [], ctx.lang), "language": ctx.lang,
+                    "awaiting": "none", "options": [], "refs": [], "data_as_of": None, "turn_id": turn_id}
+
+        initial_state: AgentState = {"message": message, "turn_id": turn_id, "turn_count": turns + 1}
+        start = self.deps.clock()
+
         try:
             result = self.graph.invoke(initial_state, config)
         except Exception as e:
@@ -55,6 +70,8 @@ class AgentService:
                 "turn_id": turn_id,
             }
 
+        if self.deps.clock() - start > SLOW_TURN_S:  # CloudWatch alarm TurnSlow; the BFF gives up at 25 s
+            logger.warning("slow turn", extra={"session_id": ctx.session_id, "turn_id": turn_id})
         return {**result["reply"], "turn_id": turn_id}
 
     def state(self, ctx: SessionContext) -> dict[str, Any]:

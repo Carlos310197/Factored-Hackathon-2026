@@ -453,6 +453,12 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-05: Spend cap, latency and staleness alarms, budget
+
+- `AgentService` caps a session at 30 turns (`MAX_TURNS`): a capped turn returns a fixed ES/PT reply (`turn_limit`) and makes no Bedrock or Jev call; `turn_count` lives in the graph state. Logs `session turn cap reached`.
+- `AgentService` logs `slow turn` when a turn takes over 20 s (`SLOW_TURN_S`).
+- `alarms.tf`: 3 more alarms (TurnSlow ≥3 in 15 min, StalePointer ≥1 in 1 h, TurnCapReached ≥20 in 1 h) and an AWS Budget `lb-demo-monthly` (100 USD; email at 80 % actual, 100 % forecast), both only when `alarm_email` is set.
+
 ### 2026-10-05: Round-two review fixes (docs = reality, required contract hash, stale-pointer log)
 
 - README: exact CI for 1/150 wrong actions (0.02–3.7 %, so ≤ 2 % is not shown; P equals B2); the resolver table says rates are 3-repeat means and the paired CI is repeat 1 only, with the paired point estimate shown; B1 vs B0 line; architecture row names Ministral extract; numeric targets (intake ≤ 5 min, 100 % complete packets, unsafe k/N with upper bound) or "set after a pilot", and the 37 h baseline flagged as a different endpoint; human-review drafts get a rationale; staff password-only login and the eval persona provider disclosed; decision records described as best-effort.

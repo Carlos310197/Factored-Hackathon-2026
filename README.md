@@ -240,7 +240,7 @@ Spanish-speaking customers' histories. The nil slice (15 cases) is too small to 
 | Agent end-to-end check | All 8 scenarios against real Jev and Bedrock on 2026-10-05 (`agent/docs/smoke-results.md`) |
 | Evaluation harness (`eval/`) | Code done and tested offline; **no live evaluation run yet**, so no resolution, containment or cost metrics are reported |
 | Transaction resolver | Trained, calibrated and evaluated on the frozen test set (two runs, both reported). In the agent it is switched on by `RESOLVER_ARTIFACT` / `THRESHOLDS_FILE` (set in Docker Compose); the deployed runtime gets them with the next agent deploy |
-| Monitoring and alarms | Three CloudWatch alarms on the agent's log lines (turn failures, template fallbacks, decision-record write failures; `infra/terraform/agent/alarms.tf`), optional email via SNS; no dashboard |
+| Monitoring and alarms | Six CloudWatch alarms on the agent's log lines (turn failures, template fallbacks, decision-record write failures, turns over 20 s, a serving export older than 2 days, sessions hitting the turn cap; `infra/terraform/agent/alarms.tf`) emailing an SNS topic, plus a monthly AWS Budget (80 % actual / 100 % forecast); no dashboard |
 
 We report what we measured. We don't report numbers we haven't run.
 
@@ -264,9 +264,10 @@ We report what we measured. We don't report numbers we haven't run.
 - **Synthetic data:** escalation and SLA rates, wait times, CSAT and agent load are generator artifacts and are not used to
   argue for this system.
 - **Hosting:** plain HTTP, so session cookies are not `Secure`; one Fargate task.
-- **No spend cap:** the demo identities and the mock IdP are public and there is no per-session or per-customer turn
-  limit, so anyone can drive Bedrock and Jev calls (billed to the account that owns the Bedrock role). The IdP's API
-  throttle (10 req/s) and the Lambda concurrency limit are the only brakes.
+- **Spend cap is per session only:** the demo identities and the mock IdP are public, so anyone can drive Bedrock and
+  Jev calls (Bedrock bills to the account that owns the Bedrock role). A session stops after 30 turns with a fixed reply
+  and no model call, and an alarm fires when sessions keep hitting the cap; but a new login starts a new session, so the
+  real brakes are the IdP throttle (10 req/s), the Lambda concurrency limit and the AWS Budget alert.
 - **Audit records** (`decision_records`) are written best-effort: a failed write is logged, not retried, and does not stop
   the turn.
 - **Staff login** is a password only (no second factor, no lockout beyond the IdP's 10 req/s throttle); staff
@@ -280,7 +281,7 @@ We report what we measured. We don't report numbers we haven't run.
 - An egress check in CI for every third-party payload (today it covers Jev in the offline suite).
 - Notifications wired to an on-call channel, a dashboard, and alarms on DynamoDB throttling and AgentCore errors.
 - A load test against the capacity limits above.
-- A per-session and per-customer turn cap, and a budget alarm on Bedrock and Jev spend.
+- A per-customer turn cap (today it is per session), and a budget alert in the account that pays for Bedrock and on Jev.
 - A calibrated threshold set (current Jev thresholds are labeled "not calibrated").
 - Least-privilege CI roles (the deploy role is an administrator today) and branch protection on `main`.
 - Retention rules for disputes and handoffs; an audit record of staff reads.

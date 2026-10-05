@@ -13,6 +13,9 @@ locals {
     TurnFailed       = { pattern = "\"turn failed\"", threshold = 3, period = 300, what = "uncaught errors in a turn" }
     TemplateFallback = { pattern = "\"reply fell back to template\"", threshold = 5, period = 900, what = "replies that fell back to the fixed template (LLM or Jev failing)" }
     AuditWriteFailed = { pattern = "\"decision record write failed\"", threshold = 1, period = 300, what = "decision records that could not be written" }
+    TurnSlow         = { pattern = "\"slow turn\"", threshold = 3, period = 900, what = "turns over 20 s (the web app gives up at 25 s)" }
+    StalePointer     = { pattern = "\"serving pointer is stale\"", threshold = 1, period = 3600, what = "reads of a serving export older than 2 days (daily pipeline stopped)" }
+    TurnCapReached   = { pattern = "\"session turn cap reached\"", threshold = 20, period = 3600, what = "turns refused by the per-session cap (possible abuse of the public demo identities)" }
   }
 }
 
@@ -58,4 +61,35 @@ resource "aws_cloudwatch_metric_alarm" "agent" {
   ok_actions          = aws_sns_topic.alarms[*].arn
 
   depends_on = [aws_cloudwatch_log_metric_filter.agent]
+}
+
+variable "monthly_budget_usd" {
+  description = "AWS Budget for this account; emails alarm_email at 80 % actual and 100 % forecast spend."
+  type        = number
+  default     = 100
+}
+
+# Spend guard for the public demo (Bedrock inference itself bills to the account that owns the Bedrock role).
+resource "aws_budgets_budget" "account" {
+  count        = var.alarm_email == "" ? 0 : 1
+  name         = "lb-demo-monthly"
+  budget_type  = "COST"
+  limit_amount = tostring(var.monthly_budget_usd)
+  limit_unit   = "USD"
+  time_unit    = "MONTHLY"
+
+  notification {
+    comparison_operator        = "GREATER_THAN"
+    threshold                  = 80
+    threshold_type             = "PERCENTAGE"
+    notification_type          = "ACTUAL"
+    subscriber_email_addresses = [var.alarm_email]
+  }
+  notification {
+    comparison_operator        = "GREATER_THAN"
+    threshold                  = 100
+    threshold_type             = "PERCENTAGE"
+    notification_type          = "FORECASTED"
+    subscriber_email_addresses = [var.alarm_email]
+  }
 }
