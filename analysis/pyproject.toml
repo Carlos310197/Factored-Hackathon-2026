@@ -1,0 +1,16 @@
+[project]
+name = "asis"
+version = "0.1.0"
+description = "As-is diagnosis of the LATAM Bank contact center (evaluation spec §3)"
+requires-python = ">=3.12"
+dependencies = ["duckdb>=1.1", "matplotlib>=3.9"]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["asis/tests"]
+pythonpath = ["."]

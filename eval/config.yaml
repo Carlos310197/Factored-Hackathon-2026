@@ -1,0 +1,27 @@
+# Evaluation config (spec §4.4, §5.4). Live runs refuse to start until persona.model is set.
+persona:
+  base_url: https://opencode.ai/zen/v1   # OpenAI-compatible chat completions; confirmed by the Task 12 smoke call
+  api_key_env: OPENCODE_API_KEY
+  model: ""                              # a non-Claude model served through OpenCode, chosen by the owner
+  temperature: 0.7
+  timeout_s: 30
+judge:
+  model: anthropic.claude-sonnet-5-5
+  prompt_version: judge.v1
+agent:
+  serving_uri: ""                        # absolute path of the local serving set built by the agent's scripts
+  dynamodb_endpoint: http://localhost:8000
+  region: us-east-1
+  audience: bankagent
+run:
+  reps: 3
+  workers: 8
+# USD per 1M tokens. A price without a source counts as missing (cost is then reported "incomplete").
+prices:
+  anthropic.claude-haiku-4-5: {input: null, output: null, source: "", as_of: ""}
+  anthropic.claude-sonnet-5-5: {input: null, output: null, source: "", as_of: ""}
+  jev-1.13.0: {input: null, output: null, source: "", as_of: ""}
+# Legacy cost per contact = cost_per_agent_hour_usd x Transaccional median handle time. Needs a cited source.
+legacy:
+  cost_per_agent_hour_usd: null
+  source: ""

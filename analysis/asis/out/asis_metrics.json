@@ -1,0 +1,920 @@
+{
+  "artifacts": [
+    {
+      "evidence": "6 reason buckets; range 0.010",
+      "holds": true,
+      "name": "escalation_flat",
+      "query": "select reason_category, avg((was_escalated = 'True')::int) from interactions group by all having count(*) >= 1000"
+    },
+    {
+      "evidence": "15 category x priority buckets; range 0.043",
+      "holds": true,
+      "name": "sla_flat",
+      "query": "select category, priority, avg((sla_breached = 'True')::int) from complaints group by all having count(*) >= 500"
+    },
+    {
+      "evidence": "6 reason x channel slices; median wait 119-120s (spread 1s); individual waits p10 41s, p90 197s",
+      "holds": true,
+      "name": "wait_constant",
+      "query": "select reason_category, channel, quantile_cont(try_cast(wait_time_seconds as double), 0.5), quantile_cont(try_cast(wait_time_seconds as double), 0.1), quantile_cont(try_cast(wait_time_seconds as double), 0.9) from interactions group by all"
+    },
+    {
+      "evidence": "mean CSAT resolved 3.00 vs unresolved 2.01 (gap 0.99); largest range across reasons within a status 0.080",
+      "holds": true,
+      "name": "csat_by_resolution",
+      "query": "select i.was_resolved, i.reason_category, avg(try_cast(s.main_score as double)) from surveys s join interactions i using (interaction_id) where s.survey_type = 'CSAT' group by all having count(*) >= 1000"
+    },
+    {
+      "evidence": "Neutral is 100.0% of 80,264",
+      "holds": true,
+      "name": "transactional_sentiment_constant",
+      "query": "select detected_sentiment, count(*) from interactions where reason_category = 'Transaccional' group by 1 order by 2 desc, 1"
+    },
+    {
+      "evidence": "countries: México 74,907, Colombia 45,251, Argentina 29,842",
+      "holds": true,
+      "name": "no_pt_customers",
+      "query": "select country, count(*) from customers group by 1 order by 2 desc, 1"
+    },
+    {
+      "evidence": "42 distinct texts in 57,589 rows",
+      "holds": true,
+      "name": "transcripts_templated",
+      "query": "select count(*), count(distinct customer_text) from transcripts"
+    }
+  ],
+  "meta": {
+    "generated_for": "2026-10-05",
+    "source": "data/data (organizer drop; backup prefix never read)",
+    "window": [
+      "2025-06-17",
+      "2026-06-17"
+    ]
+  },
+  "metrics": {
+    "capacity.agents_total": {
+      "n": 1200,
+      "value": 1200
+    },
+    "capacity.by_shift.Afternoon.agents": {
+      "n": 1200,
+      "value": 418
+    },
+    "capacity.by_shift.Afternoon.contacts_per_agent": {
+      "n": 77049,
+      "value": 184.327751
+    },
+    "capacity.by_shift.Morning.agents": {
+      "n": 1200,
+      "value": 398
+    },
+    "capacity.by_shift.Morning.contacts_per_agent": {
+      "n": 76646,
+      "value": 192.577889
+    },
+    "capacity.by_shift.Night.agents": {
+      "n": 1200,
+      "value": 181
+    },
+    "capacity.by_shift.Night.contacts_per_agent": {
+      "n": 76501,
+      "value": 422.657459
+    },
+    "capacity.by_type.Digital": {
+      "n": 1200,
+      "value": 251
+    },
+    "capacity.by_type.Hybrid": {
+      "n": 1200,
+      "value": 131
+    },
+    "capacity.by_type.In-Person": {
+      "n": 1200,
+      "value": 230
+    },
+    "capacity.by_type.Phone": {
+      "n": 1200,
+      "value": 588
+    },
+    "capacity.monthly_load_mean": {
+      "n": 1200,
+      "value": 453.030303
+    },
+    "capacity.pt_agent_share": {
+      "n": 1200,
+      "value": 0.1075
+    },
+    "complaints.total": {
+      "n": 22552,
+      "value": 22552
+    },
+    "demand.by_channel.App": {
+      "n": 230196,
+      "value": 0.038359
+    },
+    "demand.by_channel.Email": {
+      "n": 230196,
+      "value": 0.04017
+    },
+    "demand.by_channel.Phone": {
+      "n": 230196,
+      "value": 0.849771
+    },
+    "demand.by_channel.Web": {
+      "n": 230196,
+      "value": 0.004787
+    },
+    "demand.by_channel.Web Chat": {
+      "n": 230196,
+      "value": 0.033445
+    },
+    "demand.by_channel.WhatsApp": {
+      "n": 230196,
+      "value": 0.033467
+    },
+    "demand.by_hour.00": {
+      "n": 230196,
+      "value": 9642
+    },
+    "demand.by_hour.01": {
+      "n": 230196,
+      "value": 9525
+    },
+    "demand.by_hour.02": {
+      "n": 230196,
+      "value": 9511
+    },
+    "demand.by_hour.03": {
+      "n": 230196,
+      "value": 9686
+    },
+    "demand.by_hour.04": {
+      "n": 230196,
+      "value": 9492
+    },
+    "demand.by_hour.05": {
+      "n": 230196,
+      "value": 9584
+    },
+    "demand.by_hour.06": {
+      "n": 230196,
+      "value": 9527
+    },
+    "demand.by_hour.07": {
+      "n": 230196,
+      "value": 9486
+    },
+    "demand.by_hour.08": {
+      "n": 230196,
+      "value": 9624
+    },
+    "demand.by_hour.09": {
+      "n": 230196,
+      "value": 9606
+    },
+    "demand.by_hour.10": {
+      "n": 230196,
+      "value": 9617
+    },
+    "demand.by_hour.11": {
+      "n": 230196,
+      "value": 9588
+    },
+    "demand.by_hour.12": {
+      "n": 230196,
+      "value": 9612
+    },
+    "demand.by_hour.13": {
+      "n": 230196,
+      "value": 9586
+    },
+    "demand.by_hour.14": {
+      "n": 230196,
+      "value": 9583
+    },
+    "demand.by_hour.15": {
+      "n": 230196,
+      "value": 9576
+    },
+    "demand.by_hour.16": {
+      "n": 230196,
+      "value": 9688
+    },
+    "demand.by_hour.17": {
+      "n": 230196,
+      "value": 9777
+    },
+    "demand.by_hour.18": {
+      "n": 230196,
+      "value": 9683
+    },
+    "demand.by_hour.19": {
+      "n": 230196,
+      "value": 9660
+    },
+    "demand.by_hour.20": {
+      "n": 230196,
+      "value": 9573
+    },
+    "demand.by_hour.21": {
+      "n": 230196,
+      "value": 9509
+    },
+    "demand.by_hour.22": {
+      "n": 230196,
+      "value": 9421
+    },
+    "demand.by_hour.23": {
+      "n": 230196,
+      "value": 9640
+    },
+    "demand.by_reason.Comercial": {
+      "n": 230196,
+      "value": 0.080592
+    },
+    "demand.by_reason.Producto": {
+      "n": 230196,
+      "value": 0.219821
+    },
+    "demand.by_reason.Queja": {
+      "n": 230196,
+      "value": 0.170724
+    },
+    "demand.by_reason.Retención": {
+      "n": 230196,
+      "value": 0.029922
+    },
+    "demand.by_reason.Transaccional": {
+      "n": 230196,
+      "value": 0.348677
+    },
+    "demand.by_reason.Técnico": {
+      "n": 230196,
+      "value": 0.150263
+    },
+    "demand.by_weekday.Friday": {
+      "n": 230196,
+      "value": 37543
+    },
+    "demand.by_weekday.Monday": {
+      "n": 230196,
+      "value": 32524
+    },
+    "demand.by_weekday.Saturday": {
+      "n": 230196,
+      "value": 25289
+    },
+    "demand.by_weekday.Sunday": {
+      "n": 230196,
+      "value": 19306
+    },
+    "demand.by_weekday.Thursday": {
+      "n": 230196,
+      "value": 37919
+    },
+    "demand.by_weekday.Tuesday": {
+      "n": 230196,
+      "value": 38630
+    },
+    "demand.by_weekday.Wednesday": {
+      "n": 230196,
+      "value": 38985
+    },
+    "demand.dispute_complaints_per_month": {
+      "n": 8199,
+      "value": 683.25
+    },
+    "demand.in_scope_interactions_per_month": {
+      "n": 80264,
+      "value": 6688.666667
+    },
+    "demand.in_scope_per_month": {
+      "n": 88463,
+      "value": 7371.916667
+    },
+    "demand.total": {
+      "n": 230196,
+      "value": 230196
+    },
+    "demand.trend.2023-06": {
+      "n": 9254,
+      "value": 9254
+    },
+    "demand.trend.2023-07": {
+      "n": 19247,
+      "value": 19247
+    },
+    "demand.trend.2023-08": {
+      "n": 19722,
+      "value": 19722
+    },
+    "demand.trend.2023-09": {
+      "n": 18261,
+      "value": 18261
+    },
+    "demand.trend.2023-10": {
+      "n": 19243,
+      "value": 19243
+    },
+    "demand.trend.2023-11": {
+      "n": 18719,
+      "value": 18719
+    },
+    "demand.trend.2023-12": {
+      "n": 19099,
+      "value": 19099
+    },
+    "demand.trend.2024-01": {
+      "n": 19006,
+      "value": 19006
+    },
+    "demand.trend.2024-02": {
+      "n": 18478,
+      "value": 18478
+    },
+    "demand.trend.2024-03": {
+      "n": 18865,
+      "value": 18865
+    },
+    "demand.trend.2024-04": {
+      "n": 19870,
+      "value": 19870
+    },
+    "demand.trend.2024-05": {
+      "n": 19168,
+      "value": 19168
+    },
+    "demand.trend.2024-06": {
+      "n": 18074,
+      "value": 18074
+    },
+    "demand.trend.2024-07": {
+      "n": 19729,
+      "value": 19729
+    },
+    "demand.trend.2024-08": {
+      "n": 19796,
+      "value": 19796
+    },
+    "demand.trend.2024-09": {
+      "n": 18944,
+      "value": 18944
+    },
+    "demand.trend.2024-10": {
+      "n": 19555,
+      "value": 19555
+    },
+    "demand.trend.2024-11": {
+      "n": 17624,
+      "value": 17624
+    },
+    "demand.trend.2024-12": {
+      "n": 19101,
+      "value": 19101
+    },
+    "demand.trend.2025-01": {
+      "n": 19496,
+      "value": 19496
+    },
+    "demand.trend.2025-02": {
+      "n": 17211,
+      "value": 17211
+    },
+    "demand.trend.2025-03": {
+      "n": 19498,
+      "value": 19498
+    },
+    "demand.trend.2025-04": {
+      "n": 19177,
+      "value": 19177
+    },
+    "demand.trend.2025-05": {
+      "n": 19634,
+      "value": 19634
+    },
+    "demand.trend.2025-06": {
+      "n": 18237,
+      "value": 18237
+    },
+    "demand.trend.2025-07": {
+      "n": 19686,
+      "value": 19686
+    },
+    "demand.trend.2025-08": {
+      "n": 19014,
+      "value": 19014
+    },
+    "demand.trend.2025-09": {
+      "n": 19394,
+      "value": 19394
+    },
+    "demand.trend.2025-10": {
+      "n": 19022,
+      "value": 19022
+    },
+    "demand.trend.2025-11": {
+      "n": 18952,
+      "value": 18952
+    },
+    "demand.trend.2025-12": {
+      "n": 19735,
+      "value": 19735
+    },
+    "demand.trend.2026-01": {
+      "n": 18681,
+      "value": 18681
+    },
+    "demand.trend.2026-02": {
+      "n": 17789,
+      "value": 17789
+    },
+    "demand.trend.2026-03": {
+      "n": 20547,
+      "value": 20547
+    },
+    "demand.trend.2026-04": {
+      "n": 18790,
+      "value": 18790
+    },
+    "demand.trend.2026-05": {
+      "n": 18657,
+      "value": 18657
+    },
+    "demand.trend.2026-06": {
+      "n": 11021,
+      "value": 11021
+    },
+    "digital.monthly.Click": {
+      "n": 1214400,
+      "value": 101200.0
+    },
+    "digital.monthly.Error": {
+      "n": 121394,
+      "value": 10116.166667
+    },
+    "digital.monthly.FormSubmit": {
+      "n": 202827,
+      "value": 16902.25
+    },
+    "digital.monthly.Login": {
+      "n": 824090,
+      "value": 68674.166667
+    },
+    "digital.monthly.Logout": {
+      "n": 823604,
+      "value": 68633.666667
+    },
+    "digital.monthly.PageView": {
+      "n": 2025854,
+      "value": 168821.166667
+    },
+    "digital.monthly.Purchase": {
+      "n": 81550,
+      "value": 6795.833333
+    },
+    "disputes.backlog_share": {
+      "n": 8199,
+      "value": 0.698378
+    },
+    "disputes.by_channel.App": {
+      "n": 8199,
+      "value": 0.099524
+    },
+    "disputes.by_channel.Branch": {
+      "n": 8199,
+      "value": 0.039517
+    },
+    "disputes.by_channel.Call Center": {
+      "n": 8199,
+      "value": 0.506769
+    },
+    "disputes.by_channel.Email": {
+      "n": 8199,
+      "value": 0.198683
+    },
+    "disputes.by_channel.Regulator": {
+      "n": 8199,
+      "value": 0.010977
+    },
+    "disputes.by_channel.Web": {
+      "n": 8199,
+      "value": 0.14453
+    },
+    "disputes.by_subcategory.Cargo no reconocido": {
+      "n": 8199,
+      "value": 4193
+    },
+    "disputes.by_subcategory.Cobro indebido": {
+      "n": 8199,
+      "value": 4006
+    },
+    "disputes.count": {
+      "n": 8199,
+      "value": 8199
+    },
+    "disputes.first_response_h_p50": {
+      "n": 5022,
+      "value": 37.0
+    },
+    "disputes.resolution_days_p50": {
+      "n": 1886,
+      "value": 15.5
+    },
+    "disputes.sla_breach_rate": {
+      "n": 8199,
+      "value": 0.201244
+    },
+    "fairness.by_accent.argentine.fcr": {
+      "n": 11179,
+      "value": 0.915735
+    },
+    "fairness.by_accent.argentine.handle_time_s_p50": {
+      "n": 9623,
+      "value": 203.0
+    },
+    "fairness.by_accent.colombian.fcr": {
+      "n": 16976,
+      "value": 0.916647
+    },
+    "fairness.by_accent.colombian.handle_time_s_p50": {
+      "n": 14585,
+      "value": 206.0
+    },
+    "fairness.by_accent.mexican.fcr": {
+      "n": 27968,
+      "value": 0.91501
+    },
+    "fairness.by_accent.mexican.handle_time_s_p50": {
+      "n": 24070,
+      "value": 204.0
+    },
+    "fairness.by_accent.unknown.fcr": {
+      "n": 24141,
+      "value": 0.918355
+    },
+    "fairness.by_accent.unknown.handle_time_s_p50": {
+      "n": 20762,
+      "value": 204.0
+    },
+    "fairness.by_country.Argentina.csat_mean": {
+      "n": 2894,
+      "value": 2.92329
+    },
+    "fairness.by_country.Argentina.fcr": {
+      "n": 15879,
+      "value": 0.916871
+    },
+    "fairness.by_country.Argentina.handle_time_s_p50": {
+      "n": 13641,
+      "value": 204.0
+    },
+    "fairness.by_country.Colombia.csat_mean": {
+      "n": 4486,
+      "value": 2.91284
+    },
+    "fairness.by_country.Colombia.fcr": {
+      "n": 24253,
+      "value": 0.917082
+    },
+    "fairness.by_country.Colombia.handle_time_s_p50": {
+      "n": 20850,
+      "value": 205.0
+    },
+    "fairness.by_country.México.csat_mean": {
+      "n": 7547,
+      "value": 2.914668
+    },
+    "fairness.by_country.México.fcr": {
+      "n": 40132,
+      "value": 0.915927
+    },
+    "fairness.by_country.México.handle_time_s_p50": {
+      "n": 34549,
+      "value": 204.0
+    },
+    "fairness.by_segment.Basic.fcr": {
+      "n": 48129,
+      "value": 0.916267
+    },
+    "fairness.by_segment.Basic.handle_time_s_p50": {
+      "n": 41446,
+      "value": 204.0
+    },
+    "fairness.by_segment.Plus.fcr": {
+      "n": 20066,
+      "value": 0.917074
+    },
+    "fairness.by_segment.Plus.handle_time_s_p50": {
+      "n": 17224,
+      "value": 204.0
+    },
+    "fairness.by_segment.Premium.fcr": {
+      "n": 8134,
+      "value": 0.914925
+    },
+    "fairness.by_segment.Premium.handle_time_s_p50": {
+      "n": 6953,
+      "value": 205.0
+    },
+    "fairness.by_segment.Student.fcr": {
+      "n": 3935,
+      "value": 0.918933
+    },
+    "fairness.by_segment.Student.handle_time_s_p50": {
+      "n": 3417,
+      "value": 206.0
+    },
+    "quality.Comercial.escalation_rate": {
+      "n": 18552,
+      "value": 0.097833
+    },
+    "quality.Comercial.fcr": {
+      "n": 18552,
+      "value": 0.654485
+    },
+    "quality.Comercial.followup_rate": {
+      "n": 18552,
+      "value": 0.442648
+    },
+    "quality.Comercial.handle_time_s_p50": {
+      "n": 15830,
+      "value": 541.0
+    },
+    "quality.Comercial.handle_time_s_p90": {
+      "n": 15830,
+      "value": 748.0
+    },
+    "quality.Comercial.negative_sentiment_share": {
+      "n": 18552,
+      "value": 0.349396
+    },
+    "quality.Comercial.wait_time_s_p50": {
+      "n": 12774,
+      "value": 120.0
+    },
+    "quality.Producto.escalation_rate": {
+      "n": 50602,
+      "value": 0.100411
+    },
+    "quality.Producto.fcr": {
+      "n": 50602,
+      "value": 0.897138
+    },
+    "quality.Producto.followup_rate": {
+      "n": 50602,
+      "value": 0.237204
+    },
+    "quality.Producto.handle_time_s_p50": {
+      "n": 43488,
+      "value": 262.0
+    },
+    "quality.Producto.handle_time_s_p90": {
+      "n": 43488,
+      "value": 378.0
+    },
+    "quality.Producto.negative_sentiment_share": {
+      "n": 50602,
+      "value": 0.194558
+    },
+    "quality.Producto.wait_time_s_p50": {
+      "n": 35473,
+      "value": 119.0
+    },
+    "quality.Queja.escalation_rate": {
+      "n": 39300,
+      "value": 0.100025
+    },
+    "quality.Queja.fcr": {
+      "n": 39300,
+      "value": 0.436438
+    },
+    "quality.Queja.followup_rate": {
+      "n": 39300,
+      "value": 0.62827
+    },
+    "quality.Queja.handle_time_s_p50": {
+      "n": 33824,
+      "value": 431.0
+    },
+    "quality.Queja.handle_time_s_p90": {
+      "n": 33824,
+      "value": 607.0
+    },
+    "quality.Queja.negative_sentiment_share": {
+      "n": 39300,
+      "value": 0.347303
+    },
+    "quality.Queja.wait_time_s_p50": {
+      "n": 27673,
+      "value": 120.0
+    },
+    "quality.Retención.escalation_rate": {
+      "n": 6888,
+      "value": 0.092915
+    },
+    "quality.Retención.fcr": {
+      "n": 6888,
+      "value": 0.601916
+    },
+    "quality.Retención.followup_rate": {
+      "n": 6888,
+      "value": 0.492741
+    },
+    "quality.Retención.handle_time_s_p50": {
+      "n": 5883,
+      "value": 479.0
+    },
+    "quality.Retención.handle_time_s_p90": {
+      "n": 5883,
+      "value": 665.0
+    },
+    "quality.Retención.negative_sentiment_share": {
+      "n": 6888,
+      "value": 0.346835
+    },
+    "quality.Retención.wait_time_s_p50": {
+      "n": 4844,
+      "value": 120.0
+    },
+    "quality.Transaccional.escalation_rate": {
+      "n": 80264,
+      "value": 0.099808
+    },
+    "quality.Transaccional.fcr": {
+      "n": 80264,
+      "value": 0.916463
+    },
+    "quality.Transaccional.followup_rate": {
+      "n": 80264,
+      "value": 0.220435
+    },
+    "quality.Transaccional.handle_time_s_p50": {
+      "n": 69040,
+      "value": 204.0
+    },
+    "quality.Transaccional.handle_time_s_p90": {
+      "n": 69040,
+      "value": 332.0
+    },
+    "quality.Transaccional.negative_sentiment_share": {
+      "n": 80264,
+      "value": 0.0
+    },
+    "quality.Transaccional.wait_time_s_p50": {
+      "n": 56268,
+      "value": 119.0
+    },
+    "quality.Técnico.escalation_rate": {
+      "n": 34590,
+      "value": 0.102544
+    },
+    "quality.Técnico.fcr": {
+      "n": 34590,
+      "value": 0.696589
+    },
+    "quality.Técnico.followup_rate": {
+      "n": 34590,
+      "value": 0.406765
+    },
+    "quality.Técnico.handle_time_s_p50": {
+      "n": 29731,
+      "value": 360.0
+    },
+    "quality.Técnico.handle_time_s_p90": {
+      "n": 29731,
+      "value": 499.0
+    },
+    "quality.Técnico.negative_sentiment_share": {
+      "n": 34590,
+      "value": 0.348916
+    },
+    "quality.Técnico.wait_time_s_p50": {
+      "n": 24228,
+      "value": 119.0
+    },
+    "satisfaction.Comercial.CES.mean": {
+      "n": 585,
+      "value": 2.671795
+    },
+    "satisfaction.Comercial.CSAT.mean": {
+      "n": 3449,
+      "value": 2.681067
+    },
+    "satisfaction.Comercial.NPS.mean": {
+      "n": 1818,
+      "value": 4.942794
+    },
+    "satisfaction.Comercial.nps_detractor_share": {
+      "n": 1818,
+      "value": 0.783768
+    },
+    "satisfaction.Producto.CES.mean": {
+      "n": 1563,
+      "value": 2.913628
+    },
+    "satisfaction.Producto.CSAT.mean": {
+      "n": 9378,
+      "value": 2.898486
+    },
+    "satisfaction.Producto.NPS.mean": {
+      "n": 4855,
+      "value": 5.682595
+    },
+    "satisfaction.Producto.nps_detractor_share": {
+      "n": 4855,
+      "value": 0.711155
+    },
+    "satisfaction.Queja.CES.mean": {
+      "n": 1307,
+      "value": 2.451415
+    },
+    "satisfaction.Queja.CSAT.mean": {
+      "n": 7237,
+      "value": 2.43623
+    },
+    "satisfaction.Queja.NPS.mean": {
+      "n": 3638,
+      "value": 4.311435
+    },
+    "satisfaction.Queja.nps_detractor_share": {
+      "n": 3638,
+      "value": 0.856021
+    },
+    "satisfaction.Retención.CES.mean": {
+      "n": 211,
+      "value": 2.587678
+    },
+    "satisfaction.Retención.CSAT.mean": {
+      "n": 1248,
+      "value": 2.582532
+    },
+    "satisfaction.Retención.NPS.mean": {
+      "n": 675,
+      "value": 4.780741
+    },
+    "satisfaction.Retención.nps_detractor_share": {
+      "n": 675,
+      "value": 0.787167
+    },
+    "satisfaction.Transaccional.CES.mean": {
+      "n": 2496,
+      "value": 2.903045
+    },
+    "satisfaction.Transaccional.CSAT.mean": {
+      "n": 14927,
+      "value": 2.91579
+    },
+    "satisfaction.Transaccional.NPS.mean": {
+      "n": 7324,
+      "value": 5.749727
+    },
+    "satisfaction.Transaccional.nps_detractor_share": {
+      "n": 7324,
+      "value": 0.690473
+    },
+    "satisfaction.Técnico.CES.mean": {
+      "n": 1051,
+      "value": 2.656518
+    },
+    "satisfaction.Técnico.CSAT.mean": {
+      "n": 6369,
+      "value": 2.694144
+    },
+    "satisfaction.Técnico.NPS.mean": {
+      "n": 3228,
+      "value": 5.183705
+    },
+    "satisfaction.Técnico.nps_detractor_share": {
+      "n": 3228,
+      "value": 0.758722
+    },
+    "satisfaction.csat_resolved.mean": {
+      "n": 32628,
+      "value": 3.002237
+    },
+    "satisfaction.csat_unresolved.mean": {
+      "n": 9980,
+      "value": 2.00491
+    },
+    "satisfaction.link_rate": {
+      "n": 71359,
+      "value": 1.0
+    },
+    "transcripts.consulta_general_share": {
+      "n": 57589,
+      "value": 0.951536
+    },
+    "transcripts.distinct_customer_text": {
+      "n": 57589,
+      "value": 42
+    },
+    "transcripts.rows": {
+      "n": 57589,
+      "value": 57589
+    }
+  },
+  "reconciliation": {
+    "checks": [],
+    "status": "not reconciled"
+  }
+}
