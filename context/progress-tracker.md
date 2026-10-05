@@ -11,7 +11,7 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Goal
 
-- Transaction resolver unit 39: the test set is frozen and ingested; the Jev test runs, report, adoption decision and human ceiling remain (each live step needs the owner's approval).
+- Transaction resolver is done except the human ceiling: Carlos fills `agent/resolver/data/ceiling_v1.csv` (40 blind cases), then `uv run python scripts/resolver.py report` adds it to the report.
 
 ## Completed
 
@@ -222,6 +222,16 @@ Update this file whenever the current phase, the active unit or the implementati
   - Bugs fixed on the way, with tests: the dev writer is now a plain-text call (the model returned `{ {"message": ...}` 9 times out of 10 in JSON mode) and writes amounts in plain digits (`:g` produced `3.39847e+07`); `call_json` now accepts a bare doubled opening brace `{ {` (no content dropped; a restart after content stays rejected, unit 25's regression test still passes). The same doubled brace made the production `extract` fail about 70% of the time on `openai.gpt-oss-20b`, so this also helps the agent. Open: `extract` still hits `truncated output` on roughly 20% of calls at `max_tokens: 1024`;
   - Tests: agent suite 245 passed.
 
+- 2026-10-05: **Unit 39: Resolver Real Run II** (worktree `worktree-resolver-real-run-test`, branch `feature/39-resolver-real-run-test`; owner approved the Bedrock ingest and the Jev test runs):
+  - **Process note:** PR #28 merged at its first push, so the unit 38 commits (artifact, dev set, tuned thresholds, the `{ {` JSON fix) were not on `main`; the first test ingest ran without the fix (92 of 150 extractions failed) and was discarded. Those commits are now merged into this branch and the 150 Bedrock calls were redone (so 300 `extract` calls in total were spent on the test set; no Jev call had been made, so the evaluate-once rule is intact). The discarded file is not in the repo;
+  - Test set frozen before any evaluation (SHA-256 in Spec Changelog → Resolver), ingested to `agent/resolver/data/test_v1.jsonl` (150 rows, transaction fields only). **41 of 150 rows (27%) have extraction errors** (34 truncated output, 7 restarted JSON) and run with empty mentions, as the live agent would; every system reads the same extraction. The dev set excluded such cases, so dev-tuned thresholds never saw them;
+  - Jev test runs: B2 and P, 3 repeats, 900 calls, 0 errors (`resolver/runs/jev/test/`);
+  - Result (`resolver/reports/eval-2026-10-05.md`, `errors.csv`): wrong-action 0.7% for both B2 and P (1 of 150); hard-slice resolved-within-one-step P 96.0% vs B2 95.6% (paired P−B2 95% interval −1.3 to +10.7 points, so **not established at n = 150**); coverage 76.2% vs 76.0%; B0 28.0% / B1 43.3% coverage with 0 wrong actions; on the 15 not_in_list cases P resolved 57.8% in one step vs B2 80.0% and B2 acted wrongly once (small sample); P adds about 117 median Jev input tokens per call, latency unchanged (p50 about 280 ms);
+  - **Adoption decision: adopt P** (the rule fixed in code: wrong-action(P) ≤ B2 and hard-slice resolved-one-step(P) > B2, both on point estimates). `agent/docker-compose.yml` now sets `RESOLVER_ARTIFACT` and `THRESHOLDS_FILE` (pinned by `tests/test_compose_resolver.py`); `agent/README.md` documents the resolver, the evidence and the `extract` failure rate. The Terraform `agent` root (units 83+) must set the same two variables when it is built;
+  - Error analysis in the report labels every cause "unconfirmed": 9 failed cases for P (6 simulator-gap/other, mostly not_in_list cases where P asked instead of resolving), 1 act-wrong (ranker ranked the target below another candidate);
+  - **Human ceiling not done**: `agent/resolver/data/ceiling_v1.csv` (40 blind cases) is waiting for Carlos to fill the `pick` column (a candidate number or `none`); then rerun `uv run python scripts/resolver.py report` (offline) to add the ceiling to the report;
+  - Tests: agent suite 293 passed.
+
 ## In Progress
 
 - None.
@@ -234,7 +244,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
 | 12–25 | Agent core | **done**; 25 ran and recorded the definition-of-done run | none (16 uses a synthetic fixture; 23 uses the local drop) |
-| 26–39 | Transaction resolver | 26–38 **done**; 39 is `[live]` and waits for Andrés and the owner's approval | 12, 16 |
+| 26–39 | Transaction resolver | 26–39 **done** (P adopted; human ceiling pending) | 12, 16 |
 | 40–52 | Evaluation | 40–50 **done** (offline code, branch `feature/40-50-evaluation`); 51–52 are `[live]` and wait for the owner's approval and for unit 39's adoption decision | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
 | 77–90 | Deployment | not started; Terraform `bootstrap`, `platform` and the `app` web shell already exist | 77 has none; the rest follow the agent core and UI |
@@ -543,7 +553,7 @@ Records that the specs say to fill in at fixed points. Fill them here.
 **Changelog:**
 - 2026-09-29: draft.
 - Test-set SHA-256 (frozen 2026-10-05, before any evaluation; `agent/resolver/data/test_sheet_v1_completed.csv`, 150 messages, committed on `main` in `b3d60a7`): `1ab867754edd05bf8ed136071e9cd1326c59831119f2de06ad1b136d1f9a4bdd`.
-- Adoption decision: to be filled after the test run (§6.4).
+- Adoption decision (2026-10-05, §6.4): **adopt P** (Jev + ranker, `understand.v2`, `thresholds.v2`). wrong-action P 0.7% = B2 0.7%; hard-slice resolved-within-one-step P 96.0% > B2 95.6% (not statistically established at n = 150). Report: `agent/resolver/reports/eval-2026-10-05.md`. Human ceiling pending.
 
 ### Evaluation
 

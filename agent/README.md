@@ -23,6 +23,7 @@ Local data (dev only, until the pipeline export exists): `uv run python scripts/
 | `LLM_EXTRACT_MODEL`, `LLM_COMPOSE_MODEL` | override `llm/models.yaml` (Bedrock model ids) |
 | `TABLE_PREFIX`, `DYNAMODB_ENDPOINT`, `AWS_REGION` | DynamoDB tables `<prefix>-checkpoints/disputes/handoffs/decision_records` (region `us-east-1`) |
 | `IDP_ISSUER`, `IDP_AUDIENCE`, `IDP_JWKS_URL` | mock IdP the agent trusts |
+| `RESOLVER_ARTIFACT`, `THRESHOLDS_FILE` | turn the transaction resolver on (artifact directory, thresholds file); unset, the agent runs Jev alone with `understand.v1`. The compose stack sets both (`resolver.v1`, `thresholds.v2`) |
 | `AWS_PROFILE` | credentials for Bedrock (SigV4 to the Bedrock Mantle endpoint) and the S3 serving set |
 
 Models per role live in `llm/models.yaml` (currently `openai.gpt-oss-20b` for `extract` and `openai.gpt-oss-120b`
@@ -46,6 +47,12 @@ Each script below calls a real service and runs **only with the owner's approval
 input) and `scripts/smoke_serving.py` (serving read latency; local directory or `s3://`). Results are appended to
 `docs/smoke-results.md`.
 
+## Transaction resolver
+A logistic-regression ranker (`resolver/artifacts/v1`, card in `MODEL_CARD.md`) scores the 60-day candidates and Jev reads the
+scores as evidence (`understand.v2`). Adopted after one evaluation on Andrés's 150 blind messages (n = 150, so differences
+inside about ±7 points are not established): wrong-action 0.7% for both B2 and P, hard-slice resolved-within-one-step 96.0% (P)
+vs 95.6% (B2). Full report: `resolver/reports/eval-2026-10-05.md`. Any resolver failure falls back to `understand.v1`.
+
 ## Known limitations
 - Dispute policy and thresholds are labeled synthetic starting values, not calibrated (spec 2 tunes them).
 - No Portuguese-speaking customers exist in the dataset; Portuguese is a session choice and PT test cases are team-written.
@@ -58,3 +65,5 @@ input) and `scripts/smoke_serving.py` (serving read latency; local directory or 
   rejects it (`llm/client.py`) and the reply falls back to the fixed template; see `tests/test_llm.py`.
 - `scripts/pick_demo_users.py` picks customers with an approved purchase and a declined payment; scenario data beyond
   that (for example a genuine double charge) needs an identity picked by query — report gaps, never fabricate.
+- `extract` (`openai.gpt-oss-20b`, `max_tokens` 1024) fails on about a quarter of real messages (truncated output or a restarted
+  JSON object) and the turn then runs without mentions; the resolver test set had 41 of 150 such rows.

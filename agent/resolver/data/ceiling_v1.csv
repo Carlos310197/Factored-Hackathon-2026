@@ -1,0 +1,132 @@
+case_id,message,candidates,pick
+test-3-000060,"me cobraron una compra en estación de servicio de unos 120 mil pesos en una tienda, la quiero reclamar","1) 2026-03-31 · 488209.34 ARS · Transfer · Approved · Transfer · La Plata
+2) 2026-03-30 · 25064.25 ARS · Withdrawal · Approved · ATM",
+test-3-000077,"dia 20 de abril teve um saque de 1.897.101,15 pesos em cartagena, quero contestar","1) 2026-05-22 · Restaurante El Buen Sabor · 1184952.82 COP · Purchase · Approved · ATM
+2) 2026-05-09 · Estación de Servicio · 581772.96 COP · Purchase · Approved · App · Cartagena
+3) 2026-05-04 · 341775.4 COP · Withdrawal · Approved · POS · Cartagena
+4) 2026-04-28 · 14940812.16 COP · Transfer · Approved · ATM · Cartagena
+5) 2026-04-20 · 1897101.15 COP · Withdrawal · Declined · POS · Cartagena",
+test-3-000026,"quero contestar uma compra de 6.200 pesos, essa cobrança não pode estar certa","1) 2026-05-20 · 181867.54 ARS · Adjustment · Approved · ATM
+2) 2026-05-17 · 638747.14 ARS · Payment · Approved · ATM · Mendoza
+3) 2026-04-29 · 633896.57 ARS · Payment · Approved · Web · Mendoza
+4) 2026-04-21 · Cine Premium · 6220.08 ARS · Purchase · Approved · Transfer · Mendoza",
+test-3-000116,"teve uma compra de 1,7 milhões de pesos no mrcado central em bogotá, do que é?","1) 2026-03-07 · Super Ahorro · 43454.78 COP · Purchase · Approved · Web · Bogotá
+2) 2026-03-02 · 19637103.23 COP · Deposit · Approved · POS · Bogotá",
+test-3-000187,"mês passado teve uma cobrança de 5.300 dólares numa loja em barranquilla, quero contestar","1) 2026-02-17 · 357207.18 COP · Deposit · Approved · ATM
+2) 2026-02-15 · 703.51 USD · Deposit · Approved · POS
+3) 2026-02-09 · 5317.5 USD · Transfer · Approved · POS · Barranquilla
+4) 2026-01-19 · 23700910.07 COP · Transfer · Approved · Transfer · Houston",
+test-3-000039,el 7 de enero hice un pago como de 370 mil pesos y lo quiero reclamar,"1) 2026-01-18 · 68533.15 ARS · Adjustment · Approved · POS · Mendoza
+2) 2026-01-07 · 374060.54 ARS · Payment · Approved · App · Mendoza
+3) 2025-12-23 · Conciertos Live · 126198.42 ARS · Purchase · Approved · POS · Mendoza",
+test-3-000023,"apareceu um saque de 290 dólares no dia 7 de abril, vocês sabem do que é?","1) 2026-04-08 · 291.77 USD · Withdrawal · Approved · App · Tijuana
+2) 2026-03-30 · 6240.49 USD · Transfer · Approved · Web · Tijuana
+3) 2026-03-02 · 9606.05 USD · Transfer · Approved · POS · Tijuana",
+test-3-000017,"dia 6 de abril fiz uma compra que não sei bem do que é, podem me explicar?","1) 2026-05-04 · 1235.75 USD · Transfer · Approved · POS · Monterrey
+2) 2026-04-06 · Cine Premium · 425.22 USD · Purchase · Approved · ATM · Cali",
+test-3-000005,"quero contestar essa operação de 779.188,26 pesos, foi dia 17 de março em cartagena","1) 2026-04-07 · 674413.85 COP · Withdrawal · Approved · ATM · Cartagena
+2) 2026-03-27 · 534840.62 COP · Payment · Approved · POS · Cartagena
+3) 2026-03-17 · 779188.26 COP · Withdrawal · Approved · POS · Cartagena",
+test-3-000120,"el 16 de abril hubo un movimiento de 2,5 millones de pesos en la app, aquí en barranquilla, lo quiero reclamar","1) 2026-04-15 · 2518379.05 COP · Payment · Approved · App · Barranquilla
+2) 2026-04-14 · 412844.23 COP · Payment · Approved · ATM · Barranquilla",
+test-3-000074,"hola, hay un cargo que quiero reclamar, por favor revisen","1) 2026-05-22 · 297.47 USD · Withdrawal · Declined · ATM · Cartagena
+2) 2026-05-16 · 3083.87 USD · Deposit · Approved · Web · Cartagena
+3) 2026-05-02 · 5020.35 USD · Transfer · Approved · POS · Buenos Aires",
+test-3-000015,"quiero reclamar un pago de 1.300 dólares, no estoy de acuerdo con ese cobro","1) 2026-02-09 · 1298.73 USD · Payment · Approved · POS · Guadalajara
+2) 2026-02-07 · 2135.81 USD · Deposit · Approved · Branch · Guadalajara
+3) 2026-01-25 · Servicios Públicos · 430.38 USD · Purchase · Approved · Web
+4) 2026-01-22 · 3478.53 USD · Deposit · Approved · POS · Guadalajara
+5) 2026-01-17 · Cine Premium · 269.36 USD · Purchase · Approved · POS · Guadalajara
+6) 2026-01-10 · 3540.22 USD · Deposit · Approved · POS
+7) 2026-01-09 · 45.5 USD · Withdrawal · Declined · POS · Guadalajara
+8) 2026-01-06 · 50.71 USD · Withdrawal · Approved · POS · Guadalajara
+9) 2026-01-02 · 160.63 USD · Withdrawal · Approved · POS · Guadalajara",
+test-3-000056,"hubo una compra de unos 140 mil pesos en internet plus hecha en una tienda, la quiero reclamar","1) 2026-01-22 · Internet Plus · 140690.72 ARS · Purchase · Approved · POS · Rosario
+2) 2025-12-31 · 66345.79 ARS · Adjustment · Approved · Web · Rosario
+3) 2025-12-17 · 198339.57 ARS · Payment · Approved · POS · Rosario",
+test-3-000222,"un movimiento hecho por internet lo quiero reclamar, ayúdenme","1) 2026-04-07 · 389.77 USD · Withdrawal · Approved · Web · Ciudad de México
+2) 2026-03-30 · 24.91 USD · Withdrawal · Approved · POS · Ciudad de México",
+test-3-000092,el 20 de febrero hay un movimiento hecho en la app que quiero reclamar,"1) 2026-02-19 · 952.78 USD · Transfer · Approved · App · Salvador
+2) 2026-02-13 · 498.47 USD · Withdrawal · Approved · ATM · Querétaro",
+test-3-000070,"transferi 1.778,64 dólares dia 29 de abril e quero contestar isso","1) 2026-05-18 · 658.11 USD · Payment · Approved · ATM · Ciudad de México
+2) 2026-05-14 · 345.32 USD · Withdrawal · Approved · Web · Ciudad de México
+3) 2026-04-28 · 1778.64 USD · Transfer · Approved · POS · Ciudad de México
+4) 2026-04-21 · 4512.96 USD · Deposit · Approved · App · Ciudad de México",
+test-3-000044,"el 27 de marzo hice un pago de 6,1 millones de pesos en barranquilla y lo quiero reclamar","1) 2026-03-26 · 6127304.03 COP · Payment · Approved · POS · Barranquilla
+2) 2026-02-20 · 21297714.93 COP · Transfer · Approved · POS · Barranquilla
+3) 2026-02-10 · 2598287.75 COP · Deposit · Approved · Web · Barranquilla",
+test-3-000027,el 27 de marzo me llegó un depósito en cartagena y no sé de qué es,"1) 2026-04-14 · 2579326.91 COP · Payment · Approved · POS · Cartagena
+2) 2026-03-27 · 19225271.65 COP · Deposit · Approved · POS · Cartagena
+3) 2026-03-03 · 1633914.33 COP · Deposit · Approved · ATM · Cartagena",
+test-3-000067,quero contestar uma transferência que apareceu em rosario,"1) 2026-04-01 · 1361236.41 ARS · Transfer · Approved · Web · Rosario
+2) 2026-03-30 · 336189.08 ARS · Payment · Approved · Web · Rosario
+3) 2026-02-24 · Óptica Visión · 121509.0 ARS · Purchase · Approved · Web · Rosario
+4) 2026-02-19 · 3116440.28 ARS · Transfer · Approved · POS · Rosario",
+test-3-000054,"apareceu um saque de 170 dólares, do que é isso?","1) 2026-03-27 · 1049.92 USD · Deposit · Approved · POS · Córdoba
+2) 2026-03-13 · 4547.38 USD · Transfer · Approved · POS · Guadalajara
+3) 2026-03-03 · 1235.36 USD · Payment · Declined · POS · Guadalajara
+4) 2026-02-12 · 171.36 USD · Withdrawal · Approved · POS · Guadalajara
+5) 2026-02-11 · Teatro Nacional · 277.31 USD · Purchase · Approved · ATM · Guadalajara",
+test-3-000006,preciso contestar uma transferência de 29 milhões de pesos que saiu pelo aplicativo,"1) 2026-03-26 · 28898265.01 COP · Transfer · Approved · App · Cali
+2) 2026-03-25 · 1661762.19 COP · Withdrawal · Approved · POS · Cali",
+test-3-000066,"buenas, me explican un cargo que tengo ahí? no sé de qué es","1) 2026-04-17 · 16863228.96 COP · Transfer · Approved · POS · Medellín
+2) 2026-03-09 · 813312.16 COP · Withdrawal · Approved · App · Medellín",
+test-3-000069,"el 25 de abril hay un movimiento de 423,11 dólares que quiero reclamar","1) 2026-04-28 · Taxi Seguro · 168.44 USD · Purchase · Reversed · ATM · Guadalajara
+2) 2026-04-25 · 423.11 USD · Withdrawal · Approved · Web · Guadalajara
+3) 2026-03-24 · Estación de Servicio · 151.5 USD · Purchase · Approved · POS · Barcelona",
+test-3-000024,"el 12 de marzo hice un pago de 299,90 dólares en puebla y lo quiero reclamar","1) 2026-03-30 · Estación de Servicio · 245.3 USD · Purchase · Approved · POS · Puebla
+2) 2026-03-25 · Uber · 277.12 USD · Purchase · Declined · POS · Puebla
+3) 2026-02-17 · Restaurante El Buen Sabor · 412.96 USD · Purchase · Approved · POS · Puebla",
+test-3-000021,"hola, me pueden explicar un cargo que apareció? no entiendo de qué es","1) 2026-01-27 · Internet Plus · 922156.72 COP · Purchase · Approved · POS · Medellín
+2) 2026-01-26 · 277135.81 COP · Purchase · Approved · ATM · Medellín",
+test-3-000261,"dia 9 de março apareceu uma cobrança de 1.656,40 dólares numa loja em monterrey, do que é?","1) 2026-03-08 · 1656.4 USD · Payment · Approved · POS · Monterrey
+2) 2026-02-16 · 1024.45 USD · Deposit · Approved · POS · Monterrey
+3) 2026-02-04 · 906.32 USD · Payment · Approved · App · Monterrey",
+test-3-000037,"teve uma compra numa loja e eu não sei do que é, me ajudam?","1) 2026-04-19 · Servicios Públicos · 150831.83 ARS · Purchase · Approved · POS · Rosario
+2) 2026-03-23 · Servicios Públicos · 94342.03 ARS · Purchase · Approved · POS · Rosario",
+test-3-000080,"el 8 de abril hice una transferencia de 2.400 dólares en monterrey, de qué sería?","1) 2026-04-18 · 334.02 USD · Withdrawal · Approved · POS · Monterrey
+2) 2026-04-07 · 2362.54 USD · Transfer · Approved · Web · Monterrey",
+test-3-000144,"el 11 de marzo me cobraron 105 mil pesos en una tienda, lo quiero reclamar","1) 2026-03-10 · 104825.37 ARS · Withdrawal · Approved · POS · La Plata
+2) 2026-02-23 · 127.72 USD · Withdrawal · Approved · POS · La Plata
+3) 2026-02-05 · 2250.55 USD · Deposit · Approved · POS · La Plata",
+test-3-000093,"quiero reclamar un cobro de 1.704,96 dólares que tengo en medellín","1) 2026-05-22 · 2591210.35 COP · Payment · Approved · ATM · Medellín
+2) 2026-05-19 · 2532031.57 COP · Payment · Approved · POS
+3) 2026-05-19 · 851441.67 COP · Withdrawal · Pending · Web
+4) 2026-05-15 · 37468141.21 COP · Transfer · Approved · ATM · Sevilla
+5) 2026-05-07 · Taxi Seguro · 380963.43 COP · Purchase · Approved · POS · Medellín
+6) 2026-04-30 · 6819849.19 COP · Payment · Approved · POS · Medellín
+7) 2026-04-21 · 17387990.4 COP · Transfer · Approved · Web · Medellín
+8) 2026-04-15 · 8424817.97 COP · Deposit · Approved · ATM · Medellín
+9) 2026-04-14 · 115.05 USD · Purchase · Approved · Web · Medellín
+10) 2026-04-07 · 5053413.85 COP · Deposit · Approved · App · Medellín
+11) 2026-04-06 · 7449137.04 COP · Payment · Approved · POS · Medellín
+12) 2026-04-04 · 4159.85 USD · Transfer · Approved · POS · Medellín",
+test-3-000135,hubo un retiro hecho en la app aquí en córdoba y lo quiero reclamar,"1) 2026-03-24 · 35261.32 ARS · Withdrawal · Approved · Web · Córdoba
+2) 2026-02-24 · 21819.07 ARS · Withdrawal · Approved · App · Córdoba",
+test-3-000134,"teve um saque em monterrey que eu não entendi, do que é?","1) 2026-03-23 · Internet Plus · 198.4 USD · Purchase · Approved · POS · Monterrey
+2) 2026-03-04 · 1474.18 USD · Payment · Approved · POS · Monterrey
+3) 2026-02-25 · 188.54 USD · Withdrawal · Approved · ATM · Monterrey",
+test-3-000147,quero contestar um pagamento de 660 mil pesos em mendoza,"1) 2026-04-10 · Super Ahorro · 76398.21 ARS · Purchase · Approved · App · Mendoza
+2) 2026-03-05 · 658371.28 ARS · Payment · Approved · App · Mendoza
+3) 2026-02-18 · 38861.15 ARS · Payment · Approved · ATM · Mendoza",
+test-3-000047,"fue una compra de 113 mil pesos la semana pasada en el restaurante el buen saabor, en la plata, y la quiero reclamar","1) 2026-05-19 · Restaurante El Buen Sabor · 113075.06 ARS · Purchase · Approved · ATM · La Plata
+2) 2026-04-14 · Óptica Visión · 18594.59 ARS · Purchase · Approved · POS · Barranquilla",
+test-3-000011,"buenas, hay un cargo que me apareció y lo quiero reclamar","1) 2026-04-10 · 7618924.08 COP · Payment · Approved · POS · Medellín
+2) 2026-04-09 · 858.74 USD · Transfer · Approved · POS · Medellín
+3) 2026-04-05 · Farmacia Salud · 580906.83 COP · Purchase · Approved · POS · Medellín",
+test-3-000174,"semana passada teve um saque de 930 mil pesos em medellín, quero contestar","1) 2026-02-02 · 934612.17 COP · Withdrawal · Approved · ATM · Medellín
+2) 2025-12-16 · 567876.47 COP · Withdrawal · Approved · ATM · Medellín",
+test-3-000283,"tem um movimento aqui que eu não sei do que é, me explicam?","1) 2026-02-12 · 4455.0 USD · Transfer · Approved · ATM · La Plata
+2) 2026-01-27 · 1395838.68 ARS · Deposit · Approved · Web · La Plata
+3) 2026-01-20 · 639892.86 ARS · Payment · Approved · Web · La Plata
+4) 2026-01-18 · 4086.61 USD · Transfer · Approved · Branch · La Plata
+5) 2026-01-12 · 169190.66 ARS · Withdrawal · Approved · Web · La Plata
+6) 2025-12-28 · 80304.34 ARS · Withdrawal · Approved · Web · La Plata",
+test-3-000043,"teve uma compra em puebla que eu não reconheço, do que é?","1) 2026-04-20 · Ferretería · 56.86 USD · Purchase · Approved · POS · Puebla
+2) 2026-04-06 · Super Ahorro · 10.61 USD · Purchase · Approved · Web · Puebla",
+test-3-000085,"semana passada teve um movimento de 2,7 milhões de pesos em buenos aires, quero contestar","1) 2026-02-12 · Cine Premium · 479.96 USD · Purchase · Approved · ATM · Buenos Aires
+2) 2026-02-05 · 2726519.36 ARS · Transfer · Approved · App · Buenos Aires
+3) 2026-01-30 · 376.82 USD · Payment · Approved · Web · Buenos Aires
+4) 2026-01-29 · 89770.87 ARS · Withdrawal · Approved · POS · Buenos Aires",
+test-3-000049,"mês passado fiz uma transferência de 3.780,73 dólares pela internet, do que é?","1) 2026-01-26 · 3780.73 USD · Transfer · Declined · Web · Barranquilla
+2) 2026-01-06 · 460.36 USD · Withdrawal · Approved · ATM · Barranquilla",
