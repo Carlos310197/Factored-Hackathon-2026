@@ -88,6 +88,7 @@ describe("POST /api/chat", () => {
     expect(res.status).toBe(202);
     expect(m.appendMessage).not.toHaveBeenCalled();
     rejectCall(new AgentError("timeout"));
-    await vi.waitFor(() => expect(m.appendMessage).toHaveBeenCalledWith("S-1", expect.objectContaining({ role: "system" })));
+    await vi.waitFor(() => expect(m.appendMessage).toHaveBeenCalledWith("S-1", expect.objectContaining({ role: "system", meta: { error_code: "agent_error" } })));
+    expect(m.appendMessage.mock.calls[0][1].meta.control).toBeUndefined();
   });
 });

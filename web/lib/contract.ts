@@ -28,7 +28,7 @@ export type ChatReply = z.infer<typeof ChatReply>;
 export const MessageMeta = z.object({
   awaiting: Awaiting.optional(), options: z.array(z.string()).optional(), refs: z.array(z.string()).optional(),
   summary: Summary.optional(), data_as_of: z.string().optional(), control: z.string().optional(),
-  agent_name: z.string().optional(),
+  agent_name: z.string().optional(), error_code: z.string().optional(),
 });
 export type MessageMeta = z.infer<typeof MessageMeta>;
 

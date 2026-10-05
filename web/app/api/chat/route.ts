@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       try { await call(); } catch (e) {
         console.error("async turn failed", e);
         const text = who.lang === "pt" ? "O assistente não respondeu. Tente novamente." : "El asistente no respondió. Inténtalo de nuevo.";
-        await appendMessage(who.sid, { role: "system", text, meta: { control: "agent_error" } }).catch(() => {});
+        await appendMessage(who.sid, { role: "system", text, meta: { error_code: "agent_error" } }).catch(() => {});
       }
     });
     return ok({ pending: true }, 202);
