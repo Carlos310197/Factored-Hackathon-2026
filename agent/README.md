@@ -31,7 +31,7 @@ OpenAI has no tools.
 
 ## AgentCore deployment notes (spec 3 does the deployment)
 Configure the runtime with a `CUSTOM_JWT` authorizer (discovery URL = the IdP's `/.well-known/openid-configuration`,
-allowed audience `bankagent`) and `requestHeaderAllowlist: ["Authorization"]`; the agent re-verifies the token anyway.
+allowed audience `bankagent`) and `requestHeaderAllowlist: ["Authorization", "X-Amzn-Bedrock-AgentCore-Runtime-Custom-Message-Id"]` (the second passes by prefix; listing it documents the dependency); the agent re-verifies the token anyway.
 
 ## Data and privacy
 - Jev receives transaction aliases (`c1…cN`) and non-identifying fields, never transaction, customer or product ids.

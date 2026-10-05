@@ -40,3 +40,5 @@ worktrees/
 !agent/resolver/data/
 # evaluation run scratch space
 eval/runs/*/tmp/
+infra/realtime/node_modules/
+infra/realtime/dist/

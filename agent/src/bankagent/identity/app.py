@@ -2,9 +2,9 @@
 import os
 import secrets
 import time
-from typing import Optional
 
-from fastapi import FastAPI, HTTPException, status
+import jwt
+from fastapi import FastAPI, Header, HTTPException, status
 from pydantic import BaseModel
 
 from bankagent.auth.tokens import generate_keypair, issue_token, jwks_from_public
@@ -19,6 +19,12 @@ class LoginRequest(BaseModel):
 class OtpRequest(BaseModel):
     login_ticket: str
     otp: str
+    short_ttl: bool = False
+
+
+SHORT_TTL_S = 30
+STAFF_SCOPE = "handoff:work"
+REALTIME_SCOPE = "realtime:subscribe"
 
 
 class TokenResponse(BaseModel):
@@ -29,7 +35,9 @@ class TokenResponse(BaseModel):
 
 
 def create_app(users: dict[str, DemoUser], private_pem: str, public_pem: str, kid: str, issuer: str, audience: str,
-               scopes: tuple[str, ...] = ("inquiry:read", "dispute:create"), ttl_s: int = 900, clock=time.time) -> FastAPI:
+               scopes: tuple[str, ...] = ("inquiry:read", "dispute:create"), ttl_s: int = 900, clock=time.time,
+               staff_audience: str = "bankagent-staff", realtime_audience: str = "realtime",
+               demo_mode: bool = False) -> FastAPI:
     """Create the FastAPI identity service app."""
     app = FastAPI(title="Mock OIDC Identity Service")
 
@@ -53,8 +61,9 @@ def create_app(users: dict[str, DemoUser], private_pem: str, public_pem: str, ki
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid or expired ticket")
 
         user = users[username]
-        if user.otp != req.otp:
+        if user.role != "customer" or not user.otp or user.otp != req.otp:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid otp")
+        ttl = SHORT_TTL_S if req.short_ttl and user.short_ttl_allowed else ttl_s
 
         session_id = "S-" + secrets.token_hex(8)
         token = issue_token(
@@ -66,11 +75,46 @@ def create_app(users: dict[str, DemoUser], private_pem: str, public_pem: str, ki
             session_id=session_id,
             scopes=list(scopes),
             lang=user.lang,
-            ttl_s=ttl_s,
-            now=clock()
+            ttl_s=ttl,
+            now=clock(),
+            extra={"role": "customer"},
         )
 
-        return TokenResponse(access_token=token, token_type="Bearer", expires_in=ttl_s, lang=user.lang)
+        return TokenResponse(access_token=token, token_type="Bearer", expires_in=ttl, lang=user.lang)
+
+    @app.post("/auth/staff/login")
+    def staff_login(req: LoginRequest) -> dict:
+        user = users.get(req.username)
+        if not user or user.role != "agent" or user.password_sha256 != hash_password(req.password):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid credentials")
+        name = user.display_name or user.username
+        token = issue_token(private_pem, kid, issuer, staff_audience, user.username,
+                            "STAFF-" + secrets.token_hex(8), [STAFF_SCOPE], "es", ttl_s, now=clock(),
+                            extra={"role": "agent", "name": name})
+        return {"access_token": token, "token_type": "Bearer", "expires_in": ttl_s, "name": name}
+
+    @app.post("/auth/realtime-token")
+    def realtime_token(authorization: str | None = Header(default=None)) -> dict:
+        if not authorization or not authorization.lower().startswith("bearer "):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="bearer token required")
+        try:
+            src = jwt.decode(authorization[7:].strip(), public_pem, algorithms=["RS256"], issuer=issuer,
+                             audience=[audience, staff_audience])
+        except jwt.PyJWTError as e:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token") from e
+        now = int(clock())
+        ttl = max(1, min(900, int(src["exp"]) - now))
+        token = issue_token(private_pem, kid, issuer, realtime_audience, src["sub"], src["sid"], [REALTIME_SCOPE],
+                            src.get("lang", "es"), ttl, now=now, extra={"role": src.get("role", "customer")})
+        return {"token": token, "expires_in": ttl}
+
+    @app.get("/auth/demo-users")
+    def demo_users() -> list[dict]:
+        if not demo_mode:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
+        return [{"username": u.username, "demo_password": u.demo_password, "otp": u.otp, "lang": u.lang,
+                 "role": u.role, "display_name": u.display_name, "scenarios": list(u.scenarios)}
+                for u in users.values()]
 
     @app.get("/.well-known/openid-configuration")
     def openid_configuration() -> dict:
@@ -99,7 +143,8 @@ def create_app_from_env(env=None) -> FastAPI:
                       public_pem=public_pem,
                       kid=e.get("IDP_KID", "idp-local"),
                       issuer=e.get("IDP_ISSUER", "http://localhost:8081"),
-                      audience=e.get("IDP_AUDIENCE", "bankagent"))
+                      audience=e.get("IDP_AUDIENCE", "bankagent"),
+                      demo_mode=e.get("IDP_DEMO_MODE") == "1")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "module": "ESNext", "moduleResolution": "bundler", "strict": true,
+    "esModuleInterop": true, "skipLibCheck": true, "resolveJsonModule": true, "allowJs": true,
+    "types": ["node"], "outDir": "dist"
+  },
+  "include": ["authorizer", "publisher", "handlers", "scripts", "test"]
+}

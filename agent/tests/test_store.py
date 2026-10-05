@@ -24,7 +24,8 @@ def dispute(txn_id, created_at, customer="CLI-A"):
 
 def test_create_tables_idempotent_with_expected_keys(ddb):
     store, client = ddb
-    assert create_tables(client, "t") == ["t-checkpoints", "t-disputes", "t-handoffs", "t-decision_records"]
+    assert create_tables(client, "t") == ["t-checkpoints", "t-disputes", "t-handoffs", "t-decision_records",
+                                          "t-sessions", "t-conversation_messages"]
     ks = client.describe_table(TableName="t-checkpoints")["Table"]["KeySchema"]
     assert ks == [{"AttributeName": "PK", "KeyType": "HASH"}, {"AttributeName": "SK", "KeyType": "RANGE"}]
     gsis = client.describe_table(TableName="t-disputes")["Table"]["GlobalSecondaryIndexes"]
