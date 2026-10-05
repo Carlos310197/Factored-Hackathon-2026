@@ -27,6 +27,7 @@ function BarRow({ bar, reveal, index }: { bar: TraceBar; reveal: boolean; index:
 export function TraceTurnView({ turn, reveal = false, collapsed = false, onToggle }:
   { turn: TraceTurn; reveal?: boolean; collapsed?: boolean; onToggle?: () => void }) {
   const [open, setOpen] = useState(false);
+  const [checkOpen, setCheckOpen] = useState(false);
   const failed = turn.route.policy.filter((p) => !p.passed);
   const policy = [...failed, ...turn.route.policy.filter((p) => p.passed)].slice(0, 3)
     .map((p) => `${p.name.replaceAll("_", " ")} ${p.passed ? "✓" : "✗"}`).join(" · ");
@@ -56,9 +57,12 @@ export function TraceTurnView({ turn, reveal = false, collapsed = false, onToggl
             </button>
           )}
           {open && turn.folded.bars.map((b, i) => <BarRow key={b.signal} bar={b} reveal={false} index={i} />)}
-          {turn.replyCheck && (
-            <p className={`text-xs mb-2 px-1 ${turn.replyCheck.failed ? "text-c-alert" : "text-c-muted"}`}>{turn.replyCheck.text}</p>
-          )}
+          {turn.replyCheck && (turn.replyCheck.failed || turn.replyCheck.template || turn.replyCheck.regenerated > 0 ? (
+            <button type="button" aria-expanded={checkOpen} onClick={() => setCheckOpen((o) => !o)}
+              className={`w-full text-left text-xs mb-2 px-1 text-c-alert ${checkOpen ? "" : "truncate"}`}>
+              {`${checkOpen ? "▾" : "▸"} ${turn.replyCheck.text}`}
+            </button>
+          ) : <p className="text-xs mb-2 px-1 text-c-muted">{turn.replyCheck.text}</p>)}
           {turn.errors.map((e) => <p key={e} className="text-xs mb-1.5 px-1 text-c-alert">{e}</p>)}
         </>
       )}

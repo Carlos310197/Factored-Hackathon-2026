@@ -22,7 +22,10 @@ export function TraceList({ sid, mode, refreshKey = 0, running = false, onTurnCo
       const r = await fetch(`/api/trace/${encodeURIComponent(sid)}`, { cache: "no-store" });
       if (!r.ok || current.current !== sid) return; // stale: another case is open now
       const data = (await r.json()).data as TraceTurn[];
+      if (current.current !== sid) return; // the body can arrive after a case switch too
       setTurns(data);
+      // a resync after a missed turn_complete: the live turn is finished once its turn_end duration exists
+      if (!reveal) setLive((l) => (l && data.find((t) => t.turnId === l.turnId)?.durationMs != null ? null : l));
       if (reveal && data[0]) { setRevealed(data[0].turnId); setAnnounce(`Turn ${data.length}: route ${data[0].route.next}`); }
     } catch { /* keep what is shown; the next event or resync retries */ }
   }, [sid]);
@@ -31,12 +34,18 @@ export function TraceList({ sid, mode, refreshKey = 0, running = false, onTurnCo
   useEffect(() => { setTurns([]); setRevealed(null); setLive(null); void load(false); }, [load]); // reset per sid
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (refreshKey > 0) { setLive(null); void load(true); } }, [refreshKey, load]);
+  useEffect(() => {
+    if (!revealed) return;
+    const t = setTimeout(() => setRevealed(null), 1500); // the reveal is one-shot
+    return () => clearTimeout(t);
+  }, [revealed]);
   useChannel(`/trace/${sid}`, (p) => {
     const ev = TraceEvent.safeParse(p);
     if (!ev.success) return;
     if (ev.data.type === "record") {
       const stage = stageOf(ev.data.node, ev.data.kind);
       const turnId = ev.data.turn_id;
+      setRevealed(null);
       if (!stage) return;
       setLive((l) => {
         const base = l && l.turnId === turnId ? l : { turnId, lit: [] as Stage[], current: null };

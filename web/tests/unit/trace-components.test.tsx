@@ -77,3 +77,39 @@ describe("TraceList", () => {
     expect(fetchMock).toHaveBeenLastCalledWith("/api/trace/S1", { cache: "no-store" });
   });
 });
+
+describe("TraceList lifecycle", () => {
+  it("drops a stale response after the sid changes", async () => {
+    let resolveA: (v: unknown) => void = () => {};
+    const fetchMock = vi.fn((url: string) => url.endsWith("/A")
+      ? new Promise((res) => { resolveA = res; })
+      : Promise.resolve({ ok: true, json: async () => ({ data: [] }) }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { rerender } = render(<TraceList sid="A" mode="console" />);
+    rerender(<TraceList sid="B" mode="console" />);
+    await act(async () => { resolveA({ ok: true, json: async () => ({ data: [TURN] }) }); });
+    expect(screen.queryByText("Route: handoff · critical")).toBeNull();
+  });
+  it("reveals the newest turn once, then clears the highlight", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ data: [TURN] }) })));
+      const { container } = render(<TraceList sid="S1" mode="console" refreshKey={1} />);
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      expect(container.querySelector("article")?.className).toContain("ring-c-signal");
+      await act(async () => { await vi.advanceTimersByTimeAsync(1600); });
+      expect(container.querySelector("article")?.className).not.toContain("ring-c-signal");
+    } finally { vi.useRealTimers(); }
+  });
+});
+
+describe("reply check", () => {
+  it("is collapsed on failure and expands on click", async () => {
+    const t = { ...TURN, replyCheck: { ...TURN.replyCheck!, failed: true } };
+    render(<TraceTurnView turn={t} />);
+    const b = screen.getByRole("button", { name: /Reply check/ });
+    expect(b).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(b);
+    expect(b).toHaveAttribute("aria-expanded", "true");
+  });
+});
