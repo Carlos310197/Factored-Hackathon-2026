@@ -3,6 +3,19 @@ import { cookies } from "next/headers";
 import type { NextRequest, NextResponse } from "next/server";
 import { AuthFailure, verifier, type CustomerSession, type StaffSession } from "./jwt";
 
+const e2e = () => process.env.E2E_MOCK === "1" && process.env.DEMO_MODE === "1";
+function e2eCustomer(tok: string): CustomerSession | null {
+  if (!e2e() || !tok.startsWith("e2e.customer.")) return null;
+  const [, , sub, sid, lang] = tok.split(".");
+  return { token: tok, sub, sid, lang: lang === "pt" ? "pt" : "es", scopes: ["dispute:create", "inquiry:read"], exp: Math.floor(Date.now() / 1000) + 900 };
+}
+function e2eStaff(tok: string): StaffSession | null {
+  if (!e2e() || !tok.startsWith("e2e.staff.")) return null;
+  const rest = tok.slice("e2e.staff.".length);
+  const sub = rest.split(".").slice(0, 2).join(".");
+  return { token: tok, sub, sid: "STAFF-e2e", name: rest.slice(sub.length + 1), exp: Math.floor(Date.now() / 1000) + 900 };
+}
+
 export const CUSTOMER_COOKIE = "cust_session";
 export const STAFF_COOKIE = "staff_session";
 
@@ -12,19 +25,19 @@ async function safe<T>(fn: () => Promise<T>): Promise<T | null> {
 
 export async function customerFrom(req: NextRequest): Promise<CustomerSession | null> {
   const tok = req.cookies.get(CUSTOMER_COOKIE)?.value;
-  return tok ? safe(() => verifier().customer(tok)) : null;
+  return tok ? e2eCustomer(tok) ?? safe(() => verifier().customer(tok)) : null;
 }
 export async function staffFrom(req: NextRequest): Promise<StaffSession | null> {
   const tok = req.cookies.get(STAFF_COOKIE)?.value;
-  return tok ? safe(() => verifier().staff(tok)) : null;
+  return tok ? e2eStaff(tok) ?? safe(() => verifier().staff(tok)) : null;
 }
 export async function customerFromCookies(): Promise<CustomerSession | null> {
   const tok = (await cookies()).get(CUSTOMER_COOKIE)?.value;
-  return tok ? safe(() => verifier().customer(tok)) : null;
+  return tok ? e2eCustomer(tok) ?? safe(() => verifier().customer(tok)) : null;
 }
 export async function staffFromCookies(): Promise<StaffSession | null> {
   const tok = (await cookies()).get(STAFF_COOKIE)?.value;
-  return tok ? safe(() => verifier().staff(tok)) : null;
+  return tok ? e2eStaff(tok) ?? safe(() => verifier().staff(tok)) : null;
 }
 
 export function setSessionCookie(res: NextResponse, name: string, token: string, maxAge: number) {

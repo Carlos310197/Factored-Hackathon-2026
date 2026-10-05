@@ -8,7 +8,7 @@ import { t } from "@/lib/i18n";
 type DemoUser = { username: string; demo_password: string; otp: string; lang: Lang; role: string; display_name: string; scenarios: string[] };
 
 const field = "w-full rounded-control border border-b-line bg-b-surface px-3 py-2.5 text-base text-b-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-b-cobalt";
-const primary = "w-full rounded-full bg-b-leaf py-3 text-base font-bold text-b-surface transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-cobalt disabled:opacity-60";
+const primary = "w-full rounded-full bg-b-leaf py-3 text-base font-bold text-b-surface hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-cobalt disabled:opacity-60";
 
 export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = false }:
   { next: string; embed: boolean; prefillUser?: string; shortTtl?: boolean; auto?: boolean }) {
