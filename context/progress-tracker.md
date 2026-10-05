@@ -207,6 +207,7 @@ Update this file whenever the current phase, the active unit or the implementati
 - 75 (UI) web E2E and a11y: `web/e2e/{fixtures,customer.spec,console.spec,demo.spec}.ts`, guarded E2E cookies in `lib/server/session.ts` (only with `E2E_MOCK=1` and `DEMO_MODE=1`), `tests/unit/e2e-guard.test.ts`. `npm run e2e`: 13 passed (desktop + phone). Axe: no serious/critical on `/login`, `/chat`, `/agent/<id>`, `/trace/<sid>`, `/demo`.
 - 80 (deploy) identity Lambda: `agent/src/bankagent/identity/lambda_handler.py` (`build(env, s3, secrets)`, `handler`; key from Secrets Manager, users from `DEMO_USERS_S3_URI`, 503 `identity_unavailable` on cold-start failure, not cached), `agent/Dockerfile.identity` (ARM64 Lambda image, IdP deps only), `mangum` added, `agent/tests/test_identity_lambda.py` (moto).
 
+- 88 (deploy, secrets part only) `infra/terraform/bootstrap/secrets.tf` (containers `lb-demo/jev`, `lb-demo/idp-signing-key`, no versions, `prevent_destroy`; outputs `jev_secret_arn`, `idp_signing_secret_arn`), `put-secrets.sh` (silent prompt for Jev, openssl RSA 2048 PEM for the IdP key, both over stdin), tftest run `secrets_are_containers_only_and_protected`. Still open in 88: `gha-plan` role, Transaction Search, `gha-deploy` trust narrowing, `seed_demo.py`, `infra.yml` PR jobs.
 
 ## In Progress
 

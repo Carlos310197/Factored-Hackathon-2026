@@ -67,3 +67,17 @@ run "ssm_values_ignored_after_create" {
     error_message = "organizer keys must be SecureString"
   }
 }
+
+run "secrets_are_containers_only_and_protected" {
+  command = apply
+
+  assert {
+    condition     = aws_secretsmanager_secret.jev.name == "lb-demo/jev" && aws_secretsmanager_secret.idp_signing_key.name == "lb-demo/idp-signing-key"
+    error_message = "secret names"
+  }
+
+  assert {
+    condition     = output.jev_secret_arn == aws_secretsmanager_secret.jev.arn && output.idp_signing_secret_arn == aws_secretsmanager_secret.idp_signing_key.arn
+    error_message = "secret ARN outputs"
+  }
+}
