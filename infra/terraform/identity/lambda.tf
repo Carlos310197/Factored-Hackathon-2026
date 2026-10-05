@@ -55,9 +55,6 @@ resource "aws_lambda_function" "identity" {
   architectures = ["arm64"]
   memory_size   = 512
   timeout       = 10
-  # ponytail: login tickets live in process memory, so login and OTP must reach the same container. One container
-  # keeps them together; a busy minute can throttle. Upgrade path: tickets in DynamoDB, then drop this.
-  reserved_concurrent_executions = 1
 
   tracing_config {
     mode = "Active"

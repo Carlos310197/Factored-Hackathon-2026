@@ -126,3 +126,23 @@ def test_module_entrypoint_serves_demo_users_and_settings_from_env(tmp_path, mon
     assert jwks["keys"][0]["kid"] == "idp-local"
     assert api.get("/.well-known/openid-configuration").json()["issuer"] == "http://identity:8081"
     assert verify_token(tok["access_token"], jwks, "http://identity:8081", "bankagent").customer_id == "CLI-FIXC00000001"
+
+
+def test_login_ticket_works_on_another_container(users):
+    """Login and OTP may land on different Lambda containers: the ticket is signed, not kept in memory."""
+    a, b = TestClient(create_app(users, PRIV, PUB, KID, ISS, AUD)), TestClient(create_app(users, PRIV, PUB, KID, ISS, AUD))
+    t = a.post("/auth/login", json={"username": "ana.mx", "password": "demo-ana"}).json()["login_ticket"]
+    r = b.post("/auth/otp", json={"login_ticket": t, "otp": "123456"})
+    assert r.status_code == 200 and r.json()["access_token"]
+
+
+def test_login_ticket_expires_and_is_not_an_access_token(users):
+    now = [1_000_000.0]
+    api = TestClient(create_app(users, PRIV, PUB, KID, ISS, AUD, clock=lambda: now[0]))
+    t = api.post("/auth/login", json={"username": "ana.mx", "password": "demo-ana"}).json()["login_ticket"]
+    import jwt
+    with pytest.raises(jwt.InvalidAudienceError):
+        jwt.decode(t, PUB, algorithms=["RS256"], audience=AUD, options={"verify_exp": False})
+    now[0] += 301
+    assert api.post("/auth/otp", json={"login_ticket": t, "otp": "123456"}).status_code == 401
+    assert api.post("/auth/otp", json={"login_ticket": "garbage", "otp": "123456"}).status_code == 401

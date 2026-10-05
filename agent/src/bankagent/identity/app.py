@@ -23,6 +23,8 @@ class OtpRequest(BaseModel):
 
 
 SHORT_TTL_S = 30
+TICKET_AUDIENCE = "login-ticket"
+TICKET_TTL_S = 300
 STAFF_SCOPE = "handoff:work"
 REALTIME_SCOPE = "realtime:subscribe"
 
@@ -41,8 +43,10 @@ def create_app(users: dict[str, DemoUser], private_pem: str, public_pem: str, ki
     """Create the FastAPI identity service app."""
     app = FastAPI(title="Mock OIDC Identity Service")
 
-    # Store login tickets: ticket -> username
-    tickets: dict[str, str] = {}
+    # Login tickets are short-lived signed tokens, so login and OTP can land on different Lambda containers. A ticket's
+    # audience is TICKET_AUDIENCE, never accepted as an access token. Single use is per container (spent set): across
+    # containers a ticket can be retried until it expires (TICKET_TTL_S).
+    spent: set[str] = set()
 
     @app.post("/auth/login")
     def login(req: LoginRequest) -> dict:
@@ -50,13 +54,24 @@ def create_app(users: dict[str, DemoUser], private_pem: str, public_pem: str, ki
         if not user or user.password_sha256 != hash_password(req.password):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid credentials")
 
-        ticket = secrets.token_urlsafe(32)
-        tickets[ticket] = user.username
+        now = int(clock())
+        ticket = jwt.encode({"iss": issuer, "aud": TICKET_AUDIENCE, "sub": user.username, "iat": now,
+                             "exp": now + TICKET_TTL_S, "jti": secrets.token_urlsafe(8)},
+                            private_pem, algorithm="RS256", headers={"kid": kid})
         return {"login_ticket": ticket}
 
     @app.post("/auth/otp", response_model=TokenResponse)
     def otp(req: OtpRequest) -> TokenResponse:
-        username = tickets.pop(req.login_ticket, None)
+        username = None
+        if req.login_ticket not in spent:
+            spent.add(req.login_ticket)
+            try:  # expiry is checked against the injected clock, not wall time
+                claims = jwt.decode(req.login_ticket, public_pem, algorithms=["RS256"], audience=TICKET_AUDIENCE,
+                                    issuer=issuer, options={"verify_exp": False})
+                if int(claims["exp"]) > clock():
+                    username = claims["sub"]
+            except jwt.PyJWTError:
+                pass
         if not username:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid or expired ticket")
 
