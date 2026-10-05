@@ -32,4 +32,15 @@ describe("invokeAgent", () => {
     await expect(invokeAgent({ token: "t", sid: "S", message: "m", clientMessageId: "cm-12345678", lang: "es" }))
       .rejects.toBeInstanceOf(AgentError);
   });
+  const call = () => invokeAgent({ token: "t", sid: "S", message: "m", clientMessageId: "cm-12345678", lang: "es" });
+  it("maps a malformed or non-JSON 200 to upstream", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ nope: 1 })));
+    await expect(call()).rejects.toMatchObject({ kind: "upstream" });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("<html>", { status: 200 })));
+    await expect(call()).rejects.toMatchObject({ kind: "upstream" });
+  });
+  it("maps 401/403 to auth", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("no", { status: 403 })));
+    await expect(call()).rejects.toMatchObject({ kind: "auth" });
+  });
 });

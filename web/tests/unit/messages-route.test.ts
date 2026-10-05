@@ -35,6 +35,13 @@ describe("GET history", () => {
     const { GET } = await import("@/app/api/sessions/[sid]/messages/route");
     expect((await GET(get("S-2"), params("S-2"))).status).toBe(404);
   });
+  it("rejects an oversized after cursor with 400", async () => {
+    m.customerFrom.mockResolvedValue({ sub: "CLI-A", sid: "S-1" });
+    m.getSession.mockResolvedValue(SESSION);
+    const { GET } = await import("@/app/api/sessions/[sid]/messages/route");
+    const req = new NextRequest(`http://localhost/api/sessions/S-1/messages?after=${"x".repeat(200)}`);
+    expect((await GET(req, params("S-1"))).status).toBe(400);
+  });
   it("any agent can read", async () => {
     m.customerFrom.mockResolvedValue(null);
     m.staffFrom.mockResolvedValue({ sub: "agent.ana", name: "Ana R." });

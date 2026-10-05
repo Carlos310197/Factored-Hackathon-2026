@@ -28,7 +28,13 @@ export async function POST(req: NextRequest) {
 
   const call = () => invokeAgent({ token: who.token, sid: who.sid, message: body.message, clientMessageId: body.client_message_id, lang: who.lang });
   if (env().CHAT_ASYNC === "1") {  // Task 1 Step 4 fallback: reply arrives on /session/<sid>
-    after(async () => { await call().catch((e) => console.error("async turn failed", e)); });
+    after(async () => {
+      try { await call(); } catch (e) {
+        console.error("async turn failed", e);
+        const text = who.lang === "pt" ? "O assistente não respondeu. Tente novamente." : "El asistente no respondió. Inténtalo de nuevo.";
+        await appendMessage(who.sid, { role: "system", text, meta: { control: "agent_error" } }).catch(() => {});
+      }
+    });
     return ok({ pending: true }, 202);
   }
   try {
@@ -36,6 +42,7 @@ export async function POST(req: NextRequest) {
     if (reply.error === "session_expired" || reply.error === "auth_required") return fail("session_expired", "Sign in again", 401);
     return ok(reply);
   } catch (e) {
+    if (e instanceof AgentError && e.kind === "auth") return fail("session_expired", "Sign in again", 401);
     if (e instanceof AgentError) return fail(`agent_${e.kind}`, "The assistant did not answer", e.kind === "timeout" ? 504 : 502);
     throw e;
   }

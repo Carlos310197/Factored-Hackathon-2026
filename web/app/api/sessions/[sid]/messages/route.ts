@@ -13,7 +13,9 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   const session = await getSession(sid);
   const ownerOk = customer && session && customer.sid === sid && session.customer_id === customer.sub;
   if (!session || (!ownerOk && !staff)) return fail("not_found", "Not found", 404);  // same answer as a missing session
-  const after = req.nextUrl.searchParams.get("after") ?? undefined;
+  const q = z.string().max(100).optional().safeParse(req.nextUrl.searchParams.get("after") ?? undefined);
+  if (!q.success) return fail("bad_request", "Invalid cursor", 400);
+  const after = q.data;
   return ok(await listMessages(sid, after));
 }
 

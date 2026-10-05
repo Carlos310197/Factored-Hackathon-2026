@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
   customerFrom: vi.fn(), getSession: vi.fn(), appendMessage: vi.fn(), claimMessageId: vi.fn(), invokeAgent: vi.fn(),
 }));
+vi.mock("next/server", async (orig) => ({ ...(await orig<typeof import("next/server")>()), after: (fn: () => unknown) => { void fn(); } }));
 vi.mock("@/lib/server/session", () => ({ customerFrom: m.customerFrom }));
 vi.mock("@/lib/server/sessions", () => ({ getSession: m.getSession }));
 vi.mock("@/lib/server/messages", () => ({ appendMessage: m.appendMessage, claimMessageId: m.claimMessageId }));
@@ -59,5 +60,33 @@ describe("POST /api/chat", () => {
     const { AgentError } = await import("@/lib/server/agentcore");
     m.invokeAgent.mockRejectedValueOnce(new AgentError("timeout"));
     expect((await POST(post({ message: "a", client_message_id: "cm-12345679" }))).status).toBe(504);
+  });
+  it("turns an agent auth error into 401 and a malformed reply into 502", async () => {
+    m.customerFrom.mockResolvedValue(CUST);
+    m.getSession.mockResolvedValue(null);
+    const { POST } = await import("@/app/api/chat/route");
+    const { AgentError } = await import("@/lib/server/agentcore");
+    m.invokeAgent.mockRejectedValueOnce(new AgentError("auth"));
+    const r1 = await POST(post({ message: "a", client_message_id: "cm-12345670" }));
+    expect(r1.status).toBe(401);
+    expect((await r1.json()).error.code).toBe("session_expired");
+    m.invokeAgent.mockRejectedValueOnce(new AgentError("upstream"));
+    const r2 = await POST(post({ message: "a", client_message_id: "cm-12345671" }));
+    expect(r2.status).toBe(502);
+    expect((await r2.json()).error.code).toBe("agent_upstream");
+  });
+  it("CHAT_ASYNC returns 202 without awaiting, and a failed turn appends a system message", async () => {
+    process.env.CHAT_ASYNC = "1";
+    m.customerFrom.mockResolvedValue(CUST);
+    m.getSession.mockResolvedValue(null);
+    const { AgentError } = await import("@/lib/server/agentcore");
+    let rejectCall!: (e: unknown) => void;
+    m.invokeAgent.mockReturnValue(new Promise((_, rej) => { rejectCall = rej; }));
+    const { POST } = await import("@/app/api/chat/route");
+    const res = await POST(post({ message: "a", client_message_id: "cm-12345672" }));
+    expect(res.status).toBe(202);
+    expect(m.appendMessage).not.toHaveBeenCalled();
+    rejectCall(new AgentError("timeout"));
+    await vi.waitFor(() => expect(m.appendMessage).toHaveBeenCalledWith("S-1", expect.objectContaining({ role: "system" })));
   });
 });

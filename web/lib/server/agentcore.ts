@@ -4,7 +4,7 @@ import { ChatReply, type Lang } from "@/lib/contract";
 import { env } from "./env";
 
 export class AgentError extends Error {
-  constructor(readonly kind: "timeout" | "upstream", detail = "") { super(`agent ${kind} ${detail}`.trim()); }
+  constructor(readonly kind: "timeout" | "upstream" | "auth", detail = "") { super(`agent ${kind} ${detail}`.trim()); }
 }
 
 /** AgentCore needs >= 33 chars; deterministic so every turn of a conversation reuses its runtime session. */
@@ -29,6 +29,13 @@ export async function invokeAgent(a: { token: string; sid: string; message: stri
     const name = (e as { name?: string }).name;
     throw new AgentError(name === "TimeoutError" || name === "AbortError" ? "timeout" : "upstream", String(e));
   }
-  if (!res.ok) throw new AgentError("upstream", `HTTP ${res.status}`);
-  return ChatReply.parse(await res.json());
+  if (!res.ok) {
+    await res.body?.cancel().catch(() => {});
+    throw new AgentError(res.status === 401 || res.status === 403 ? "auth" : "upstream", `HTTP ${res.status}`);
+  }
+  try {
+    return ChatReply.parse(await res.json());
+  } catch (e) {
+    throw new AgentError("upstream", `bad reply: ${String(e).slice(0, 200)}`);
+  }
 }
