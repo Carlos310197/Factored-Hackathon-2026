@@ -54,7 +54,7 @@ can't dispute a charge you can't find.
 | Unsafe outcomes: 0, reported as k/N, never as "zero risk" | — | eval classifier, unsafe outcomes over all in-scope cases |
 | Every human handoff arrives as a complete `handoff.v1` packet (request, verified facts, actions, evidence, open questions) | free-text complaints | packet schema validation + eval judge |
 | Safe automated resolution of in-scope inquiries and eligible disputes, with the rate and its CI | — | eval, safe automated resolution over all in-scope cases |
-| Wrong-transaction disputes ≤ 2 % at the resolver's threshold | — | resolver evaluation on the frozen human-written test set |
+| Wrong-transaction disputes ≤ 2 % at the resolver's threshold (**measured: 0.7 %, 1 of 150, 95 % CI 0–2 %**) | — | resolver evaluation on the frozen human-written test set |
 
 **What we don't claim.** That customers want chat (85 % of contacts are phone today), any savings figure, or improvement
 over the legacy process. Those need a pilot.
@@ -169,6 +169,49 @@ leave Snowflake `RAW`, and product numbers are cut to the last four digits.
 
 All DynamoDB tables have point-in-time recovery and deletion protection.
 
+## Learned component: the transaction resolver
+
+**The job.** When a customer says "me cobraron dos veces en Tienda Don José", which of *their own* transactions do they mean?
+Picking the wrong one files a dispute on the wrong charge, so the system must either pick right or ask.
+
+**Why this and not the organizer's labels.** The dataset's own targets are generator artifacts: `was_escalated` and
+`sla_breached` are flat across every slice, and `is_fraud` just reproduces `fraud_score` (see the as-is report). A ranker
+over the customer's own candidates is a real, bounded ML task whose labels are known by construction.
+
+**The model.** Logistic regression over 13 features (merchant similarity, amount error, date fit, type, channel, city,
+recency, …), temperature-calibrated (T = 1.34), with a "none of these" option. It never acts alone: it is evidence for
+Jev's `target_transaction` decision, and code applies the thresholds. Model card:
+[`agent/src/bankagent/resolver/artifacts/v1/MODEL_CARD.md`](agent/src/bankagent/resolver/artifacts/v1/MODEL_CARD.md).
+
+**Data and leakage.** 30,000 simulated training cases over real transaction histories; customers split by hash
+(train / dev / test never share a customer) and anchor dates split by period. Dev: 300 LLM-written ES/PT messages. **Test:
+150 messages written blind by a teammate**, frozen by SHA-256 (`1ab86775…9bdd`) before any evaluation.
+
+**Systems compared, adoption rule fixed before the test run:** B0 = the production filter (no model), B1 = the resolver
+alone, B2 = Jev without the resolver, P = Jev with the resolver's evidence.
+
+| Test run (150 messages, 3 Jev repeats) | Wrong action, P / B2 | All cases, resolved in one step, P / B2 | Hard slice, resolved in one step, P / B2 | Paired P − B2 (hard), 95 % CI |
+|---|---|---|---|---|
+| **Run 1, pre-registered** (extract = gpt-oss-20b) | 0.7 % / 0.7 % | **93.8 % / 95.1 %** | 96.0 % / 95.6 % | −1.3 to +10.7 points (not established) |
+| Run 2, post-hoc (extract = Ministral 3 14B) | 0.7 % / 0.7 % | 96.0 % / 94.4 % | 98.7 % / 94.2 % | +1.3 to +10.7 points |
+
+Decision under the fixed rule: **adopt P** in both runs. That means P met the rule written before the test (a wrong-action
+rate no higher than B2's, and a higher hard-slice point estimate); it is **not** evidence that P is better. In the
+pre-registered run, P is slightly *worse* than B2 on one-step resolution over all cases (93.8 % vs 95.1 %) and on the
+nil slice, and the hard-slice difference is not established. Reports:
+[`agent/resolver/reports/eval-2026-10-05.md`](agent/resolver/reports/eval-2026-10-05.md) (run 1) and
+[`agent/resolver/ministral/reports/eval-2026-10-05.md`](agent/resolver/ministral/reports/eval-2026-10-05.md) (run 2).
+
+**How to read run 2.** In run 1, gpt-oss-20b failed to extract mentions from 41 of the 150 test messages (27 %: truncated
+or broken JSON). We compared extract models *on those same test messages*, switched to Ministral (0–1 failures, equal
+extraction quality), and re-ran the test. So run 2 is **not** independent held-out evidence: the test set informed the
+model choice, the two runs share their messages, and the dev set and thresholds still reflect gpt-oss extractions. Run 1
+is the pre-registered result; run 2 shows what the reliability fix does. Neither run claims a production effect.
+
+**Limits.** Training mentions are simulated, and the test writer followed style hints from the same simulator, so the test
+measures text → extraction → ranking noise, not how often real customers mention each field. Portuguese messages describe
+Spanish-speaking customers' histories. The nil slice (15 cases) is too small to read.
+
 ## Evidence map for the judges
 
 | Judged area | Look at |
@@ -177,7 +220,7 @@ All DynamoDB tables have point-in-time recovery and deletion protection.
 | Data engineering | [`docs/data-pipeline.md`](docs/data-pipeline.md): contracts, quarantine with a 1 % gate, lineage manifest, fixture drop proof (`tests/test_fixture_drop.py`), atomic self-describing serving pointer (`tests/test_export.py`), contract parity with the agent (`tests/test_contract_parity.py`), and the live run evidence (row counts per layer, 77 pass / 3 warn / 0 error) |
 | Data analytics | [`reports/asis-2026-10-05.md`](reports/asis-2026-10-05.md) and `analysis/asis/` (synthetic-artifact detectors, every number with n) |
 | AI engineering | The control matrix and failure table above; live trace at `/trace/<session>`; `agent/docs/smoke-results.md` (all 8 scenarios against real Jev and Bedrock, 2026-10-05) |
-| ML | Transaction resolver in `agent/resolver/`: simulated training cases, customer-disjoint splits, B0 (production filter) and B2 (Jev only) baselines fixed before the test run, and a human-written ES/PT test sheet (`agent/resolver/data/`). See status below. |
+| ML | [Learned component](#learned-component-the-transaction-resolver) above: model card, customer-disjoint splits, baselines and adoption rule fixed before the test run, frozen human-written ES/PT test set, both test runs reported with CIs |
 | Deployment | `infra/terraform/` (7 roots), `.github/workflows/` (OIDC, pinned actions), live app above |
 
 ## Status: what is done and what is not
@@ -188,7 +231,7 @@ All DynamoDB tables have point-in-time recovery and deletion protection.
 | Agent, web, identity, realtime | Live in AWS us-east-1 |
 | Agent end-to-end check | All 8 scenarios against real Jev and Bedrock on 2026-10-05 (`agent/docs/smoke-results.md`) |
 | Evaluation harness (`eval/`) | Code done and tested offline; **no live evaluation run yet**, so no resolution, containment or cost metrics are reported |
-| Transaction resolver | Code done and tested; **no trained artifact, dev results or model card committed yet**. The human-written test sheet is complete (150 rows) |
+| Transaction resolver | Trained, calibrated and evaluated on the frozen test set (two runs, both reported). In the agent it is switched on by `RESOLVER_ARTIFACT` / `THRESHOLDS_FILE` (set in Docker Compose); the deployed runtime gets them with the next agent deploy |
 | Monitoring and alarms | Three CloudWatch alarms on the agent's log lines (turn failures, template fallbacks, decision-record write failures; `infra/terraform/agent/alarms.tf`), optional email via SNS; no dashboard |
 
 We report what we measured. We don't report numbers we haven't run.
