@@ -12,3 +12,9 @@ os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
 def serving_root(tmp_path_factory):
     from tests.fixtures.serving_fixture import build_serving
     return build_serving(tmp_path_factory.mktemp("serving"))
+
+
+@pytest.fixture(scope="session")
+def history_serving(tmp_path_factory):
+    from tests.fixtures.resolver_serving import build_history_serving
+    return build_history_serving(tmp_path_factory.mktemp("history_serving"))
