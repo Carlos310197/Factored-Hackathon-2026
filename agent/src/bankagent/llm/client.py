@@ -54,14 +54,21 @@ def call_json(client, cfg: RoleConfig, system: str, user: str, schema: dict) -> 
     except openai.AuthenticationError as e:
         raise LLMError(f"Auth error: {e}") from e
 
+    # Debug: log the raw response structure
+    if not resp.choices:
+        raise LLMError(f"No choices in response. Raw response: {resp}")
+
     if resp.choices[0].finish_reason == "length":
         raise LLMError("truncated output")
 
     text = resp.choices[0].message.content
+    if not text:
+        raise LLMError(f"Empty message content. Finish reason: {resp.choices[0].finish_reason}")
+
     try:
         data = json.loads(text)
     except (TypeError, ValueError) as e:
-        raise LLMError("invalid JSON output") from e
+        raise LLMError(f"invalid JSON output: {text[:200]}") from e
 
     usage = {
         "input_tokens": resp.usage.prompt_tokens if resp.usage else 0,
