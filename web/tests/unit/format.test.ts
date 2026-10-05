@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fmtAge, fmtDate, fmtMoney } from "@/lib/format";
+import { fmtAge, fmtDate, fmtMoney, fmtTime } from "@/lib/format";
 
 describe("fmtMoney", () => {
   it("formats COP without decimals in es-CO and pt-BR", () => {
@@ -29,5 +29,15 @@ describe("fmtAge", () => {
     expect(fmtAge("2026-09-30T11:58:00Z", now)).toBe("2 min");
     expect(fmtAge("2026-09-30T09:00:00Z", now)).toBe("3 h");
     expect(fmtAge("2026-09-28T12:00:00Z", now)).toBe("2 d");
+  });
+});
+
+describe("fmtTime", () => {
+  it("shows hours and minutes in the customer's locale", () => {
+    expect(fmtTime("2026-10-05T14:05:00.000000+00:00", "es", "UTC")).toBe("14:05");
+    expect(fmtTime("2026-10-05T09:30:00Z", "pt", "UTC")).toBe("09:30");
+  });
+  it("is empty for a timestamp it can't read", () => {
+    expect(fmtTime("t", "es")).toBe("");
   });
 });
