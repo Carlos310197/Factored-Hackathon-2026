@@ -27,6 +27,8 @@ From the as-is diagnosis of the organizer data ([`reports/asis-2026-10-05.md`](r
 2025-06-17 → 2026-06-17). Every figure there is tagged **evidence** or **synthetic artifact**, and artifacts are never used
 as an argument.
 
+![Dispute handling today: 37 h to first response, 15.5 days to resolve, 70 % still open](reports/figures/asis-dispute-handling.png)
+
 | Finding | Value | Tag |
 |---|---|---|
 | Dispute complaints (Cargo no reconocido, Cobro indebido) | 8,199 | evidence |
