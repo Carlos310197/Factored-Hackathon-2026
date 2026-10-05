@@ -30,10 +30,11 @@ def jwks_from_public(public_pem: str, kid: str) -> dict:
 
 
 def issue_token(private_pem: str, kid: str, issuer: str, audience: str, customer_id: str, session_id: str,
-                scopes, lang: str, ttl_s: int = 900, now: float | None = None) -> str:
+                scopes, lang: str, ttl_s: int = 900, now: float | None = None, extra: dict | None = None) -> str:
     iat = int(now if now is not None else time.time())
     claims = {"iss": issuer, "aud": audience, "client_id": audience, "sub": customer_id, "sid": session_id,
               "scope": " ".join(sorted(scopes)), "lang": lang, "iat": iat, "exp": iat + ttl_s}
+    claims.update(extra or {})
     return jwt.encode(claims, private_pem, algorithm="RS256", headers={"kid": kid})
 
 
