@@ -3,6 +3,7 @@ import { util } from "@aws-appsync/utils";
 // UI spec §3 rule 4: customers only their own /session/<sid>; agents any session, /queue/all and traces.
 const STAFF_NAMESPACES = ["session", "queue", "trace"];
 
+// Not exported: APPSYNC_JS namespace code may export only its handlers (onSubscribe/onPublish).
 function allowed(segments, c) {
   if (!c || !segments || segments.length === 0 || segments.indexOf("") !== -1) return false;
   const ns = segments[0];
@@ -28,5 +29,3 @@ export function onPublish(ctx) {
   return ctx.events;
 }
 
-// APPSYNC_JS rejects calling an inline-exported function from another handler; export the helper here (tests use it).
-export { allowed };
