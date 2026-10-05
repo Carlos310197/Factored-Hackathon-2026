@@ -1,12 +1,14 @@
-"""OpenAI role 2 (compose.v1): the reply, written only from receipts, plus the claims it makes (for Jev to verify)."""
+"""OpenAI role 2 (compose.v2): the reply, written only from receipts, plus the claims it makes (for Jev to verify)."""
 import json
 from dataclasses import dataclass
 
+from bankagent.decisions.verify import redact
 from bankagent.llm.client import LLMCall, LLMError, call_json
 from bankagent.llm.config import RoleConfig
 
 COMPOSE_SYSTEM = """You write the reply of LATAM Bank's customer-service assistant in the requested language (es or pt).
 Rules:
+- Address the customer informally and consistently: "tú" in Spanish (never "usted"), "você" in Portuguese.
 - Use only facts present in <receipts>. Never invent balances, dates, amounts, statuses, deadlines, refunds or outcomes.
 - Follow <goal>.kind: answer (answer from the receipts; if goal.note is set, explain it), ask_clarification (ask one
   short question offering goal.display_options), ask_confirmation (one sentence asking the customer to confirm the
@@ -48,7 +50,7 @@ def compose(client, cfg: RoleConfig, goal: dict, receipts: list[dict], language:
     if goal.get("fixed_block"):
         visible["has_fixed_block"] = True
     user = (f"<language>{language}</language>\n<goal>{json.dumps(visible, ensure_ascii=False)}</goal>\n"
-            f"<receipts>{json.dumps(receipts, ensure_ascii=False, default=str)}</receipts>")
+            f"<receipts>{json.dumps(redact(receipts), ensure_ascii=False, default=str)}</receipts>")
     if feedback:
         user += f"\n<feedback>{json.dumps(feedback, ensure_ascii=False)}</feedback>"
     call = call_json(client, cfg, COMPOSE_SYSTEM, user, COMPOSE_SCHEMA)
@@ -61,6 +63,6 @@ def compose(client, cfg: RoleConfig, goal: dict, receipts: list[dict], language:
 def open_questions(client, cfg: RoleConfig, request_en: str, reason_codes: list[str],
                    receipts: list[dict]) -> tuple[list[str], LLMCall]:
     user = (f"<request>{request_en}</request>\n<reason_codes>{json.dumps(reason_codes)}</reason_codes>\n"
-            f"<receipts>{json.dumps(receipts, ensure_ascii=False, default=str)}</receipts>")
+            f"<receipts>{json.dumps(redact(receipts), ensure_ascii=False, default=str)}</receipts>")
     call = call_json(client, cfg, OPEN_QUESTIONS_SYSTEM, user, OPEN_QUESTIONS_SCHEMA)
     return [q for q in call.data.get("questions", []) if isinstance(q, str)][:3], call

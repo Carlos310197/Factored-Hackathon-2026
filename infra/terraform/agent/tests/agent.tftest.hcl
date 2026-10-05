@@ -8,6 +8,9 @@ mock_provider "aws" {
   mock_resource "aws_iam_role" {
     defaults = { arn = "arn:aws:iam::762197749808:role/lb-demo-agent-exec" }
   }
+  mock_resource "aws_sns_topic" {
+    defaults = { arn = "arn:aws:sns:us-east-1:762197749808:lb-demo-agent-alarms" }
+  }
   mock_resource "aws_bedrockagentcore_agent_runtime" {
     defaults = {
       agent_runtime_id      = "lb_demo_agent-AbC123xYz0"
@@ -99,15 +102,19 @@ run "runtime_environment_has_no_secret_values" {
 
   assert {
     condition = aws_bedrockagentcore_agent_runtime.agent.environment_variables == tomap({
-      TABLE_PREFIX      = "lb-demo"
-      SERVING_URI       = "s3://latam-bank-serving-762197749808-use1/serving/"
-      IDP_ISSUER        = "https://idp123.execute-api.us-east-1.amazonaws.com"
-      IDP_AUDIENCE      = "bankagent"
-      IDP_JWKS_URL      = "https://idp123.execute-api.us-east-1.amazonaws.com/jwks.json"
-      LLM_EXTRACT_MODEL = "openai.gpt-oss-20b"
-      LLM_COMPOSE_MODEL = "openai.gpt-oss-120b"
-      GIT_SHA           = "abc1234"
-      JEV_SECRET_ID     = "lb-demo/jev"
+      TABLE_PREFIX        = "lb-demo"
+      SERVING_URI         = "s3://latam-bank-serving-762197749808-use1/serving/"
+      IDP_ISSUER          = "https://idp123.execute-api.us-east-1.amazonaws.com"
+      IDP_AUDIENCE        = "bankagent"
+      IDP_JWKS_URL        = "https://idp123.execute-api.us-east-1.amazonaws.com/jwks.json"
+      LLM_EXTRACT_MODEL   = "mistral.ministral-3-14b-instruct"
+      LLM_COMPOSE_MODEL   = "openai.gpt-oss-120b"
+      GIT_SHA             = "abc1234"
+      JEV_SECRET_ID       = "lb-demo/jev"
+      BEDROCK_ROLE_ARN    = "arn:aws:iam::040684487035:role/argos-bedrock-role"
+      BEDROCK_EXTERNAL_ID = "fh26-7c1e9a52-3b4d-4f0e-9a8b-2d6c5e1f0a73"
+      RESOLVER_ARTIFACT   = "/app/src/bankagent/resolver/artifacts/v1"
+      THRESHOLDS_FILE     = "/app/src/bankagent/decisions/thresholds.v2.yaml"
     })
     error_message = "agent environment (names only, no secret values)"
   }
@@ -182,7 +189,7 @@ run "least_privilege_data_access" {
     error_message = "only the Jev secret"
   }
   assert {
-    condition     = anytrue([for s in data.aws_iam_policy_document.agent.statement : contains(tolist(s.actions), "bedrock-mantle:CreateInference") && anytrue([for c in s.condition : c.variable == "bedrock-mantle:Model" && toset(c.values) == toset(["openai.gpt-oss-20b", "openai.gpt-oss-120b"])])])
+    condition     = anytrue([for s in data.aws_iam_policy_document.agent.statement : contains(tolist(s.actions), "bedrock-mantle:CreateInference") && anytrue([for c in s.condition : c.variable == "bedrock-mantle:Model" && toset(c.values) == toset(["mistral.ministral-3-14b-instruct", "openai.gpt-oss-120b"])])])
     error_message = "Mantle inference limited to the two configured models"
   }
   assert {
@@ -201,5 +208,41 @@ run "invoke_url_uses_the_live_qualifier" {
   assert {
     condition     = output.runtime_id == "lb_demo_agent-AbC123xYz0" && output.runtime_arn == "arn:aws:bedrock-agentcore:us-east-1:762197749808:runtime/lb_demo_agent-AbC123xYz0"
     error_message = "runtime id and arn outputs"
+  }
+}
+
+run "alarms" {
+  command = apply
+
+  assert {
+    condition     = length(aws_cloudwatch_log_metric_filter.agent) == 6
+    error_message = "one metric filter per watched log line (turn failed, template fallback, audit write, slow turn, stale pointer, turn cap)"
+  }
+  assert {
+    condition     = aws_cloudwatch_log_metric_filter.agent["TemplateFallback"].pattern == "\"reply fell back to template\""
+    error_message = "the template-fallback filter must match the agent's log line exactly"
+  }
+  assert {
+    condition     = aws_cloudwatch_metric_alarm.agent["TurnFailed"].threshold == 3 && aws_cloudwatch_metric_alarm.agent["TurnFailed"].treat_missing_data == "notBreaching"
+    error_message = "turn failures alarm at 3 in 5 minutes; no traffic is not an alarm"
+  }
+  assert {
+    condition     = length(aws_sns_topic.alarms) == 0 && length(aws_budgets_budget.account) == 0
+    error_message = "no notification topic or budget unless alarm_email is set"
+  }
+}
+
+run "alarms_notify_by_email" {
+  command = apply
+  variables {
+    alarm_email = "ops@example.com"
+  }
+  assert {
+    condition     = length(aws_sns_topic.alarms) == 1 && length(aws_cloudwatch_metric_alarm.agent["TurnFailed"].alarm_actions) == 1
+    error_message = "with alarm_email set, every alarm notifies the topic"
+  }
+  assert {
+    condition     = length(aws_budgets_budget.account) == 1 && aws_budgets_budget.account[0].limit_amount == "100"
+    error_message = "with alarm_email set, a monthly account budget emails at 80 % actual / 100 % forecast"
   }
 }

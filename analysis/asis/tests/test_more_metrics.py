@@ -9,6 +9,7 @@ def test_capacity_and_portuguese_coverage(con):
     c = metrics.capacity(con)
     assert c["capacity.pt_agent_share"] == {"value": 0.5, "n": 4}
     assert v(c, "capacity.monthly_load_mean") == 450.0
+    assert c["capacity.observed_monthly_per_agent"] == {"value": 6 / 12 / 4, "n": 6}  # logged contacts / 12 / agents
     assert v(c, "capacity.by_shift.Morning.agents") == 2
     assert c["capacity.by_shift.Morning.contacts_per_agent"] == {"value": 2.5, "n": 5}
     assert c["capacity.by_shift.Afternoon.contacts_per_agent"] == {"value": 0.0, "n": 0}

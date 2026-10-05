@@ -411,6 +411,16 @@ Bedrock Mantle chat-completions endpoint, not the `openai.gpt-5-6-luna` / `opena
 gpt-oss models occasionally emit malformed JSON (decoder restarts / split values); `llm/client.py` rejects it and
 the reply falls back to the fixed template (unit 25 findings, tests in `tests/test_llm.py`).
 
+### 2026-10-05: Bedrock inference runs in a second account
+
+The hackathon account has limited Bedrock model access, so the agent's LLM calls run in account `040684487035`.
+When `BEDROCK_ROLE_ARN` is set, `llm/client.py` `_bedrock_session()` assumes that role (with `BEDROCK_EXTERNAL_ID`)
+and mints the Mantle token from the assumed credentials; when it is unset, it uses this account's credentials as
+before. The `agent` root sets both env vars (`main.tf` locals) and grants `lb-demo-agent-exec` `sts:AssumeRole` on
+`arn:aws:iam::040684487035:role/argos-bedrock-role`. That role (managed outside this repo) must trust
+`arn:aws:iam::762197749808:role/lb-demo-agent-exec` with the external id and allow `bedrock-mantle:CallWithBearerToken`
+plus `bedrock-mantle:CreateInference` on its own projects. Inference quotas and cost now land on that account.
+
 ### 2026-10-05: Web session cookies and the E2E guard (final-review fixes)
 
 - `COOKIE_SECURE` drives the `Secure` flag on session cookies (default "1" in production, "0" disables). The current deployment is plain HTTP on the ECS public IP, so it must be set to 0 there until an ALB with TLS exists.
@@ -478,12 +488,68 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-05: Spend cap, latency and staleness alarms, budget
+
+- `AgentService` caps a session at 30 turns (`MAX_TURNS`): a capped turn returns a fixed ES/PT reply (`turn_limit`) and makes no Bedrock or Jev call; `turn_count` lives in the graph state. Logs `session turn cap reached`.
+- `AgentService` logs `slow turn` when a turn takes over 20 s (`SLOW_TURN_S`).
+- `alarms.tf`: 3 more alarms (TurnSlow ≥3 in 15 min, StalePointer ≥1 in 1 h, TurnCapReached ≥20 in 1 h) and an AWS Budget `lb-demo-monthly` (100 USD; email at 80 % actual, 100 % forecast), both only when `alarm_email` is set.
+
+### 2026-10-05: Round-two review fixes (docs = reality, required contract hash, stale-pointer log)
+
+- README: exact CI for 1/150 wrong actions (0.02–3.7 %, so ≤ 2 % is not shown; P equals B2); the resolver table says rates are 3-repeat means and the paired CI is repeat 1 only, with the paired point estimate shown; B1 vs B0 line; architecture row names Ministral extract; numeric targets (intake ≤ 5 min, 100 % complete packets, unsafe k/N with upper bound) or "set after a pilot", and the 37 h baseline flagged as a different endpoint; human-review drafts get a rationale; staff password-only login and the eval persona provider disclosed; decision records described as best-effort.
+- `serving.pointer()` now **requires** `contract_hash` (only a pre-hash `local_build` dev pointer may omit it; the local builder now writes the real hash) and logs `serving pointer is stale` when `exported_at` is over 2 days old.
+- `pipeline.yml:51` comment and the `templates.py` docstring corrected.
+
+### 2026-10-05: Review fixes (turn budget, LLM redaction, disclosures)
+
+- **Turn budget 20 → 15 s** (`AgentService` default): the Jev client retries once at 3 s, so a closing verify can take 6 s; 15 + 6 ≈ 21 s stays under the BFF's 25 s. `test_worst_case_turn_fits_inside_the_bff_wait` encodes the arithmetic. The earlier "~23 s" claim was wrong.
+- **Bedrock payloads redacted like Jev's:** compose and handoff open-questions receipts go through `decisions.verify.redact` (no `customer_id`, `product_id`, fraud fields), since inference runs through a role in account `040684487035`. Test checks every non-extract LLM call.
+- README: the egress row names the second account; limitations add the missing spend cap (public demo identities, no per-session turn limit).
+
+### 2026-10-05: Agent hardening (timeouts, confirmation binding, alarms, capacity)
+
+- **Timeouts made true:** every LLM call passes its role's `timeout_s` (extract 10 s, compose 20 s); the client's SDK retries are off (`max_retries=0`, graph-level retries stay explicit); a compose call is capped at the turn budget's remainder and no regeneration starts once the budget is spent. With Jev at 3 s, a turn ends within about 23 s, under the BFF's 25 s.
+- **Confirmation bound to the card:** `check_eligibility` stores `card_hash` (SHA-256 of `confirmation_payload`: merchant, date, amount, currency, reason); `file_dispute` recomputes it from the freshly read transaction and, on a mismatch, files nothing and shows the new card (`file_dispute` → `confirm`). The human-review path clears the hash (no confirmation there).
+- **Alarms:** `infra/terraform/agent/alarms.tf` adds metric filters and alarms on the runtime log group for `turn failed` (≥3 in 5 min), `reply fell back to template` (≥5 in 15 min; new warning log line in `reply`) and `decision record write failed` (≥1); optional `alarm_email` → SNS topic. Also fixed `runtime_environment_has_no_secret_values`, broken on `main` since the cross-account Bedrock change (expected env lacked `BEDROCK_ROLE_ARN` / `BEDROCK_EXTERNAL_ID`).
+- **Alarms applied 2026-10-05** (targeted apply of the 8 alarm resources only; runtime untouched): 3 metric filters, 3 alarms, SNS topic `lb-demo-agent-alarms` with an email subscription. The address lives in the git-ignored `infra/terraform/agent/alarms.auto.tfvars` (keep it there, or a full apply removes the topic). `TurnFailed` and `AuditWriteFailed` watch log lines the deployed agent already writes; `TemplateFallback` starts counting after the next agent deploy.
+- **Capacity:** README table from Service Quotas and Terraform. Our account's on-demand Bedrock quotas for gpt-oss and Ministral read 0; Mantle/cross-account limits are not visible. Lambda account concurrency is 10.
+
+### 2026-10-05: Evidence and targets in the docs
+
+- README: a "What success looks like" table (dispute intake vs the 37 h baseline, unsafe k/N, complete handoff packets, safe automated resolution with CI, wrong-transaction disputes ≤ 2 %), each mapped to the metric that measures it; more limitations (best-effort decision records, unsalted demo password hashes, no audit of staff reads, pipeline re-export and RAW growth).
+- `docs/data-pipeline.md`: live run evidence for `37378614273-1` (RAW = STAGING = exported row counts, quarantine 0, dbt 77/3/0, the 3 warnings named, manifest 3,293 files) and a "limitations of the pipeline" list. Read-only Snowflake queries approved by the owner.
+- `pipeline.yml` keeps dbt `manifest.json` and `run_results.json` as a workflow artifact per run (`dbt-lineage-<run_id>`, 90 days; `actions/upload-artifact` pinned to v7.0.1).
+
+### 2026-10-05: Self-describing serving pointer and contract parity
+
+- `latest.json` now also carries `git_sha` (`GITHUB_SHA`), `contract_hash` (SHA-256 of the exported columns, in order, canonical JSON) and `dq_summary` (META.DQ_RESULTS counts by status for the run). Older keys unchanged.
+- The agent computes the same hash from `CONTRACT` and refuses a pointer whose hash differs (`ServingError` → data unavailable + human); a pointer without a hash is still served.
+- `tests/test_contract_parity.py` (root suite): the agent's `CONTRACT` equals dbt `curated/schema.yml` plus the seed CSV header, per table and in order, and both sides hash the same way.
+- Verified live 2026-10-05: pipeline run `37378614273-1` (commit `57b728f`) green; `latest.json` carries `git_sha`, `contract_hash` `9d9a5ffe…578d` (equals the agent's `contract_hash()`), `dq_summary` `{pass: 55, warn: 3}` (dbt: 77 pass, 3 warn = known source nulls in complaints `claimed_amount` and interactions `duration_seconds` / `customer_detected_accent`, severity warn by design). The new agent code accepts the live pointer.
+
+### 2026-10-05: Judge-review quick wins (eval prices, copy, Jev egress)
+
+- **Eval prices:** `eval/config.yaml` has sourced Bedrock prices for `openai.gpt-oss-20b` (0.07/0.30 USD per 1M in/out) and `openai.gpt-oss-120b` (0.15/0.60), AWS Price List API, Mantle standard tier, us-east-1, 2026-10-05. Jev has no public price, so cost stays `incomplete`; the report adds the priced part per attempted case as a lower bound.
+- **Customer copy:** the handoff fixed block now gives the case reference, the next step (a person continues in this chat) and a safety step (block the card in the app) instead of repeating the model's "a specialist will review". The compose prompt sets one register (tú / você) and is now `compose.v2`.
+- **Jev egress (closes the invariant breach):** `verify_reply` receipts are redacted of `customer_id`, `product_id`, `is_fraud` and `fraud_score` (`decisions/verify.py` `REDACTED_FIELDS`); `test_graph_paths.py` checks every Jev call in the inquiry and dispute flows.
+
+### 2026-10-05: Test sheet frozen
+
+- `agent/resolver/data/test_sheet_v1_completed.csv` (commit `b3d60a7`): 150 rows, 150 messages written, SHA-256 `1ab867754edd05bf8ed136071e9cd1326c59831119f2de06ad1b136d1f9a4bdd`. Any later change to the file invalidates the single test run (unit 39); check the hash before running it.
+
+### 2026-10-05: System README and honest claims
+
+- Root `README.md` is now the system README (dispute-pain story from the as-is report, what it does, architecture, control matrix with file:line and tests, failure table, egress and retention tables, evidence map, status, limitations, before-production list, run commands). The pipeline README moved verbatim to `docs/data-pipeline.md`. `{{APP_URL}}` is filled in at submission (ALB).
+- Pipeline claims made true: freshness is recorded but does not gate (static drop); a broken FK fails the daily build through dbt `relationships` tests, and the fixture proof does not exercise it.
+- As-is report: the agents' `total_monthly_interactions` (453) is tagged synthetic artifact next to the logged load (16.0 contacts per agent per month, evidence); flat hourly demand is a synthetic artifact; the per-shift load is labeled not evidence. `reports/asis-2026-10-05.md` was edited to match the renderer (the full drop `data/data/` isn't cached locally); `analysis/asis` tests cover the renderer.
+
 ### 2026-10-05: Judge-panel blockers (staff credentials, stale Bedrock key, IdP first login)
 
 - **Staff credentials are never published.** `GET /auth/demo-users` (IdP) and `/api/auth/demo-users` (BFF) return customer identities only; `?role=agent` returns `[]`. Staff sign in by typing credentials, which go in the submission text. Closes the chain public staff password → staff token → subscribe to every `/session/*` and `/trace/*` (judge review D1).
 - **The Mantle token is re-minted.** `make_bedrock_client` returns a `RefreshingClient`: a new token every 30 min, and once on a 401/403 inside `call_json` (then the call is retried once). Before, the token was minted once per container and replies fell back to templates after about an hour.
-- **IdP first login:** the IdP Lambda has `reserved_concurrent_executions = 1` so login and OTP reach the same container (tickets are in memory); the BFF waits up to 15 s for the IdP (was 5 s) to ride out a cold start. Known ceiling: concurrent IdP calls can throttle; upgrade path is tickets in DynamoDB.
+- **IdP first login:** login tickets are signed RS256 tokens (audience `login-ticket`, 2 min, spent map bounded and pruned on expiry, never accepted as access tokens) instead of an in-memory map, so login and OTP can reach different Lambda containers; a ticket is single-use per container, and across containers it can be retried until it expires. The BFF waits up to 15 s for the IdP (was 5 s) to ride out a cold start. Reserved concurrency was tried first and refused: the account's Lambda concurrency limit is 10, all of which must stay unreserved.
 - PT template "não fue recusada" → "não foi recusada".
+- Deployed 2026-10-05 ~15:50: IdP `lb-demo-identity:9761324`, agent `lb-demo-agent:3dbe926` (runtime v3), web `latam-bank-web:3dbe926` at `http://54.81.128.47:3000`. Live checks: IdP and BFF demo-users list customers only (`?role=agent` → `[]`); customer login → signed ticket → OTP 200; staff sign-in with typed credentials 200 for agent.ana/luis/bia.
 
 ### 2026-10-05: UI polish pass (unit 76, design pass part)
 

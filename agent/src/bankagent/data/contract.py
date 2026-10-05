@@ -1,4 +1,7 @@
 """Serving contract consumed by the agent (pipeline spec §5.3–5.4): lowercase column names, in order."""
+import hashlib
+import json
+
 CONTRACT: dict[str, list[str]] = {
     "dim_customer": ["customer_id", "country", "city", "state", "segment", "detected_accent", "customer_status",
                      "registration_date", "accepts_marketing", "last_updated"],
@@ -15,3 +18,10 @@ CONTRACT: dict[str, list[str]] = {
                       "is_repeat_complainer", "first_response_ts", "resolution_ts", "closing_ts"],
     "seed_decline_reason": ["response_code", "reason_key", "customer_text_es", "customer_text_pt", "next_step"],
 }
+
+
+def contract_hash(contract: dict[str, list[str]] | None = None) -> str:
+    """Same canonical hash the pipeline writes into latest.json (pipeline.export.contract_hash; parity is tested)."""
+    columns = CONTRACT if contract is None else contract
+    canon = json.dumps({t: [c.lower() for c in cols] for t, cols in columns.items()}, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canon.encode()).hexdigest()

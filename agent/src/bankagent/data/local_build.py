@@ -7,6 +7,8 @@ from pathlib import Path
 
 import duckdb
 
+from bankagent.data.contract import contract_hash
+
 # Team-authored, labeled synthetic seed (same meaning as the pipeline's seed_decline_reason).
 SEED_ROWS = [
     ("00", "approved", "La transacción fue aprobada.", "A transação foi aprovada.", "none"),
@@ -104,8 +106,10 @@ def build_local_serving(data_dir: Path, out_dir: Path, since: str = "2026-02-01"
         counts[table] = con.execute(f"select count(*) from read_parquet('{d}/*.parquet')").fetchone()[0]
     max_pd = con.execute(
         f"select max(process_date) from read_parquet('{out_dir / run_id}/fct_transaction/*.parquet')").fetchone()[0]
+    columns = {t: [r[0] for r in con.execute(f"describe select * from read_parquet('{out_dir / run_id}/{t}/*.parquet')").fetchall()]
+               for t in sources}
     pointer = {"run_id": run_id, "exported_at": datetime.now(timezone.utc).isoformat(),
-               "max_process_date": max_pd.isoformat(), "tables": counts,
+               "max_process_date": max_pd.isoformat(), "tables": counts, "contract_hash": contract_hash(columns),
                "source": "local_build (DEV ONLY, not the pipeline export)"}
     (out_dir / "latest.json").write_text(json.dumps(pointer, indent=2))
     con.close()

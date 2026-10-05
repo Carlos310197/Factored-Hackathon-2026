@@ -44,6 +44,11 @@ data "aws_iam_policy_document" "agent" {
       values   = values(local.models)
     }
   }
+  # Cross-account Bedrock: the client assumes this role and mints the Mantle token from its credentials.
+  statement {
+    actions   = ["sts:AssumeRole"]
+    resources = [local.bedrock_role_arn]
+  }
   statement {
     actions   = ["s3:GetObject"]
     resources = ["${data.terraform_remote_state.data.outputs.serving_bucket_arn}/serving/*"]
