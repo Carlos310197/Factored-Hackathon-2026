@@ -42,4 +42,4 @@ class Deps:
     })
     
     # Timing
-    clock: Callable[[], float] = field(default_factory=time.monotonic)
+    clock: Callable[[], float] = field(default_factory=lambda: time.monotonic)

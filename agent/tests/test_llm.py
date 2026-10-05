@@ -11,6 +11,14 @@ from tests.fakes import FakeLLM
 M = load_models(env={})
 
 
+def _client(finish_reason, text):
+    resp = SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content=text), finish_reason=finish_reason)],
+        usage=SimpleNamespace(prompt_tokens=1, completion_tokens=1)
+    )
+    return SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **kw: resp)))
+
+
 def test_model_defaults_and_env_override():
     assert M["extract"].model == "openai.gpt-oss-20b" and M["extract"].effort is None
     assert M["compose"].model == "openai.gpt-oss-120b" and M["compose"].effort == "low"
@@ -59,14 +67,32 @@ def test_connection_error_raises_llm_error():
 
 
 def test_invalid_json_and_truncation_raise():
-    def client(finish_reason, text):
-        resp = SimpleNamespace(
-            choices=[SimpleNamespace(message=SimpleNamespace(content=text), finish_reason=finish_reason)],
-            usage=SimpleNamespace(prompt_tokens=1, completion_tokens=1)
-        )
-        return SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **kw: resp)))
-
     with pytest.raises(LLMError, match="invalid JSON"):
-        call_json(client("stop", "not json"), M["extract"], "s", "u", {"type": "object"})
+        call_json(_client("stop", "not json"), M["extract"], "s", "u", {"type": "object"})
     with pytest.raises(LLMError, match="truncated"):
-        call_json(client("length", "{}"), M["extract"], "s", "u", {"type": "object"})
+        call_json(_client("length", "{}"), M["extract"], "s", "u", {"type": "object"})
+
+
+def test_restarted_json_object_is_rejected_not_salvaged():
+    """Regression (unit 25): a decoder restart mid-string leaves the first object unparseable; the extractor used to
+    silently salvage the restarted fragment, so compose returned a reply missing its first clause (seen live on
+    Bedrock: reply_text " 15.99 USD en StreamCo fue aprobada el 10 de junio de 2026.")."""
+    raw = ('{"reply_text":"La transacción de{"reply_text":'
+           '" 15.99 USD en StreamCo fue aprobada el 10 de junio de 2026.","claims":[]}')
+    with pytest.raises(LLMError, match="ambiguous"):
+        call_json(_client("stop", raw), M["compose"], "s", "u", {"type": "object"})
+
+
+def test_duplicate_keys_in_json_object_are_rejected():
+    """Regression (unit 25): a split value emitted as two members of the same key silently dropped the first half
+    (json.loads keeps the last). Malformed model output is an error, never a reply."""
+    raw = ('{"reply_text":"La transacción de","reply_text":'
+           '" 15.99 USD en StreamCo fue aprobada el 10 de junio de 2026.","claims":[]}')
+    with pytest.raises(LLMError, match="invalid JSON"):
+        call_json(_client("stop", raw), M["compose"], "s", "u", {"type": "object"})
+
+
+def test_json_with_text_preamble_still_parses():
+    call = call_json(_client("stop", 'Sure! {"reply_text": "hola", "claims": []} — hope that helps'),
+                     M["compose"], "s", "u", {"type": "object"})
+    assert call.data["reply_text"] == "hola"
