@@ -38,3 +38,5 @@ worktrees/
 
 # resolver datasets are committed (transaction fields only)
 !agent/resolver/data/
+# evaluation run scratch space
+eval/runs/*/tmp/

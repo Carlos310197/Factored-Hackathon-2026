@@ -183,6 +183,7 @@ Update this file whenever the current phase, the active unit or the implementati
   - 43 `eval/` project (`evalkit`, depends on `bankagent` by path): `config`, `splits` (same rule as the resolver), `universe`, `goals` (21 groups, seeded, labels from `DisputePolicy.evaluate()`, the generator names the group it cannot fill, review sheet, `freeze`). Plan code unchanged apart from `agent.region`. `cd eval && uv run pytest` → 12 passed. The real goal sets are generated in unit 51.
   - 44 `evalkit.persona`: OpenAI-compatible persona client (one retry on 5xx, errors raise, `[DONE]` detection) and the rule checks (`too_long`, `id_leak`, `out_of_character`, `wrong_language`); mocked HTTP only. Offline suite 19 passed. `persona.model` stays empty in `config.yaml` until the owner picks an OpenCode-served model.
   - 45 `evalkit.faults` (`jev_down`, `serving_down`, `dynamo_throttle` via a failing proxy; the real store is never touched) and `evalkit.conversation` (`TokenIssuer` incl. short-TTL expired tokens, `snapshot`, `run_conversation` with discard, max-turns and harness-error end reasons). Offline suite 29 passed.
+  - 46 `evalkit.agent_runtime` (one table prefix per goal repetition, so a second rep never sees the first rep's dispute) and `evalkit.run` (resumable `(goal_id, rep)` pairs, run manifest with the goal-set hash, 8 workers; refuses without `--live`). Offline suite 34 passed.
 
 ## In Progress
 
