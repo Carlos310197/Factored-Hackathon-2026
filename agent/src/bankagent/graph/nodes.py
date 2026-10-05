@@ -107,11 +107,27 @@ class Nodes:
         """Check if goal offers human handoff."""
         return bool((state.get("goal") or {}).get("offer_human"))
     
-    def _decision_refs(self, u) -> list[dict]:
+    def _resolve(self, state, config, candidates: list[dict], ex) -> dict[str, float] | None:
+        """Resolver scores as evidence for Jev (resolver spec 3.2). Any failure: no scores, Jev alone."""
+        if self.d.resolver is None or self.d.understand_qs_scored is None or ex is None or not candidates:
+            return None
+        start = self.d.clock()
+        try:
+            s = self.d.resolver.score(candidates, ex.mentions)
+        except Exception as e:  # the resolver never blocks a turn
+            self._log(state, config, "understand", "error", {"role": "resolver", "error": str(e)})
+            return None
+        self._log(state, config, "understand", "model",
+                  {"probs": s.probs, "p_none": s.p_none, "best_raw_fit": s.best_raw_fit,
+                   "contributions": {k: [list(c) for c in v] for k, v in s.contributions.items()}},
+                  {"resolver": s.version}, int((self.d.clock() - start) * 1000))
+        return s.probs
+
+    def _decision_refs(self, u, qs: str) -> list[dict]:
         """Build decision references for handoff packet."""
         if u is None:
             return []
-        qs, th = self.d.understand_qs["version"], self.d.thresholds.version
+        th = self.d.thresholds.version
         refs = [{"question": "intent", "value": u.intent.label, "p": u.intent.p,
                  "question_set": qs, "thresholds": th}]
         refs += [{"question": q, "value": p, "question_set": qs, "thresholds": th}
@@ -225,15 +241,19 @@ class Nodes:
                 "reply_language": language
             }
             
+            candidates = select_candidates(state["candidates"], ex.mentions if ex else None)
+            scores = self._resolve(state, config, candidates, ex)
+            qs = self.d.understand_qs_scored if scores is not None else self.d.understand_qs
             jev_state, questions, aliases = build_understand_request(
-                self.d.understand_qs,
+                qs,
                 message=msg,
                 gloss=ex.english_gloss if ex else None,
                 gloss_mode=self.d.gloss_mode.get(language, "original_plus_gloss"),
                 session_facts=facts,
-                candidates=select_candidates(state["candidates"], ex.mentions if ex else None),
+                candidates=candidates,
                 awaiting_confirmation=state["awaiting"] == "confirmation",
-                confirmation_summary=state.get("confirmation_summary")
+                confirmation_summary=state.get("confirmation_summary"),
+                scores=scores
             )
             
             # Jev understand
@@ -243,7 +263,7 @@ class Nodes:
                 u = parse_understanding(res, aliases)
                 self._log(state, config, "understand", "jev",
                          {"answers": _answers(res), "usage": res.usage, "state_hash": res.state_hash},
-                         {"question_set": self.d.understand_qs["version"],
+                         {"question_set": qs["version"],
                           "thresholds": self.d.thresholds.version, "model": res.model},
                          res.latency_ms)
             except JevError as e:
@@ -270,7 +290,7 @@ class Nodes:
                 "reasons": list(route.reasons),
                 "goal": goal,
                 "awaiting": "none",
-                "decisions": self._decision_refs(u),
+                "decisions": self._decision_refs(u, qs["version"]),
                 "pending": ({"intent": route.intent, "target_txn_id": route.target_txn_id,
                             "dispute_reason": route.dispute_reason} if route.next == "clarify" else {})
             }

@@ -43,12 +43,13 @@ class Harness:
 
 
 def make_harness(store, serving_uri, specs, llm=None, verify=True, clock=None, recursion_limit=25,
-                 turn_budget_s=20.0) -> Harness:
+                 turn_budget_s=20.0, resolver=None) -> Harness:
     serving, policy = ServingData(str(serving_uri)), DisputePolicy.load()
     llm, jev = llm or FakeLLM(), FakeJev(specs, verify)
     deps = Deps(read=ReadTools(serving), write=WriteTools(store, policy), store=store, policy=policy, jev=jev,
                 llm_client=llm, models=load_models(env={}), thresholds=load_thresholds(),
                 understand_qs=load_question_set("understand.v1"), verify_qs=load_question_set("verify_reply.v1"),
-                clock=clock or time.monotonic)
+                clock=clock or time.monotonic, resolver=resolver,
+                understand_qs_scored=load_question_set("understand.v2") if resolver else None)
     service = AgentService(deps, InMemorySaver(), turn_budget_s=turn_budget_s, recursion_limit=recursion_limit)
     return Harness(service, store, jev, llm)

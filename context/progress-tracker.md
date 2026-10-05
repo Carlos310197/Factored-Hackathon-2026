@@ -4,14 +4,14 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Phase
 
-- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), **Agent core units 12–25 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing, OpenAI on Bedrock, LangGraph workflow and agent service, AgentCore runtime entrypoint, local serving builder and demo identities, container image + local compose stack + terminal chat, and unit 25: live checks, the definition-of-done run and the README) and **Transaction resolver units 26–28 complete** (features and splits, history sampler, simulator). Agent core is done (12–25); the resolver continues with units 29–39. Evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
+- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), **Agent core units 12–25 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing, OpenAI on Bedrock, LangGraph workflow and agent service, AgentCore runtime entrypoint, local serving builder and demo identities, container image + local compose stack + terminal chat, and unit 25: live checks, the definition-of-done run and the README) and **Transaction resolver units 26–37 complete** (features and splits, history sampler, simulator, extract hints and `understand.v2`, test sheet and CLI, model, training, dev-set builder, finalize, systems and tuning, Jev runs and report, graph integration). Agent core is done (12–25); the resolver's remaining units 38–39 are live runs. Evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
 - Region: **us-east-1** for all our AWS resources and Snowflake. The organizer bucket (theirs) stays in us-east-2.
 - Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-05). Agent suite: `cd agent && uv run pytest` → 195 passed (2026-10-05). Container contract: `cd agent && uv run pytest -m container` → 4 passed against `docker compose up` (2026-10-05).
 - Submission deadline: **2026-10-05**.
 
 ## Current Goal
 
-- Continue the transaction resolver at `feature-specs/29-resolver-agent-hooks.md` (Agent-Core Changes I: extract hints, dev writer, `understand.v2`); `31-resolver-model.md` needs only `26` and can run in parallel. The as-is diagnosis (`40`) can also run in parallel. The UI (53+) and deployment (77+) follow.
+- Transaction resolver units 38 (train, dev set, finalize, tune; about 600 Bedrock + 600 Jev calls) and 39 (freeze, evaluate once; Andrés's completed sheet needed first) are `[live]`: each step needs the owner's approval. Send `agent/resolver/data/test_sheet_v1.csv` and `TEST_SHEET_README.md` to Andrés. The as-is diagnosis (`40`) can also run in parallel. The UI (53+) and deployment (77+) follow.
 
 ## Completed
 
@@ -161,6 +161,21 @@ Update this file whenever the current phase, the active unit or the implementati
   - Data-use gate cleared with the owner (organizers confirmed; the run used the real serving set, no fixture). Scenario data rule applied: the double-charge scenario uses `demo21` (`CLI-NS0BYNOKEL6S`, real duplicate pair at Tienda Don José 2026-06-15/16, picked by query and appended to the gitignored `config/demo_users.yaml`) because no generated demo identity has a repeat merchant pair; the PT decline uses `demo16` (real declined purchase at Gasolinera Express);
   - All tests pass: 195/195 offline in agent/ (191 at branch point + 1 `Deps.clock` regression test + 3 LLM-boundary tests), 43/43 in root offline suite, 4/4 container against the stack.
 
+- 2026-10-05: **Unit 29: Agent-Core Changes I** (`agent/src/bankagent/llm/`, `decisions/`):
+  - `llm/extract.py`: `extract.v2`, `mentions` gains nullable `type_hint` (`purchase|withdrawal|transfer|payment|deposit`), `channel_hint` (`atm|pos|app|web|branch`) and `city`; `llm/models.yaml`: `extract` is `extract.v2` and the new offline `dev_writer` role (`devwriter.v1`, effort `low`, same gpt-oss-120b model as `compose`, override `LLM_DEV_WRITER_MODEL`);
+  - `decisions/understand.py`: public `matches_mentions(t, m)` (merchant substring, amount within 1%, date inside range) shared with `select_candidates`; this fixes `select_candidates`, whose private filter compared amounts for exact equality; `describe_txn(t, score=None)` appends ` · match 0.93`; `build_understand_request(..., scores=None)` adds `match` to the criteria and candidate state only when scores are given;
+  - `decisions/questions/understand.v2.yaml`: v1 plus the match-score instruction on `target_transaction` (adds that the scores need not sum to 1, per resolver plan #1); the graph still uses v1 until unit 37;
+  - Tests first: `test_extract_schema_has_nullable_hints`, `test_dev_writer_role_is_configured`, `test_matches_mentions_is_the_prefilter_rule`, `test_scores_are_shown_only_when_given`; agent suite 199 passed (195 + 4).
+
+- 2026-10-05: **Units 30–37: resolver tooling, model, training, evaluation, graph integration** (one worktree `worktree-transaction-resolver`, branch `feature/29-39-transaction-resolver`; units 31/32/34, 35, 36 and 37 were built by parallel subagents, each committed alone):
+  - 30 `records.py`, `testset.py`, `scripts/resolver.py` (all nine subcommands; `dev-set`, `ingest-test`, `jev` refuse without `--live`), `tests/resolver_llm.py::ScriptedLLM` (OpenAI `chat.completions` shape, not the plan's Anthropic one). The real blind test sheet was generated from the full-history local serving set (`.serving-full`, gitignored): `agent/resolver/data/test_sheet_v1.{csv,json}` (75 hard / 60 easy / 15 nil, ES 76 / PT 74 since odd-sized slices can't balance) plus `TEST_SHEET_README.md`. **Still to do: send the CSV and README to Andrés.** Root `.gitignore` gained `!agent/resolver/data/` because the `data/` rule hid the committed datasets;
+  - 31 `model.py` (JSON artifact, none-of-these softmax, 20-row self-check refusing tampered artifacts); 32 `train.py` + `tracking.py` (grids, MLflow file store); 34 `finalize.py` (finalist choice with the 0.02 tie to logreg, temperature fit, promotion, model card). Plan code used unchanged. `test_resolver_train.py` takes about 40 s (MLflow; set `MLFLOW_DISABLE_AGENT_HINT=1`);
+  - 33 `devset.py` (writer sees only the details; LLM failures skipped, not fatal), adapted to the OpenAI request shape;
+  - 35 `systems.py`, `metrics.py`, `tune.py`: B0/B1/Jev decision rules, outcomes, bootstrap CIs, threshold search. `write_thresholds_v2` rewrites the whole `target_transaction` block of `thresholds.v1.yaml` as an inline mapping, because the repo's v1 file writes it as an indented block;
+  - 36 `jev_runs.py`, `evaluate.py`: resumable cached Jev runs, `tune_systems`, `evaluate`, adoption rule as code (P replaces B2 iff mean wrong-action(P) ≤ B2's and mean hard-slice resolved-within-one-step(P) > B2's), error sheet, plots, report. The offline flow `finalize --promote` → `tune` → `report` ran end to end in a temp directory;
+  - 37 `Deps.resolver` / `Deps.understand_qs_scored` (default `None`), `Settings.resolver_artifact` / `thresholds_file` (default off), `runtime.load_resolver` (never raises), `kind: model` decision records, and fallback to `understand.v1` with one `kind: error` record on any resolver failure. The Dockerfile needed no change: `--no-default-groups` already keeps lightgbm, scikit-learn, mlflow and matplotlib out of the image;
+  - Tests: agent suite 242 passed (195 → 242), root offline suite 43 passed. Not run: units 38 and 39 (`[live]`), which need the owner's approval for each Bedrock/Jev run.
+
 ## In Progress
 
 - None.
@@ -173,7 +188,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
 | 12–25 | Agent core | **done**; 25 ran and recorded the definition-of-done run | none (16 uses a synthetic fixture; 23 uses the local drop) |
-| 26–39 | Transaction resolver | 26–28 **done** (features, splits, history sampler, simulator); 29 next | 12, 16 |
+| 26–39 | Transaction resolver | 26–37 **done**; 38–39 are `[live]` and wait for the owner's approval | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
 | 77–90 | Deployment | not started; Terraform `bootstrap`, `platform` and the `app` web shell already exist | 77 has none; the rest follow the agent core and UI |

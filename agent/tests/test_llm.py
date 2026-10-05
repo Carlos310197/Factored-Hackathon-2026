@@ -22,7 +22,7 @@ def _client(finish_reason, text):
 def test_model_defaults_and_env_override():
     assert M["extract"].model == "openai.gpt-oss-20b" and M["extract"].effort is None
     assert M["compose"].model == "openai.gpt-oss-120b" and M["compose"].effort == "low"
-    assert M["extract"].prompt_version == "extract.v1" and M["compose"].timeout_s == 20.0
+    assert M["extract"].prompt_version == "extract.v2" and M["compose"].timeout_s == 20.0
     over = load_models(env={"LLM_COMPOSE_MODEL": "openai.gpt-5-5"})
     assert over["compose"].model == "openai.gpt-5-5"
 
@@ -37,7 +37,7 @@ def test_extract_request_shape_and_untrusted_wrapping():
     assert "<customer_message>\nhola, ¿mi saldo?\n</customer_message>" in kw["messages"][1]["content"]
     assert "as_of: 2026-06-17" in kw["messages"][1]["content"]
     assert ex.english_gloss == "EN: hola, ¿mi saldo?" and ex.language_detected == "es"
-    assert call.usage == {"input_tokens": 100, "output_tokens": 20} and call.prompt_version == "extract.v1"
+    assert call.usage == {"input_tokens": 100, "output_tokens": 20} and call.prompt_version == "extract.v2"
 
 
 def test_compose_uses_json_schema_format_and_hides_fixed_block():
@@ -96,3 +96,17 @@ def test_json_with_text_preamble_still_parses():
     call = call_json(_client("stop", 'Sure! {"reply_text": "hola", "claims": []} — hope that helps'),
                      M["compose"], "s", "u", {"type": "object"})
     assert call.data["reply_text"] == "hola"
+
+
+def test_extract_schema_has_nullable_hints():
+    from bankagent.llm.extract import EXTRACT_SCHEMA
+    m = EXTRACT_SCHEMA["properties"]["mentions"]
+    assert {"type_hint", "channel_hint", "city"} <= set(m["required"])
+    assert m["properties"]["type_hint"]["anyOf"][0]["enum"] == ["purchase", "withdrawal", "transfer", "payment", "deposit"]
+    assert m["properties"]["channel_hint"]["anyOf"][1] == {"type": "null"}
+    ex, _ = extract(FakeLLM(mentions={"type_hint": "withdrawal"}), M["extract"], "el retiro del cajero", "2026-06-17", [])
+    assert ex.mentions["type_hint"] == "withdrawal" and ex.mentions["city"] is None
+
+
+def test_dev_writer_role_is_configured():
+    assert M["dev_writer"].prompt_version == "devwriter.v1" and M["dev_writer"].effort == "low"

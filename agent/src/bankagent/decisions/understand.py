@@ -28,8 +28,8 @@ class Understanding:
     aliases: dict[str, str]
 
 
-def describe_txn(t: dict) -> str:
-    """Build a human-readable description of a transaction for Jev."""
+def describe_txn(t: dict, score: float | None = None) -> str:
+    """Build a human-readable description of a transaction for Jev. A resolver score is appended as 'match'."""
     parts = [
         str(t["process_date"])[:10],
         t["merchant_name"],
@@ -39,7 +39,24 @@ def describe_txn(t: dict) -> str:
         t["channel"],
         t["transaction_city"],
     ]
-    return " · ".join(str(p) for p in parts if p is not None)
+    text = " · ".join(str(p) for p in parts if p is not None)
+    return text if score is None else f"{text} · match {score:.2f}"
+
+
+def matches_mentions(t: dict, m: dict) -> bool:
+    """The heuristic filter: merchant substring, amount within 1%, date inside the range. Unmentioned fields pass.
+    Also the resolver's baseline B0 (resolver spec 6.1)."""
+    if m.get("merchant") and m["merchant"].lower() not in (t.get("merchant_name") or "").lower():
+        return False
+    if m.get("amount") is not None:
+        tol = max(0.01, 0.01 * abs(float(m["amount"])))
+        if abs(float(t["amount"]) - float(m["amount"])) > tol:
+            return False
+    if m.get("date_from") and str(t["process_date"])[:10] < m["date_from"]:
+        return False
+    if m.get("date_to") and str(t["process_date"])[:10] > m["date_to"]:
+        return False
+    return True
 
 
 def select_candidates(
@@ -48,44 +65,10 @@ def select_candidates(
     """Select up to `limit` candidate transactions, preferring matches to mentions."""
     if len(txns) <= limit:
         return txns
-    
     if mentions is None:
         return txns[:limit]
-    
-    # Filter by mentions
-    matched = []
-    for t in txns:
-        if _matches_mentions(t, mentions):
-            matched.append(t)
-    
-    # If we have matches, return them (up to limit)
-    if matched:
-        return matched[:limit]
-    
-    # Otherwise return most recent
-    return txns[:limit]
-
-
-def _matches_mentions(t: dict, mentions: dict) -> bool:
-    """Check if a transaction matches the extracted mentions."""
-    if mentions.get("merchant"):
-        merchant = t.get("merchant_name", "") or ""
-        if mentions["merchant"].lower() not in merchant.lower():
-            return False
-    
-    if mentions.get("amount") is not None:
-        if t.get("amount") != mentions["amount"]:
-            return False
-    
-    if mentions.get("date_from"):
-        if str(t["process_date"])[:10] < mentions["date_from"]:
-            return False
-    
-    if mentions.get("date_to"):
-        if str(t["process_date"])[:10] > mentions["date_to"]:
-            return False
-    
-    return True
+    matched = [t for t in txns if matches_mentions(t, mentions)]
+    return (matched or txns)[:limit]
 
 
 def build_understand_request(
@@ -98,15 +81,20 @@ def build_understand_request(
     candidates: list[dict],
     awaiting_confirmation: bool,
     confirmation_summary: str | None = None,
+    scores: dict[str, float] | None = None,
 ) -> tuple[dict, dict, dict[str, str]]:
     """Build the state and questions for an understand request.
+
+    scores (transaction_id -> resolver probability) are shown as 'match' only with a question set that explains
+    them (understand.v2); without scores the request is exactly understand.v1's.
     
     Returns:
         (state, questions, aliases) where aliases maps c1..cN to transaction_ids
     """
     # Build aliases
     aliases = {f"c{i+1}": t["transaction_id"] for i, t in enumerate(candidates)}
-    
+    score_of = (lambda t: scores.get(t["transaction_id"])) if scores else (lambda t: None)
+
     # Build customer content
     customer_content = {"customer_message": message}
     if gloss_mode == "original_plus_gloss" and gloss:
@@ -131,6 +119,7 @@ def build_understand_request(
             "status": t["transaction_status"],
             "channel": t["channel"],
             "city": t["transaction_city"],
+            **({"match": round(score_of(t), 2)} if score_of(t) is not None else {}),
         })
     
     # Build state
@@ -148,7 +137,7 @@ def build_understand_request(
     
     # Add target_transaction with dynamic criteria
     tq = qset["target_transaction"]
-    target_criteria = {a: describe_txn(t) for a, t in zip(aliases, candidates)}
+    target_criteria = {a: describe_txn(t, score_of(t)) for a, t in zip(aliases, candidates)}
     target_criteria.update(tq["fixed_criteria"])
     questions["target_transaction"] = {
         "type": "choice",

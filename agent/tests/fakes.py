@@ -44,8 +44,8 @@ class FakeLLM:
         msg = re.search(r"<customer_message>\n(.*)\n</customer_message>", user, re.S).group(1)
         return {"language_detected": self.language, "english_gloss": f"EN: {msg}", "multi_intent": self.multi_intent,
                 "secondary_request_en": self.secondary,
-                "mentions": {"merchant": None, "amount": None, "currency": None, "date_from": None, "date_to": None}
-                | self.mentions,
+                "mentions": {"merchant": None, "amount": None, "currency": None, "date_from": None, "date_to": None,
+                             "type_hint": None, "channel_hint": None, "city": None} | self.mentions,
                 "customer_statement": {"original": msg, "en": f"EN: {msg}"}}
 
     def composition(self, user: str) -> dict:
