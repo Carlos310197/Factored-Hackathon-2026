@@ -8,7 +8,7 @@ from decimal import Decimal
 
 import duckdb
 
-from bankagent.data.contract import CONTRACT
+from bankagent.data.contract import CONTRACT, contract_hash
 
 RUN_ID_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 
@@ -53,9 +53,14 @@ class ServingData:
     def pointer(self) -> Pointer:
         try:
             p = json.loads(self._read_text(f"{self.base}/latest.json"))
-            return Pointer(p["run_id"], date.fromisoformat(p["max_process_date"]), p.get("exported_at", ""))
+            pointer = Pointer(p["run_id"], date.fromisoformat(p["max_process_date"]), p.get("exported_at", ""))
         except Exception as e:  # any read/parse failure means the serving set is unusable
             raise ServingError(f"cannot read serving pointer: {e}") from e
+        # A pointer that names its columns and disagrees with ours would be misread: refuse it (older pointers carry
+        # no hash and are served as before).
+        if p.get("contract_hash") and p["contract_hash"] != contract_hash():
+            raise ServingError(f"serving contract mismatch for run {pointer.run_id}")
+        return pointer
 
     def query(self, run_id: str, table: str, where: str, params: list, order_by: str = "") -> list[dict]:
         if table not in CONTRACT:

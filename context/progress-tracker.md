@@ -443,6 +443,12 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-05: Self-describing serving pointer and contract parity
+
+- `latest.json` now also carries `git_sha` (`GITHUB_SHA`), `contract_hash` (SHA-256 of the exported columns, in order, canonical JSON) and `dq_summary` (META.DQ_RESULTS counts by status for the run). Older keys unchanged.
+- The agent computes the same hash from `CONTRACT` and refuses a pointer whose hash differs (`ServingError` → data unavailable + human); a pointer without a hash is still served.
+- `tests/test_contract_parity.py` (root suite): the agent's `CONTRACT` equals dbt `curated/schema.yml` plus the seed CSV header, per table and in order, and both sides hash the same way.
+
 ### 2026-10-05: Judge-review quick wins (eval prices, copy, Jev egress)
 
 - **Eval prices:** `eval/config.yaml` has sourced Bedrock prices for `openai.gpt-oss-20b` (0.07/0.30 USD per 1M in/out) and `openai.gpt-oss-120b` (0.15/0.60), AWS Price List API, Mantle standard tier, us-east-1, 2026-10-05. Jev has no public price, so cost stays `incomplete`; the report adds the priced part per attempted case as a lower bound.
