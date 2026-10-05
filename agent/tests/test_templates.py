@@ -43,3 +43,22 @@ def test_fallback_offers_human_and_lists_options():
 
 def test_fallback_unknown_language_defaults_to_es():
     assert fallback_reply({"kind": "greeting"}, [], "fr") == fallback_reply({"kind": "greeting"}, [], "es")
+
+
+def test_fallback_translates_product_and_transaction_status():
+    products = {"receipt_id": "R1", "source": "dim_product", "data": [
+        {"product_type": "Tarjeta Débito", "product_last4": "5827", "current_balance": 309666.73, "currency": "ARS",
+         "product_status": "Active"}]}
+    txn = {"receipt_id": "R2", "source": "fct_transaction", "data": {**TXN, "transaction_status": "Declined"}}
+    es = fallback_reply({"kind": "answer"}, [products, txn], "es")
+    assert "(Activa)" in es and "Rechazada" in es and "Active" not in es and "Declined" not in es
+    pt = fallback_reply({"kind": "answer"}, [products, txn], "pt")
+    assert "(Ativa)" in pt and "Recusada" in pt
+    unknown = {**products, "data": [{**products["data"][0], "product_status": "Frozen"}]}
+    assert "(Frozen)" in fallback_reply({"kind": "answer"}, [unknown], "es")  # unknown values pass through
+
+
+def test_portuguese_copy_has_no_spanish():
+    from bankagent.llm.templates import FALLBACK, INTENT_LABELS
+    assert "con sus" not in FALLBACK["pt"]["greeting"]
+    assert " fue " not in INTENT_LABELS["pt"]["decline_explanation"]
