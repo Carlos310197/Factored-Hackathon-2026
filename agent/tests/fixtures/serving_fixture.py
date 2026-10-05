@@ -1,6 +1,8 @@
 """SYNTHETIC serving fixture — labeled test data, NOT organizer records.
 Mirrors the pipeline serving contract: <root>/latest.json + <root>/<run_id>/<table>/data_0.parquet."""
 import json
+
+from bankagent.data.contract import contract_hash
 from pathlib import Path
 
 import duckdb
@@ -114,7 +116,7 @@ def write_run(root: Path, run_id: str = RUN_ID) -> None:
 def write_pointer(root: Path, run_id: str = RUN_ID, max_process_date: str = AS_OF) -> None:
     (root / "latest.json").write_text(json.dumps({
         "run_id": run_id, "exported_at": "2026-06-18T06:00:00Z", "max_process_date": max_process_date,
-        "tables": {k: len(v) for k, v in ROWS.items()}}))
+        "tables": {k: len(v) for k, v in ROWS.items()}, "contract_hash": contract_hash()}))
 
 
 def build_serving(root: Path) -> Path:

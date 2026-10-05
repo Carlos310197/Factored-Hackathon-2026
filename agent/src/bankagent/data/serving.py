@@ -3,12 +3,16 @@ import json
 import re
 import threading
 from dataclasses import dataclass
-from datetime import date, datetime
+import logging
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 import duckdb
 
-from bankagent.data.contract import CONTRACT
+from bankagent.data.contract import CONTRACT, contract_hash
+
+log = logging.getLogger(__name__)
+STALE_AFTER = timedelta(days=2)
 
 RUN_ID_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 
@@ -53,9 +57,22 @@ class ServingData:
     def pointer(self) -> Pointer:
         try:
             p = json.loads(self._read_text(f"{self.base}/latest.json"))
-            return Pointer(p["run_id"], date.fromisoformat(p["max_process_date"]), p.get("exported_at", ""))
+            pointer = Pointer(p["run_id"], date.fromisoformat(p["max_process_date"]), p.get("exported_at", ""))
         except Exception as e:  # any read/parse failure means the serving set is unusable
             raise ServingError(f"cannot read serving pointer: {e}") from e
+        # A pointer must name its columns, and they must be ours: otherwise the parquet would be misread. Only a local
+        # dev build made before the hash existed may omit it.
+        legacy_dev = "contract_hash" not in p and str(p.get("source", "")).startswith("local_build")
+        if not legacy_dev and p.get("contract_hash") != contract_hash():
+            raise ServingError(f"serving contract mismatch for run {pointer.run_id}")
+        # The pipeline moves the pointer daily; an old export means it stopped (CloudWatch alarm StalePointer).
+        try:
+            age = datetime.now(timezone.utc) - datetime.fromisoformat(pointer.exported_at.replace("Z", "+00:00"))
+            if age > STALE_AFTER:
+                log.warning("serving pointer is stale", extra={"run_id": pointer.run_id, "age_h": round(age.total_seconds() / 3600)})
+        except ValueError:
+            log.warning("serving pointer is stale", extra={"run_id": pointer.run_id, "exported_at": pointer.exported_at})
+        return pointer
 
     def query(self, run_id: str, table: str, where: str, params: list, order_by: str = "") -> list[dict]:
         if table not in CONTRACT:

@@ -8,6 +8,7 @@ from pathlib import Path
 
 import duckdb
 
+from bankagent.data.contract import contract_hash
 from tests.fixtures.serving_fixture import DDL
 
 RUN_ID = "resolver-fixture-1"
@@ -47,6 +48,6 @@ def build_history_serving(root: Path) -> Path:
         csv.writer(f).writerows(rows())
     con.execute(f"copy fct_transaction from '{staged}' (header false, nullstr '')")
     con.execute(f"copy fct_transaction to '{d / 'data_0.parquet'}' (format parquet)")
-    (root / "latest.json").write_text(json.dumps({"run_id": RUN_ID, "exported_at": "2026-06-18T06:00:00Z",
+    (root / "latest.json").write_text(json.dumps({"run_id": RUN_ID, "contract_hash": contract_hash(), "exported_at": "2026-06-18T06:00:00Z",
                                                   "max_process_date": "2026-06-17", "tables": {}}))
     return root

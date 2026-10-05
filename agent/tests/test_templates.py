@@ -19,7 +19,11 @@ def test_confirmation_summary_es_and_pt():
 
 
 def test_fixed_blocks():
-    assert "HND-1" in handoff_notice("HND-1", "es") and "especialista" in handoff_notice("HND-1", "pt")
+    es, pt = handoff_notice("HND-1", "es"), handoff_notice("HND-1", "pt")
+    assert "HND-1" in es and "HND-1" in pt
+    # complements the model's own "a specialist will review" sentence: next step + safety step, no repeat
+    assert "este chat" in es and "bloquea tu tarjeta" in es and "especialista" not in es
+    assert "este chat" in pt and "bloqueie seu cartão" in pt and "especialista" not in pt
     assert "DSP-1" in dispute_filed("DSP-1", "pt")
     assert auth_message("session_expired", "pt") != auth_message("session_expired", "es")
 
@@ -67,3 +71,8 @@ def test_portuguese_copy_has_no_spanish():
     from bankagent.llm import templates
     pt_block = inspect.getsource(templates).split('"pt": {"not_declined"', 1)[1].split("}", 1)[0]
     assert " fue " not in pt_block
+
+
+def test_compose_prompt_sets_one_register():
+    from bankagent.llm.compose import COMPOSE_SYSTEM
+    assert "tú" in COMPOSE_SYSTEM and "você" in COMPOSE_SYSTEM

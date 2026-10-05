@@ -18,6 +18,7 @@ def test_account_inquiry_es(ddb_store, serving_root):
     assert h.jev.count("understand") == 1 and h.jev.count("verify") == 1
     sent = json.dumps(h.jev.calls[0][1])
     assert "TRX-" not in sent and "CLI-" not in sent  # Jev sees aliases, never ids
+    _assert_jev_never_sees_customer_or_product_ids(h)
 
 
 def test_decline_explanation_pt(ddb_store, serving_root):
@@ -43,6 +44,16 @@ def test_dispute_confirm_file_verify(ddb_store, serving_root):
     assert r2["awaiting"] == "none" and rec["dispute_id"] in r2["reply_text"] and r2["refs"] == [rec["dispute_id"]]
     verify = [x for x in h.state()["receipts"] if x["source"] == "disputes.verify"]
     assert verify[0]["data"]["verified"] is True
+    _assert_jev_never_sees_customer_or_product_ids(h)
+
+
+def _assert_jev_never_sees_customer_or_product_ids(h):
+    """Invariant (architecture-context): no Jev request carries customer_id, product_id or fraud fields."""
+    assert h.jev.calls and any(c[0] == "verify" for c in h.jev.calls)
+    for kind, state, questions in h.jev.calls:
+        sent = json.dumps([state, questions])
+        assert "CLI-" not in sent and "PRD-" not in sent, kind
+        assert "fraud_score" not in sent and "is_fraud" not in sent, kind
 
 
 def test_ambiguous_intent_clarifies_then_answers(ddb_store, serving_root):
@@ -121,3 +132,34 @@ def test_session_keeps_its_run_id_when_pointer_moves(ddb_store, tmp_path):
     write_pointer(root, run_id="run-that-does-not-exist")
     r = h.turn("¿y ahora?")
     assert r["reply_text"] == "[answer]" and h.state()["run_id"] == RUN_ID
+
+
+def test_confirmation_is_bound_to_the_card_the_customer_saw(ddb_store, serving_root):
+    """'Sí' confirms exactly the card shown: if the transaction behind it changed, nothing is filed and the card is
+    shown again with the new data."""
+    h = make_harness(ddb_store, serving_root, [DISPUTE_NETFLIX, {"intent": "dispute_charge", "confirmation": "confirm"}])
+    r1 = h.turn("Me cobraron dos veces Netflix, quiero disputarlo")
+    assert r1["awaiting"] == "confirmation" and "15.99" in r1["reply_text"]
+    read = h.service.deps.read
+    original = read.get_transaction
+
+    def changed(*a, **kw):  # the record behind the card changed before the customer said yes
+        res = original(*a, **kw)
+        return type(res)(res.source, {**res.data, "amount": 99.0}, res.as_of)
+
+    read.get_transaction = changed
+    r2 = h.turn("sí, confirmo")
+    assert ddb_store.disputes.get(t(101)) is None
+    assert r2["awaiting"] == "confirmation" and "99" in r2["reply_text"]
+
+
+def test_llm_never_sees_customer_or_product_ids(ddb_store, serving_root):
+    """Bedrock runs in a second AWS account: compose and handoff payloads get the same redaction as Jev."""
+    h = make_harness(ddb_store, serving_root, [DISPUTE_NETFLIX, {"intent": "dispute_charge", "confirmation": "confirm"}])
+    h.turn("Me cobraron dos veces Netflix, quiero disputarlo")
+    h.turn("sí, confirmo")
+    composes = [c for c, r in zip(h.llm.calls, h.llm.roles) if r != "extract"]
+    assert composes
+    for c in composes:
+        sent = json.dumps(c["messages"])
+        assert "CLI-" not in sent and "PRD-" not in sent and "fraud_score" not in sent

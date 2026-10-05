@@ -48,8 +48,17 @@ jobs:
       - run: uv sync
       - run: uv run python -m pipeline.setup 02_raw_tables.sql
       - run: uv run python -m pipeline.load --run-id "$RUN_ID" --stage-url-prefix "$ORGANIZER_STAGE_URL"
-      - run: uv run dbt source freshness --project-dir dbt --target ci || true # warn/error recorded in the log; dbt build gates
+      - run: uv run dbt source freshness --project-dir dbt --target ci || true # recorded in the run log only; freshness does not gate (the organizer drop is static)
       - run: uv run dbt build --project-dir dbt --target ci
       - if: always() && hashFiles('dbt/target/run_results.json') != ''
         run: uv run python -m pipeline.dq_results --run-id "$RUN_ID"
       - run: uv run python -m pipeline.export --run-id "$RUN_ID"
+      - name: Keep the dbt lineage (manifest, run results) with the run
+        if: always() && hashFiles('dbt/target/run_results.json') != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dbt-lineage-${{ env.RUN_ID }}
+          path: |
+            dbt/target/manifest.json
+            dbt/target/run_results.json
+          retention-days: 90

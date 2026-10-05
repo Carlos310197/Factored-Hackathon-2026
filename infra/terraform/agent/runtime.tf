@@ -32,15 +32,19 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
   # Names only: the Jev key is read from Secrets Manager at start (bankagent.settings.load_settings).
   # table_name() joins prefix and name with "-", so "lb-demo" gives lb-demo-<name>.
   environment_variables = {
-    TABLE_PREFIX      = "lb-demo"
-    SERVING_URI       = "s3://${data.terraform_remote_state.data.outputs.serving_bucket}/serving/"
-    IDP_ISSUER        = local.issuer
-    IDP_AUDIENCE      = local.audience
-    IDP_JWKS_URL      = data.terraform_remote_state.identity.outputs.jwks_url
-    LLM_EXTRACT_MODEL = local.models.extract
-    LLM_COMPOSE_MODEL = local.models.compose
-    GIT_SHA           = element(split(":", local.image), length(split(":", local.image)) - 1)
-    JEV_SECRET_ID     = data.aws_secretsmanager_secret.jev.name
+    TABLE_PREFIX        = "lb-demo"
+    SERVING_URI         = "s3://${data.terraform_remote_state.data.outputs.serving_bucket}/serving/"
+    IDP_ISSUER          = local.issuer
+    IDP_AUDIENCE        = local.audience
+    IDP_JWKS_URL        = data.terraform_remote_state.identity.outputs.jwks_url
+    LLM_EXTRACT_MODEL   = local.models.extract
+    LLM_COMPOSE_MODEL   = local.models.compose
+    GIT_SHA             = element(split(":", local.image), length(split(":", local.image)) - 1)
+    JEV_SECRET_ID       = data.aws_secretsmanager_secret.jev.name
+    BEDROCK_ROLE_ARN    = local.bedrock_role_arn
+    BEDROCK_EXTERNAL_ID = local.bedrock_external_id
+    RESOLVER_ARTIFACT   = local.resolver.artifact
+    THRESHOLDS_FILE     = local.resolver.thresholds
   }
 
   lifecycle {

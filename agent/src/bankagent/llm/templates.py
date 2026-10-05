@@ -1,5 +1,5 @@
 """Fixed ES/PT texts inserted verbatim (confirmation summary, handoff notice, auth messages) and the deterministic
-fallback reply used when Claude or the reply verification fails. No model writes these."""
+fallback reply used when the LLM or the reply verification fails. No model writes these."""
 
 INTENT_LABELS = {
     "es": {"account_info": "información de tus cuentas", "transaction_status": "el estado de una transacción",
@@ -34,7 +34,8 @@ FALLBACK = {
            "greeting": "¡Hola! ¿En qué puedo ayudarte con tus cuentas o pagos?",
            "dispute_cancelled": "Entendido, no registré la disputa.",
            "data_unavailable": "No puedo acceder a tu información en este momento.",
-           "error": "Tuve un problema procesando tu mensaje."},
+           "error": "Tuve un problema procesando tu mensaje.",
+           "turn_limit": "Esta conversación llegó a su límite de mensajes. Para seguir, sal y vuelve a entrar."},
     "pt": {"answer": "Isto é o que encontrei:", "ask_clarification": "Pode me ajudar a detalhar sua solicitação?",
            "ask_confirmation": "Você confirma que devo registrar esta contestação?",
            "handoff_notice": "Vou transferir seu caso para um especialista.", "handoff_failed": "",
@@ -44,7 +45,8 @@ FALLBACK = {
            "greeting": "Olá! Como posso ajudar com suas contas ou pagamentos?",
            "dispute_cancelled": "Entendido, não registrei a contestação.",
            "data_unavailable": "Não consigo acessar suas informações neste momento.",
-           "error": "Tive um problema ao processar sua mensagem."},
+           "error": "Tive um problema ao processar sua mensagem.",
+           "turn_limit": "Esta conversa chegou ao limite de mensagens. Para continuar, saia e entre de novo."},
 }
 NOTES = {
     "es": {"not_declined": "Esa transacción no fue rechazada.",
@@ -97,8 +99,10 @@ def confirmation_summary(txn: dict, reason: str, lang: str) -> str:
 
 def handoff_notice(ref: str, lang: str) -> str:
     if _lang(lang) == "pt":
-        return f"Referência do seu caso: {ref}. Um especialista vai analisar sua solicitação."
-    return f"Referencia de tu caso: {ref}. Un especialista revisará tu solicitud."
+        return (f"Referência do seu caso: {ref}. Uma pessoa da nossa equipe vai continuar com você por este chat. "
+                "Se você vir cobranças que não reconhece, bloqueie seu cartão pelo app.")
+    return (f"Referencia de tu caso: {ref}. Una persona de nuestro equipo continuará contigo por este chat. "
+            "Si ves cargos que no reconoces, bloquea tu tarjeta desde la app.")
 
 
 def dispute_filed(dispute_id: str, lang: str) -> str:

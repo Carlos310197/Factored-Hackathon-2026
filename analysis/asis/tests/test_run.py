@@ -21,6 +21,7 @@ def test_reconcile_passes_on_exact_match_and_fails_beyond_tolerance(con):
 def test_charts_are_written(con, tmp_path):
     names = render_all(metrics.collect(con), tmp_path)
     assert names and all((tmp_path / n).stat().st_size > 1000 for n in names)
+    assert "asis-dispute-handling.png" in names  # the three dispute numbers for slide 1
 
 
 def test_report_tags_artifacts_and_states_reconciliation(con):
@@ -54,3 +55,14 @@ def test_run_fails_on_mismatch_without_writing(data_dir, tmp_path):
     assert main(["--data", str(data_dir), "--out", str(out), "--reports", str(tmp_path / "rep"),
                  "--curated-counts", str(counts)]) == 1
     assert not (out / "asis_metrics.json").exists()
+
+
+def test_report_does_not_call_generator_attributes_evidence(con):
+    mt = metrics.collect(con)
+    text = render(mt, detect_all(con), reconcile(mt, None), "2026-10-01", [])
+    load = next(x for x in text.splitlines() if "total_monthly_interactions" in x)
+    assert "synthetic artifact" in load and "evidence" not in load
+    assert "logged contacts per agent per month" in text.lower()
+    hourly = next(x for x in text.splitlines() if x.startswith("- Contacts per hour of day"))
+    assert hourly.endswith("synthetic artifact") or "· synthetic artifact" in hourly
+    assert "not evidence" in text.split("## 3. Capacity", 1)[1].split("## 4.", 1)[0]

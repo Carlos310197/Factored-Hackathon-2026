@@ -16,6 +16,16 @@ def test_build_pointer_shape():
     p = build_pointer("r1", "2026-09-27T06:00:00Z", "2026-06-17", {"dim_customer": 150000})
     assert p == {"run_id": "r1", "exported_at": "2026-09-27T06:00:00Z", "max_process_date": "2026-06-17", "tables": {"dim_customer": 150000}}
 
+
+def test_pointer_describes_its_build():
+    from pipeline.export import contract_hash
+    cols = {"dim_customer": ["customer_id", "country"]}
+    p = build_pointer("r1", "t", "2026-06-17", {"dim_customer": 1}, git_sha="abc123",
+                      contract_hash=contract_hash(cols), dq_summary={"pass": 40, "warn": 1})
+    assert p["git_sha"] == "abc123" and p["dq_summary"] == {"pass": 40, "warn": 1}
+    assert p["contract_hash"] == contract_hash({"dim_customer": ["customer_id", "country"]})  # deterministic
+    assert contract_hash(cols) != contract_hash({"dim_customer": ["country", "customer_id"]})  # order matters
+
 def test_runs_to_prune_keeps_newest_three_by_write_time():
     from datetime import datetime
     t = lambda h: datetime(2026, 10, 1, h)
