@@ -115,6 +115,15 @@ Update this file whenever the current phase, the active unit or the implementati
   - `tests/test_graph_paths.py`: 12 scenario tests covering main conversation paths (account inquiry ES/PT, decline explanation, dispute flow with confirmation, ambiguous intent clarification, unsupported request, unrecognized charge handoff, over-limit human review, legal threat, declined payment dispute, multi-intent queue, unsupported language, run_id persistence)
   - `tests/test_graph_failures.py`: 15 failure scenario tests (Jev down once/twice, Jev down during confirmation, unclear confirmation 3x, modify during confirmation, duplicate dispute, injection refused then handed off, compose failure, unverified claims, verify outage, foreign ID blocked, serving unavailable, missing dispute scope, turn budget exhausted, extract failure, recursion limit)
   - All 27 new tests pass; total 151/151 in agent/ (124 existing + 27 new), 43/43 in root offline suite
+- 2026-10-05: **Unit 26: Resolver Features and Splits** (`agent/src/bankagent/resolver/`):
+  - Added `numpy>=2.0` and `rapidfuzz>=3.9` as runtime dependencies;
+  - Added `resolver` dependency group: `scikit-learn>=1.5`, `lightgbm>=4.5`, `mlflow>=3.1`, `matplotlib>=3.9` (offline training/evaluation only, excluded from runtime image via `--no-default-groups`);
+  - `resolver/features.py`: Pure feature function with 13 features (merchant_mentioned, merchant_sim, merchant_missing_on_cand, amount_mentioned, amount_log_err, amount_rank, date_mentioned, days_outside, type_match, channel_match, city_match, recency_pct, is_purchase); `fold()` for accent-insensitive text normalization; `mentions_present()` to detect if customer mentioned anything;
+  - `resolver/splits.py`: Leakage-safe customer split using SHA256 hash (first byte mod 10 → 0-7 train, 8 dev, 9 test); anchor date ranges (train: 2023-09-01 to 2025-09-30, dev: 2025-10-01 to 2026-01-31, test: 2026-02-01 to 2026-06-17); hard-slice rule for deterministic case classification (easy/hard/nil);
+  - `tests/resolver_data.py`: Synthetic transaction and mentions helpers for testing;
+  - 14 comprehensive tests covering: accent-insensitive merchant matching, amount error calculation with local vs USD fallback, date range handling (including reversed ranges), hint matching (type/channel/city with case/whitespace tolerance), degenerate amounts (0, negative, boolean, string), customer split determinism and distribution, anchor date non-overlap, hard-slice rules;
+  - All tests pass: 138/138 in agent/ (124 existing + 14 new);
+  - Followed TDD: tests written first, all initially failing with ModuleNotFoundError, then implementation added to make them pass.
 
 ## In Progress
 
@@ -128,7 +137,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
 | 12–25 | Agent core | 12–21 **done**; 22–25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
-| 26–39 | Transaction resolver | not started | 12, 16 |
+| 26–39 | Transaction resolver | 26 **done** (features and splits) | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
 | 77–90 | Deployment | not started; Terraform `bootstrap`, `platform` and the `app` web shell already exist | 77 has none; the rest follow the agent core and UI |
