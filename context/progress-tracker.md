@@ -191,7 +191,9 @@ Update this file whenever the current phase, the active unit or the implementati
   - Offline totals: `cd analysis && uv run pytest` → 25 passed; `cd eval && uv run pytest` → 65 passed. Units 51–52 (`[live]`) are not started: they need the owner's approval for every persona, Bedrock and Jev run, an OpenCode `persona.model`, `OPENCODE_API_KEY`, a local serving set, DynamoDB Local, and (for 52) the held-out freeze and Carlos's 40 judge labels. Hold 51 until unit 39 records the resolver adoption decision, so the eval runs against the final agent.
   - 54 (UI) `sessions` and `conversation_messages` tables (90-day TTL on messages), `SessionRepo` and `MessageLog` (claim/store_reply/append/list, idempotency markers `~idem#<id>`), `Store.sessions`/`Store.messages`, Streams (`NEW_IMAGE`) on `handoffs`, `decision_records`, `conversation_messages` (turned on for existing tables too). Offline agent suite 246 passed.
   - 55 (UI) IdP: `issue_token(extra=)`, customer tokens carry `role`, `DemoUser` role/display_name/demo_password/scenarios/short_ttl_allowed, `POST /auth/staff/login` (aud bankagent-staff), `POST /auth/realtime-token` (aud realtime, exp ≤ source), `GET /auth/demo-users` (IDP_DEMO_MODE=1 only), 30 s `short_ttl` OTP tokens. 9 new tests; agent suite 255 passed.
+  - 57 (UI) `decisions/trace_payload.py` (`thresholds_map`, `alias_view`, `confirmation_payload`): understand `jev` record gains `thresholds` and `aliases`; reply gains `summary` {merchant, date, amount, currency, reason_code} when awaiting confirmation (no product_last4, AD #1). Agent suite: 267 passed.
 - 2026-10-05: **UI unit 56**: entrypoint control gate, idempotent turns per message id, message log, `turn_end` record (`app.py`, `service.py`).
+- 2026-10-05: **UI unit 57**: trace payloads (thresholds + aliases on the understand record, confirmation summary). Aliases use the filtered candidates passed to `build_understand_request`.
 
 ## In Progress
 
