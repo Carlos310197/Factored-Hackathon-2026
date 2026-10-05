@@ -5,6 +5,8 @@ from langgraph.checkpoint.memory import InMemorySaver
 
 from bankagent.graph.deps import Deps
 from bankagent.service import AgentService
+import pytest
+
 from tests.fakes import FakeLLM
 from tests.fixtures.serving_fixture import C1, t
 from tests.harness import CTX_ES, CTX_ES2, CTX_READ_ONLY, make_harness
@@ -158,3 +160,28 @@ def test_empty_jev_key_turn_clarifies_instead_of_raising(ddb_store, serving_root
     h = make_harness(ddb_store, serving_root, [])
     object.__setattr__(h.service.deps, "jev", JevClient(""))
     assert h.turn("hola, una consulta")["awaiting"] == "clarification"
+
+
+def test_compose_timeout_is_capped_by_the_remaining_turn_budget(ddb_store, serving_root):
+    """The BFF stops waiting at 25 s: a compose that starts late gets only what is left of the 20 s budget."""
+    ticks = iter([0.0] + [15.0] * 1000)  # deadline = 20; every later check sees 15 s elapsed
+    h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}], clock=lambda: next(ticks))
+    h.turn("¿Mi saldo?")
+    compose_call = next(c for c, r in zip(h.llm.calls, h.llm.roles) if r == "compose")
+    assert compose_call["timeout"] == pytest.approx(5.0)
+
+
+def test_no_second_compose_draft_once_the_budget_is_spent(ddb_store, serving_root):
+    llm = FakeLLM()
+    clock = lambda: 1000.0 if "compose" in llm.roles else 0.0  # the first draft used up the budget  # noqa: E731
+    h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}], llm=llm, verify=False, clock=clock)
+    r = h.turn("¿Mi saldo?")
+    assert llm.roles.count("compose") == 1 and r["reply_text"].startswith("Esto es lo que encontré:")
+
+
+def test_template_fallback_is_logged_for_the_alarm(ddb_store, serving_root, caplog):
+    """CloudWatch counts this line (metric filter TemplateFallback): a spike means the LLM or Jev path is failing."""
+    h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}], llm=FakeLLM(fail={"compose"}))
+    with caplog.at_level("WARNING"):
+        h.turn("¿Mi saldo?")
+    assert any(r.getMessage() == "reply fell back to template" for r in caplog.records)

@@ -49,6 +49,7 @@ class AgentState(MessagesState):
     txn: dict = field(default_factory=dict)
     statement: dict = field(default_factory=dict)
     confirmation_summary: str = ""
+    card_hash: str = ""  # hash of the structured card the customer is asked to confirm; file_dispute re-checks it
     policy_checks: list[dict] = field(default_factory=list)
     
     # Filed dispute
