@@ -51,3 +51,5 @@ body { background: var(--color-c-canvas); color: var(--color-c-ink); }
 @layer utilities {
   .font-staff { font-variant-numeric: tabular-nums; }
 }
+
+@keyframes grow { from { width: 0; } }
