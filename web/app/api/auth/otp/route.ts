@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     setSessionCookie(res, CUSTOMER_COOKIE, t.access_token, t.expires_in);
     return res;
   } catch (e) {
-    if (e instanceof IdpError) return fail("otp_failed", "Invalid or expired code", e.status === 401 ? 401 : 503);
+    if (e instanceof IdpError) return fail("otp_failed", "Invalid or expired code", e.httpStatus);
     throw e;
   }
 }

@@ -12,7 +12,7 @@ export interface StaffSession { token: string; sub: string; sid: string; name: s
 export function makeVerifier(getKey: JWTVerifyGetKey, cfg: { issuer: string; audience: string; staffAudience: string }) {
   async function verify(token: string, audience: string) {
     try {
-      return (await jwtVerify(token, getKey, { issuer: cfg.issuer, audience, algorithms: ["RS256"] })).payload;
+      return (await jwtVerify(token, getKey, { issuer: cfg.issuer, audience, algorithms: ["RS256"], requiredClaims: ["exp", "sub", "sid"] })).payload;
     } catch (e) {
       throw new AuthFailure(e instanceof errors.JWTExpired ? "expired" : "invalid");
     }
@@ -20,7 +20,7 @@ export function makeVerifier(getKey: JWTVerifyGetKey, cfg: { issuer: string; aud
   return {
     async customer(token: string): Promise<CustomerSession> {
       const p = await verify(token, cfg.audience);
-      if (typeof p.sub !== "string" || typeof p.sid !== "string") throw new AuthFailure("invalid");
+      if (p.role !== "customer" || typeof p.sub !== "string" || typeof p.sid !== "string") throw new AuthFailure("invalid");
       return { token, sub: p.sub, sid: p.sid, lang: Lang.catch("es").parse(p.lang),
         scopes: String(p.scope ?? "").split(" ").filter(Boolean).sort(), exp: Number(p.exp) };
     },

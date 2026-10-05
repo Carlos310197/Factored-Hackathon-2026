@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   try {
     return ok(await idp.login(body.username, body.password));
   } catch (e) {
-    if (e instanceof IdpError) return fail("login_failed", "Invalid credentials", e.status === 401 ? 401 : 503);
+    if (e instanceof IdpError) return fail("login_failed", "Invalid credentials", e.httpStatus);
     throw e;
   }
 }

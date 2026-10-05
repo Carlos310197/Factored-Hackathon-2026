@@ -4,6 +4,8 @@ import { env } from "./env";
 
 export class IdpError extends Error {
   constructor(readonly status: number) { super(`identity service ${status}`); }
+  /** Status for our own response: IdP 4xx pass through as 400/401, 5xx and network errors become 503. */
+  get httpStatus() { return this.status === 400 || this.status === 422 ? 400 : this.status < 500 ? 401 : 503; }
 }
 const DemoUser = z.object({ username: z.string(), demo_password: z.string(), otp: z.string(), lang: z.enum(["es", "pt"]),
   role: z.enum(["customer", "agent"]), display_name: z.string(), scenarios: z.array(z.string()) });
@@ -18,7 +20,9 @@ async function call<S extends z.ZodTypeAny>(path: string, schema: S, init: Reque
     throw new IdpError(503);
   }
   if (!res.ok) throw new IdpError(res.status);
-  return schema.parse(await res.json());
+  const parsed = await res.json().then((j: unknown) => schema.safeParse(j), () => null);
+  if (!parsed?.success) throw new IdpError(502); // malformed reply: keep the {error} contract
+  return parsed.data;
 }
 
 export const idp = {

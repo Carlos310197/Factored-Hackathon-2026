@@ -30,4 +30,8 @@ describe("verifier", () => {
     const tok = await k.sign({ sub: "x", sid: "STAFF-1", role: "customer", scope: "handoff:work" }, "bankagent-staff");
     await expect(v.staff(tok)).rejects.toMatchObject({ reason: "invalid" });
   });
+  it("rejects a customer-audience token with role agent", async () => {
+    const tok = await k.sign({ sub: "x", sid: "S-1", lang: "es", scope: "", role: "agent" }, "bankagent");
+    await expect(v.customer(tok)).rejects.toMatchObject({ reason: "invalid" });
+  });
 });

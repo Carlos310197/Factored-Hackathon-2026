@@ -10,7 +10,10 @@ export async function GET(req: NextRequest) {
   try {
     return ok(await idp.realtimeToken(who.token));
   } catch (e) {
-    if (e instanceof IdpError) return fail("realtime_unavailable", "Realtime token unavailable", 503);
+    if (e instanceof IdpError) {
+      return e.status === 401 ? fail("session_expired", "Sign in again", 401)
+        : fail("realtime_unavailable", "Realtime token unavailable", e.httpStatus);
+    }
     throw e;
   }
 }

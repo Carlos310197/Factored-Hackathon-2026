@@ -14,4 +14,4 @@ export function proxy(req: NextRequest) {
   return NextResponse.next();
 }
 
-export const config = { matcher: ["/chat", "/agent/:path*", "/trace/:path*", "/demo"] };
+export const config = { matcher: ["/chat/:path*", "/agent/:path*", "/trace/:path*", "/demo/:path*"] };
