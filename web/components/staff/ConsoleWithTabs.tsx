@@ -11,6 +11,8 @@ function useTrace(sid: string) {
   const [turns, setTurns] = useState<TraceTurn[]>([]);
   useEffect(() => {
     let live = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTurns([]); // never show the previous case's trace
     fetch(`/api/trace/${encodeURIComponent(sid)}`, { cache: "no-store" })
       .then(async (r) => { if (r.ok && live) setTurns((await r.json()).data); })
       .catch(() => {}); // no trace: the packet shows its fallback line

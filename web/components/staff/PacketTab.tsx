@@ -32,8 +32,8 @@ export function PacketTab({ packet, why }: { packet: HandoffPacket; why: TraceBa
         </Box>
         <Box title="Actions taken">
           {packet.actions_taken.length ? packet.actions_taken.map((a) => (
-            <p key={a.receipt_id} className="flex justify-between gap-2 py-1"><span>{words(a.action)} · {words(a.result)}</span>
-              <span className="text-[11px] text-c-muted whitespace-nowrap">rcpt {a.receipt_id}</span></p>
+            <p key={a.action + a.result + (a.receipt_id ?? "")} className="flex justify-between gap-2 py-1"><span>{words(a.action)} · {words(a.result)}</span>
+              {a.receipt_id && <span className="text-[11px] text-c-muted whitespace-nowrap">rcpt {a.receipt_id}</span>}</p>
           )) : <p className="text-c-muted">No actions were taken.</p>}
         </Box>
       </div>

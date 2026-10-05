@@ -76,7 +76,7 @@ export const HandoffPacket = z.object({
   reason_codes: z.array(z.string()),
   customer_request: z.object({ original: z.string(), en: z.string() }),
   verified_facts: z.array(z.object({ fact: z.string(), receipt_id: z.string() })),
-  actions_taken: z.array(z.object({ action: z.string(), result: z.string(), receipt_id: z.string() })),
+  actions_taken: z.array(z.object({ action: z.string(), result: z.string(), receipt_id: z.string().nullish() })),
   decisions: z.array(z.object({ question: z.string(), value: z.number(), question_set: z.string(), thresholds: z.string() })),
   policy_checks: z.array(z.object({ rule: z.string(), passed: z.boolean() })),
   open_questions: z.array(z.string()).max(3),

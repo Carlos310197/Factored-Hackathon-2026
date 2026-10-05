@@ -30,7 +30,7 @@ export function ConversationTab({ sid, lang, control, me }: { sid: string; lang:
     try {
       const r = await fetch(`/api/sessions/${encodeURIComponent(sid)}/messages`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: body }) });
       if (r.ok) { setText(""); setError(null); resync(); }
-      else setError(r.status === 409 ? "You no longer hold this conversation." : "Message not sent. Try again.");
+      else { setError(r.status === 409 ? "You no longer hold this conversation." : "Message not sent. Try again."); if (r.status === 409) resync(); }
     } catch { setError("Message not sent. Try again."); }
     finally { setSending(false); }
   }
