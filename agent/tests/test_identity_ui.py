@@ -105,3 +105,5 @@ def test_demo_users_only_in_demo_mode(users):
     ana = next(u for u in listed if u["username"] == "ana.mx")
     assert ana["demo_password"] == "demo-ana" and ana["otp"] == "123456" and ana["scenarios"] == ["dispute_filed"]
     assert all("password_sha256" not in u for u in listed)
+    assert all(u["role"] == "customer" for u in listed)  # staff credentials are never published
+    assert "agent.ana" not in {u["username"] for u in listed}

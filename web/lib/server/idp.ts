@@ -15,7 +15,7 @@ async function call<S extends z.ZodTypeAny>(path: string, schema: S, init: Reque
   let res: Response;
   try {
     res = await fetch(`${env().IDP_URL}${path}`, { ...init, headers: { "content-type": "application/json", ...init.headers },
-      signal: AbortSignal.timeout(5000), cache: "no-store" });
+      signal: AbortSignal.timeout(15_000), cache: "no-store" });
   } catch {
     throw new IdpError(503);
   }

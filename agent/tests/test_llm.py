@@ -110,3 +110,42 @@ def test_extract_schema_has_nullable_hints():
 
 def test_dev_writer_role_is_configured():
     assert M["dev_writer"].prompt_version == "devwriter.v1" and M["dev_writer"].effort == "low"
+
+
+def test_bedrock_client_remints_its_token_on_a_timer_and_on_auth_errors():
+    import httpx
+    import openai
+
+    from bankagent.llm.client import RefreshingClient
+    now = [0.0]
+    minted = []
+    calls = {"n": 0}
+    ok = _client("stop", '{"a": 1}')
+
+    def factory():
+        minted.append(now[0])
+        def create(**kw):
+            calls["n"] += 1
+            if calls["n"] == 1:  # the first token is already stale at the endpoint
+                raise openai.AuthenticationError("expired", response=httpx.Response(401, request=httpx.Request("POST", "https://x")), body=None)
+            return ok.chat.completions.create(**kw)
+        return SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+
+    c = RefreshingClient(factory, max_age_s=100, clock=lambda: now[0])
+    schema = {"type": "object"}
+    assert call_json(c, M["extract"], "s", "u", schema).data == {"a": 1}  # 401 → re-mint → retried once
+    assert len(minted) == 2
+    now[0] = 150
+    call_json(c, M["extract"], "s", "u", schema)
+    assert len(minted) == 3  # older than max_age → fresh token before the call
+
+
+def test_auth_error_without_refresh_still_raises_llm_error():
+    import httpx
+    import openai
+
+    def create(**kw):
+        raise openai.AuthenticationError("no", response=httpx.Response(401, request=httpx.Request("POST", "https://x")), body=None)
+    client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+    with pytest.raises(LLMError):
+        call_json(client, M["extract"], "s", "u", {"type": "object"})

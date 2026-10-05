@@ -62,3 +62,8 @@ def test_portuguese_copy_has_no_spanish():
     from bankagent.llm.templates import FALLBACK, INTENT_LABELS
     assert "con sus" not in FALLBACK["pt"]["greeting"]
     assert " fue " not in INTENT_LABELS["pt"]["decline_explanation"]
+    import inspect
+
+    from bankagent.llm import templates
+    pt_block = inspect.getsource(templates).split('"pt": {"not_declined"', 1)[1].split("}", 1)[0]
+    assert " fue " not in pt_block
