@@ -4,7 +4,7 @@ from bankagent.decisions.jev import JevResult, validate_answers
 from bankagent.decisions.questions import load_question_set
 from bankagent.decisions.thresholds import load_thresholds
 from bankagent.decisions.understand import (SPECIAL_TARGETS, build_understand_request, describe_txn,
-                                            parse_understanding, select_candidates)
+                                            matches_mentions, parse_understanding, select_candidates)
 from bankagent.decisions.verify import build_verify_request, parse_verify
 
 QS = load_question_set("understand.v1")
@@ -96,3 +96,24 @@ def test_verify_request_and_parse():
                         "promises_unverified_action": {"type": "noul", "noul": 0.7}}}
     out = parse_verify(JevResult(validate_answers(questions, body), {}, 1, "h", "m"), TH)
     assert out.ok is False and out.failed_claims == [1] and out.promises_unverified is True
+
+
+def test_matches_mentions_is_the_prefilter_rule():
+    t = txn(1, "Netflix", 15.99, "2026-06-10")
+    assert matches_mentions(t, {}) is True
+    assert matches_mentions(t, {"merchant": "netflix", "amount": 16.1, "date_from": "2026-06-01", "date_to": None})
+    assert not matches_mentions(t, {"amount": 17.0})
+    assert not matches_mentions(t, {"date_to": "2026-06-09"})
+
+
+def test_scores_are_shown_only_when_given():
+    v2 = load_question_set("understand.v2")
+    assert v2["version"] == "understand.v2" and "match score" in v2["target_transaction"]["instructions"]
+    assert {k: v for k, v in v2.items() if k not in ("version", "target_transaction")} == \
+        {k: v for k, v in QS.items() if k not in ("version", "target_transaction")}
+    state, questions, _ = build(scores={"TRX-T0000000000000000001": 0.934})
+    assert questions["target_transaction"]["criteria"]["c1"].endswith(" · match 0.93")
+    assert questions["target_transaction"]["criteria"]["c2"] == describe_txn(txn(2, "Amazon", 120.0))
+    assert state["candidate_transactions"][0]["match"] == 0.93 and "match" not in state["candidate_transactions"][1]
+    plain_state, plain_q, _ = build()
+    assert "· match" not in str(plain_q["target_transaction"]) and "match" not in plain_state["candidate_transactions"][0]

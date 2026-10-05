@@ -161,6 +161,12 @@ Update this file whenever the current phase, the active unit or the implementati
   - Data-use gate cleared with the owner (organizers confirmed; the run used the real serving set, no fixture). Scenario data rule applied: the double-charge scenario uses `demo21` (`CLI-NS0BYNOKEL6S`, real duplicate pair at Tienda Don José 2026-06-15/16, picked by query and appended to the gitignored `config/demo_users.yaml`) because no generated demo identity has a repeat merchant pair; the PT decline uses `demo16` (real declined purchase at Gasolinera Express);
   - All tests pass: 195/195 offline in agent/ (191 at branch point + 1 `Deps.clock` regression test + 3 LLM-boundary tests), 43/43 in root offline suite, 4/4 container against the stack.
 
+- 2026-10-05: **Unit 29: Agent-Core Changes I** (`agent/src/bankagent/llm/`, `decisions/`):
+  - `llm/extract.py`: `extract.v2`, `mentions` gains nullable `type_hint` (`purchase|withdrawal|transfer|payment|deposit`), `channel_hint` (`atm|pos|app|web|branch`) and `city`; `llm/models.yaml`: `extract` is `extract.v2` and the new offline `dev_writer` role (`devwriter.v1`, effort `low`, same gpt-oss-120b model as `compose`, override `LLM_DEV_WRITER_MODEL`);
+  - `decisions/understand.py`: public `matches_mentions(t, m)` (merchant substring, amount within 1%, date inside range) shared with `select_candidates`; this fixes `select_candidates`, whose private filter compared amounts for exact equality; `describe_txn(t, score=None)` appends ` · match 0.93`; `build_understand_request(..., scores=None)` adds `match` to the criteria and candidate state only when scores are given;
+  - `decisions/questions/understand.v2.yaml`: v1 plus the match-score instruction on `target_transaction` (adds that the scores need not sum to 1, per resolver plan #1); the graph still uses v1 until unit 37;
+  - Tests first: `test_extract_schema_has_nullable_hints`, `test_dev_writer_role_is_configured`, `test_matches_mentions_is_the_prefilter_rule`, `test_scores_are_shown_only_when_given`; agent suite 199 passed (195 + 4).
+
 ## In Progress
 
 - None.
