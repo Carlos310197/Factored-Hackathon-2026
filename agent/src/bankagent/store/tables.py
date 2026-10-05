@@ -7,7 +7,7 @@ TABLE_SPECS = {
                  "gsis": [("by_status", [("status", "S", "HASH"), ("created_at", "S", "RANGE")])], "ttl": None},
     "decision_records": {"keys": [("session_id", "S", "HASH"), ("sk", "S", "RANGE")], "gsis": [], "ttl": "ttl"},
     # UI spec §4.1–4.2
-    "sessions": {"keys": [("session_id", "S", "HASH")], "gsis": [], "ttl": None},
+    "sessions": {"keys": [("session_id", "S", "HASH")], "gsis": [], "ttl": "ttl"},  # 90 days
     "conversation_messages": {"keys": [("session_id", "S", "HASH"), ("sk", "S", "RANGE")], "gsis": [], "ttl": "ttl"},
 }
 # Tables whose changes are pushed to the UI by the realtime publisher (UI spec §3)

@@ -92,3 +92,10 @@ def test_failed_turn_still_ends_and_marker_is_released():
     assert first["error"] == "turn_failed" and first["awaiting"] == "none"
     assert r.service.deps.store.log.records[-1]["kind"] == "turn_end"
     assert entry.handle({"message": "saldo"}, auth("msg-00000006"), r) == first
+
+
+def test_turn_end_carries_the_reply_language():
+    r = rt()
+    entry.handle({"message": "saldo"}, auth("msg-00000042"), r)
+    end = r.service.deps.store.log.records[-1]
+    assert end["kind"] == "turn_end" and end["payload"]["language"] in ("es", "pt")

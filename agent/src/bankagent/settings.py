@@ -1,7 +1,12 @@
 """Runtime settings from environment variables."""
+import logging
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
+
+import boto3
+
+log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -18,6 +23,7 @@ class Settings:
     jwks_url: str
     resolver_artifact: str | None = None  # a resolver artifact directory; unset = Jev alone (resolver spec 6.4)
     thresholds_file: str | None = None  # e.g. decisions/thresholds.v2.yaml once the resolver is adopted
+    git_sha: str = "dev"
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] = os.environ) -> "Settings":
@@ -34,4 +40,20 @@ class Settings:
             jwks_url=env.get("IDP_JWKS_URL", "http://localhost:8081/jwks.json"),
             resolver_artifact=env.get("RESOLVER_ARTIFACT") or None,
             thresholds_file=env.get("THRESHOLDS_FILE") or None,
+            git_sha=env.get("GIT_SHA", "dev"),
         )
+
+
+def load_settings(env: Mapping[str, str] = os.environ, secrets_client=None) -> Settings:
+    """Settings for the deployed runtime. When JEV_SECRET_ID is set and JEV_API_KEY isn't, the key is read from
+    Secrets Manager once. A failure leaves it empty: Jev calls then fail and the graph clarifies or hands off.
+    The container still starts, so /ping stays healthy (never a crash loop)."""
+    merged = dict(env)
+    secret_id = merged.get("JEV_SECRET_ID")
+    if secret_id and not merged.get("JEV_API_KEY"):
+        try:
+            client = secrets_client or boto3.client("secretsmanager", region_name=merged.get("AWS_REGION", "us-east-1"))
+            merged["JEV_API_KEY"] = client.get_secret_value(SecretId=secret_id)["SecretString"].strip()
+        except Exception:
+            log.exception("could not read the Jev secret %s; Jev calls will fail", secret_id)
+    return Settings.from_env(merged)

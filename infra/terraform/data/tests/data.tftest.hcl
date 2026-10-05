@@ -27,12 +27,12 @@ run "ttl_and_streams_match_the_specs" {
   command = plan
 
   assert {
-    condition     = alltrue([for k in ["checkpoints", "decision_records", "conversation_messages"] : aws_dynamodb_table.this[k].ttl[0].enabled && aws_dynamodb_table.this[k].ttl[0].attribute_name == "ttl"])
-    error_message = "ttl attribute on checkpoints, decision_records, conversation_messages"
+    condition     = alltrue([for k in ["checkpoints", "decision_records", "conversation_messages", "sessions"] : aws_dynamodb_table.this[k].ttl[0].enabled && aws_dynamodb_table.this[k].ttl[0].attribute_name == "ttl"])
+    error_message = "ttl attribute on checkpoints, decision_records, conversation_messages, sessions"
   }
   assert {
-    condition     = alltrue([for k in ["disputes", "handoffs", "sessions"] : length(aws_dynamodb_table.this[k].ttl) == 0 || !aws_dynamodb_table.this[k].ttl[0].enabled])
-    error_message = "no TTL on the other tables (unit 78 adds sessions later)"
+    condition     = alltrue([for k in ["disputes", "handoffs"] : length(aws_dynamodb_table.this[k].ttl) == 0 || !aws_dynamodb_table.this[k].ttl[0].enabled])
+    error_message = "no TTL on disputes and handoffs"
   }
   assert {
     condition     = toset(keys(output.stream_arns)) == toset(["handoffs", "decision_records", "conversation_messages"])

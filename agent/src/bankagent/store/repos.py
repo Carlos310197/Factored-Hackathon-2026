@@ -68,15 +68,18 @@ class DecisionLog:
         self._seq: dict[tuple[str, str], int] = {}
 
     def append(self, session_id: str, turn_id: str, node: str, kind: str, payload: dict,
-               versions: dict | None = None, latency_ms: int | None = None) -> None:
+               versions: dict | None = None, latency_ms: int | None = None, trace_id: str | None = None) -> None:
         key = (session_id, turn_id)
         seq = self._seq.get(key, 0) + 1
         self._seq[key] = seq
         now = self.clock()
-        self.t.put_item(Item=to_dynamo({
+        item = {
             "session_id": session_id, "sk": f"{turn_id}#{seq:04d}", "turn_id": turn_id, "seq": seq, "node": node,
             "kind": kind, "ts": datetime.fromtimestamp(now, timezone.utc).isoformat(), "payload": payload,
-            "versions": versions or {}, "latency_ms": latency_ms, "ttl": int(now) + self.TTL_DAYS * 86400}))
+            "versions": versions or {}, "latency_ms": latency_ms, "ttl": int(now) + self.TTL_DAYS * 86400}
+        if trace_id:
+            item["trace_id"] = trace_id  # links the audit record to its trace
+        self.t.put_item(Item=to_dynamo(item))
 
     def list(self, session_id: str) -> list[dict]:
         items, kwargs = [], {"KeyConditionExpression": Key("session_id").eq(session_id)}
@@ -95,12 +98,15 @@ def _iso(ts: float) -> str:
 class SessionRepo:
     """One item per conversation (UI spec §4.1). `control` is changed only by the BFF's takeover/return."""
 
+    TTL_DAYS = 90
+
     def __init__(self, table, clock=time.time):
         self.t, self.clock = table, clock
 
     def ensure(self, session_id: str, customer_id: str, lang: str) -> dict:
+        now = self.clock()
         item = {"session_id": session_id, "customer_id": customer_id, "language": lang, "control": "agent",
-                "created_at": _iso(self.clock())}
+                "created_at": _iso(now), "ttl": int(now) + self.TTL_DAYS * 86400}
         try:
             _conditional_put(self.t, item, "session_id")
         except AlreadyExists:
