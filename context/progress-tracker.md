@@ -232,6 +232,13 @@ Update this file whenever the current phase, the active unit or the implementati
   - **Human ceiling not done**: `agent/resolver/data/ceiling_v1.csv` (40 blind cases) is waiting for Carlos to fill the `pick` column (a candidate number or `none`); then rerun `uv run python scripts/resolver.py report` (offline) to add the ceiling to the report;
   - Tests: agent suite 293 passed.
 
+- 2026-10-05: **`extract` model comparison on the 150 test messages** (owner-approved, about 300 Bedrock calls; `agent/scripts/compare_extract_models.py`, production `extract.v2` prompt and `max_tokens` 1024, only the model swapped; no Jev calls, `models.yaml` unchanged):
+  - `openai.gpt-oss-20b` (current): 41 of 150 failed (27%); on the 99 non-nil rows where it worked, 61% of extractions are consistent with the known target (`matches_mentions`, a strict check: merchant substring, amount within 1%, date inside range);
+  - `mistral.ministral-3-14b-instruct`: **0 of 150 failed**, p50 1.8 s / p95 2.9 s, about 209 output tokens, 64% consistent on all 135 non-nil rows (65% on the 99 rows where gpt-oss worked);
+  - `qwen.qwen3-next-80b-a3b-instruct`: **0 of 150 failed**, p50 3.3 s / p95 4.3 s, about 202 output tokens, 61% consistent (63% on the same 99 rows);
+  - `xai.grok-4.3`: listed by the Mantle endpoint, but chat-completions rejects it (`isn't supported on this route`); a one-off Responses-API probe timed out at 30 s on a trivial prompt. Not testable through the current client, so not compared;
+  - Reading: the new models fix reliability (27% → 0%) at equal extraction quality on this metric. Not measured: end-to-end effect on B2/P (would need a labeled rerun of the Jev test runs), Spanish/Portuguese gloss quality, cost. Switching is `LLM_EXTRACT_MODEL=<id>`; the dev set, thresholds and test evaluation were all produced with gpt-oss-20b.
+
 ## In Progress
 
 - None.
