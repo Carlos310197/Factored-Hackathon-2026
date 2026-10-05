@@ -29,7 +29,7 @@ def test_writer_sees_only_the_details(history_serving):
     hs = sample_histories(TransactionSource(history_serving), "dev", 10, seed=4)
     llm = ScriptedLLM()
     rows, _ = build_dev_set(hs, load_sim_config(), seed=4, n=3, client=llm, models=M)
-    writer_prompts = [c["messages"][1]["content"] for c in llm.calls if "message" in c["response_format"]["json_schema"]["schema"]["properties"]]
+    writer_prompts = [c["messages"][1]["content"] for c in llm.calls if "response_format" not in c]
     for prompt, row in zip(writer_prompts, rows):
         others = [t for t in row["candidates"] if t["transaction_id"] != row["target_id"]]
         assert all(t["transaction_id"] not in prompt for t in row["candidates"])
@@ -52,3 +52,29 @@ def test_details_render_the_style():
     assert d[1] == "the amount: about 340 USD" and d[2].startswith("when: last week")
     assert d[3] == "it happened with the card in a shop"
     assert details_en(case | {"style": {"no_detail": True}})[0].startswith("no specific details")
+
+
+def test_amounts_are_written_in_plain_digits():
+    case = {"anchor": "2026-06-17", "style": {"amount": "exact", "date": "absent", "no_detail": False},
+            "mentions": {"merchant": None, "amount": 33984700.0, "currency": "COP", "date_from": None, "date_to": None,
+                         "type_hint": None, "channel_hint": None, "city": None}}
+    assert details_en(case) == ["the amount: exactly 33984700 COP"]
+    assert details_en(case | {"mentions": case["mentions"] | {"amount": 56.56}}) == ["the amount: exactly 56.56 COP"]
+
+
+def test_writer_accepts_plain_text_even_with_stray_braces():
+    from bankagent.resolver.devset import write_message
+
+    class Raw:
+        def __init__(self, text):
+            self.chat = type("C", (), {"completions": self})()
+            self.text = text
+
+        def create(self, **kw):
+            from types import SimpleNamespace as N
+            assert "response_format" not in kw
+            return N(choices=[N(message=N(content=self.text), finish_reason="stop")], usage=N(prompt_tokens=1, completion_tokens=1))
+
+    case = {"anchor": "2026-06-17", "style": {"no_detail": True}, "mentions": {}}
+    got = write_message(Raw('  "Hola, no reconozco un cargo."  \n'), M["dev_writer"], case, "es", "dispute")
+    assert got.data["message"] == "Hola, no reconozco un cargo." and got.prompt_version == "devwriter.v1"

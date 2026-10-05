@@ -149,3 +149,10 @@ def test_auth_error_without_refresh_still_raises_llm_error():
     client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
     with pytest.raises(LLMError):
         call_json(client, M["extract"], "s", "u", {"type": "object"})
+def test_doubled_opening_brace_is_accepted_but_a_restart_after_content_is_not():
+    """gpt-oss on Bedrock often emits '{ {"a": 1}': a stray opener with nothing inside it. No content is dropped, so
+    the complete object that follows is the answer. A restart after content (unit 25's regression) stays rejected."""
+    out = call_json(_client("stop", '{\n  {"language_detected": "es"}'), M["extract"], "s", "u", {"type": "object"})
+    assert out.data == {"language_detected": "es"}
+    with pytest.raises(LLMError, match="ambiguous"):
+        call_json(_client("stop", '{"a": "tex{"a": "x"}'), M["extract"], "s", "u", {"type": "object"})

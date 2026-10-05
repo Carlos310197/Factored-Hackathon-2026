@@ -11,7 +11,7 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Goal
 
-- Transaction resolver units 38 (train, dev set, finalize, tune; about 600 Bedrock + 600 Jev calls) and 39 (freeze, evaluate once; Andrés's completed sheet needed first) are `[live]`: each step needs the owner's approval. Send `agent/resolver/data/test_sheet_v1.csv` and `TEST_SHEET_README.md` to Andrés. The evaluation's offline code (units 40–50) is done; its live runs (51–52) wait for 39's adoption decision. The UI (53+) and deployment (77+) follow.
+- Transaction resolver unit 39: the test set is frozen and ingested; the Jev test runs, report, adoption decision and human ceiling remain (each live step needs the owner's approval).
 
 ## Completed
 
@@ -213,6 +213,14 @@ Update this file whenever the current phase, the active unit or the implementati
 - 82 (deploy) `infra/terraform/identity/`: `lb-demo-identity` arm64 image Lambda (512 MB, 10 s, X-Ray) behind a `$default` AWS_PROXY HTTP API (10/s, burst 20, permission scoped to the API). Image URI read from the `/fh26/identity/image` parameter via `data` remote state; signing secret referenced by name (`data.aws_secretsmanager_secret`). `IDP_ISSUER` = `api_endpoint`, `IDP_DEMO_MODE=1`, outputs `issuer`, `jwks_url` (`<issuer>/jwks.json`), `api_id`, `function_name`. `terraform test`: 4 runs pass (offline, mocked).
 
 - 78 (deploy) agent deployed settings: `load_settings()` reads the Jev key from `JEV_SECRET_ID` (raw string, stripped) when `JEV_API_KEY` is unset and logs an error instead of raising on failure (empty key, no crash loop); `Settings.git_sha` from `GIT_SHA` (default `dev`); `sessions` TTL 90 days (`SessionRepo.TTL_DAYS`, attribute `ttl`); `DecisionLog.append(trace_id=)` stores `trace_id` only when given; `turn_end` payload carries `language`. `tables.json` regenerated and `data.tftest.hcl` TTL assertions flipped (sessions now has TTL): the controller must apply the in-place TTL update on the `data` root. 284 agent tests pass, `terraform test` in `data` passes. The local `.env` rename (`TYPESAFE_API_KEY` to `JEV_API_KEY`) was not done: no `.env` in the worktree.
+- 2026-10-05: **Unit 38: Resolver Real Run I** (owner approved the Bedrock dev-set build and the Jev dev runs; run with `AWS_PROFILE=hackathon-sso`, the default profile is the organizers' S3-only user and gets a 403 on Bedrock Mantle):
+  - Train (offline, `train --serving .serving-full`, 30k train / 3k simulated-validation cases, 17 grid points, MLflow in `agent/mlruns`): logreg C=1 simulated-validation top-1 0.919 (hard 0.905), LightGBM 31 leaves / lr 0.1 / 500 trees top-1 0.927 (hard 0.894);
+  - Dev set: `agent/resolver/data/dev_v1.jsonl`, 300 rows (150 ES / 150 PT), 158 cases skipped after LLM errors (mostly gpt-oss output truncated at `max_tokens`). **Slice mix is skewed**: 186 easy / 84 hard / 30 not_in_list, because the skipped cases were disproportionately hard; the simulator targets about 50% hard. 17 extractions had no mentions. No scientific-notation amounts, no `CLI-`/`PRD-` ids. Carlos has not yet reviewed 30 rows for realism (spec §5.3 item 5), so the regeneration count `k` is not recorded;
+  - Finalize (`finalize --promote`): **logreg chosen**, dev hard-slice top-1 0.917 vs LightGBM 0.833, temperature **1.337**; dev ECE 0.168 (logreg), nil AUC 0.873. Artifact and `MODEL_CARD.md` in `src/bankagent/resolver/artifacts/v1/`. LightGBM stays a resolver-group dependency;
+  - Jev on dev (1 run each, 300 calls per system, 0 errors): `resolver/runs/jev/dev/{B2,P}_r1.jsonl`;
+  - Tune (≤ 2% dev wrong-action): B1 τ=0.62 φ=0.30 (coverage 0.637, resolved-in-one-step 0.853); B2 t=0.59 m=0.18 (0.747, 0.910); **P t=0.74 m=0.48** (0.767, 0.947). `decisions/thresholds.v2.yaml` written; figures `dev_coverage_curve.png` and `dev_reliability.png`. These are dev numbers, not the adoption decision: that is unit 39 on the frozen test set;
+  - Bugs fixed on the way, with tests: the dev writer is now a plain-text call (the model returned `{ {"message": ...}` 9 times out of 10 in JSON mode) and writes amounts in plain digits (`:g` produced `3.39847e+07`); `call_json` now accepts a bare doubled opening brace `{ {` (no content dropped; a restart after content stays rejected, unit 25's regression test still passes). The same doubled brace made the production `extract` fail about 70% of the time on `openai.gpt-oss-20b`, so this also helps the agent. Open: `extract` still hits `truncated output` on roughly 20% of calls at `max_tokens: 1024`;
+  - Tests: agent suite 245 passed.
 
 ## In Progress
 
@@ -226,7 +234,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
 | 12–25 | Agent core | **done**; 25 ran and recorded the definition-of-done run | none (16 uses a synthetic fixture; 23 uses the local drop) |
-| 26–39 | Transaction resolver | 26–37 **done**; 38–39 are `[live]` and wait for the owner's approval | 12, 16 |
+| 26–39 | Transaction resolver | 26–38 **done**; 39 is `[live]` and waits for Andrés and the owner's approval | 12, 16 |
 | 40–52 | Evaluation | 40–50 **done** (offline code, branch `feature/40-50-evaluation`); 51–52 are `[live]` and wait for the owner's approval and for unit 39's adoption decision | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
 | 77–90 | Deployment | not started; Terraform `bootstrap`, `platform` and the `app` web shell already exist | 77 has none; the rest follow the agent core and UI |

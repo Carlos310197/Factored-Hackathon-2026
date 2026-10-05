@@ -16,10 +16,12 @@ class _Completions:
         o.n += 1
         if o.fail_every and o.n % o.fail_every == 0:
             raise openai.APIConnectionError(request=SimpleNamespace(method="POST", url="https://bedrock.test"))
-        props = kw["response_format"]["json_schema"]["schema"]["properties"]
         user = kw["messages"][1]["content"]
-        if "message" in props:
-            data = {"message": "Hola, " + " / ".join(re.findall(r"^- (.*)$", user, re.M))}
+        if "response_format" not in kw:  # the dev writer: plain text, no JSON schema
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=SimpleNamespace(
+                    content="Hola, " + " / ".join(re.findall(r"^- (.*)$", user, re.M))), finish_reason="stop")],
+                usage=SimpleNamespace(prompt_tokens=80, completion_tokens=30))
         else:
             msg = re.search(r"<customer_message>\n(.*)\n</customer_message>", user, re.S).group(1)
             data = {"language_detected": "es", "english_gloss": f"EN: {msg}", "multi_intent": False,
