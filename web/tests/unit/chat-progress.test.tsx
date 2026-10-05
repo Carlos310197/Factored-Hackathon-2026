@@ -22,4 +22,5 @@ it("the typing indicator follows progress events (es)", async () => {
   expect(screen.getByText("Entendiendo tu mensaje…")).toBeInTheDocument();
   act(() => push({ type: "progress", turn_id: "T", stage: "verify" }));
   expect(screen.getByText("Verificando la respuesta…")).toBeInTheDocument();
+  expect(screen.getByText("Verificando la respuesta…").closest(".sr-only")).toBeNull();  // visible, not screen-reader-only
 });
