@@ -1,5 +1,6 @@
 "use client";
 import { AssistantRuntimeProvider, ThreadPrimitive, useExternalStoreRuntime, type ThreadMessageLike } from "@assistant-ui/react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { api, syncHistory } from "@/lib/chat/api";
@@ -8,6 +9,7 @@ import { SessionEvent, type Lang } from "@/lib/contract";
 import { isDemoMessage, notifyParent } from "@/lib/demo/bridge";
 import { t } from "@/lib/i18n";
 import { newClientMessageId } from "@/lib/ids";
+import { signOut } from "@/lib/signout";
 import { useChannel } from "@/lib/realtime/useChannel";
 import { AsOfBanner } from "./AsOfBanner";
 import { ExpiredSheet } from "./ExpiredSheet";
@@ -20,6 +22,7 @@ export function ChatScreen({ sid, lang, embed }: { sid: string; lang: Lang; embe
   const [store] = useState(createChatStore);
   const s = useStore(store);
   const d = t(lang);
+  const router = useRouter();
   const [draft, setDraft] = useState("");
   const [inFlight, setInFlight] = useState(0);
   const [ctl, setCtl] = useState<{ control: string; agent_name?: string | null } | null>(null);
@@ -96,7 +99,11 @@ export function ChatScreen({ sid, lang, embed }: { sid: string; lang: Lang; embe
               <span aria-hidden className="absolute -right-6 -top-10 size-24 rounded-full bg-b-sun" />
               <span aria-hidden className="absolute -bottom-10 right-14 size-20 rounded-full bg-b-leaf" />
               <h1 className="relative text-lg font-extrabold tracking-tight">{d.bank}</h1>
-              <span className="relative rounded-full bg-b-surface px-2.5 py-0.5 text-xs font-bold text-b-ink">{lang.toUpperCase()}</span>
+              <span className="relative flex items-center gap-2">
+                <span className="rounded-full bg-b-surface px-2.5 py-0.5 text-xs font-bold text-b-ink">{lang.toUpperCase()}</span>
+                <button type="button" onClick={() => void signOut("customer").then(() => router.replace("/login"))}
+                  className="min-h-11 rounded-full bg-b-surface px-4 text-sm font-bold text-b-cobalt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-surface">{d.signOut}</button>
+              </span>
             </header>
           )}
           <AsOfBanner date={asOf} lang={lang} />

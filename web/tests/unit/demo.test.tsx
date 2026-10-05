@@ -7,6 +7,7 @@ import { ScenarioRail } from "@/components/demo/ScenarioRail";
 import { SignInPanel } from "@/components/demo/SignInPanel";
 import { SCENARIOS } from "@/lib/demo/scenarios";
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock("@/components/trace/TraceList", () => ({ TraceList: () => null }));
 vi.mock("@/components/demo/HandoffTicker", () => ({ HandoffTicker: () => null }));
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });

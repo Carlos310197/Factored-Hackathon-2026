@@ -67,6 +67,18 @@ describe("ChatScreen", () => {
     return f;
   }
 
+  it("Salir/Sair posts customer logout then goes to /login; hidden in embed", async () => {
+    const f = mockFetch([]);
+    render(<ChatScreen sid="s1" lang="pt" embed={false} />);
+    await userEvent.click(screen.getByRole("button", { name: "Sair" }));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
+    const call = (f.mock.calls as unknown[][]).find(([u]) => u === "/api/auth/logout")!;
+    expect(JSON.parse(String((call[1] as RequestInit).body))).toEqual({ who: "customer" });
+    cleanup();
+    render(<ChatScreen sid="s1" lang="es" embed={true} />);
+    expect(screen.queryByRole("button", { name: "Salir" })).not.toBeInTheDocument();
+  });
+
   it("renders history: chips, receipts and the as-of banner; tapping a chip posts it", async () => {
     const f = mockFetch([
       msg({ id: "a", cursor: "0001", text: "¿Qué necesitas?", meta: { awaiting: "clarification", options: ["Reclamar un cargo"], refs: ["HND-7Q2K"], data_as_of: "2026-06-17" } }),

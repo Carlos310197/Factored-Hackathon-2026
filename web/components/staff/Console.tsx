@@ -5,6 +5,7 @@ import { HandoffPacket, HandoffRow, QueueEvent, type ResolutionCode } from "@/li
 import { useChannel } from "@/lib/realtime/useChannel";
 import type { CaseAction } from "@/lib/staff/actions";
 import { CaseHeader } from "./CaseHeader";
+import { StaffSignOut } from "./StaffSignOut";
 import { Queue, type QueueFilter } from "./Queue";
 
 export type CaseData = { packet: HandoffPacket; control: string };
@@ -97,7 +98,7 @@ export function Console({ me, initialId, renderTab }: { me: { sub: string; name:
   return (
     <div className="font-staff h-dvh flex flex-col bg-c-canvas text-c-ink">
       <div className="flex justify-between items-center px-5 py-2.5 bg-c-ink text-c-canvas text-sm">
-        <b>LATAM Bank · Agent console</b><span className="text-xs opacity-80">{me.name} · test identity</span>
+        <b>LATAM Bank · Agent console</b><span className="flex items-center gap-3"><span className="text-xs opacity-80">{me.name} · test identity</span><StaffSignOut /></span>
       </div>
       <div className="grid grid-cols-[290px_1fr] flex-1 min-h-0">
         <Queue rows={rows} filter={filter} onFilter={setFilter} selected={selected} onSelect={(id) => { if (id === selected) return; caseSeq.current++; setData(null); setCaseState(null); setSelected(id); setTab("packet"); setNotice(null); }} fresh={fresh} me={me.sub} />

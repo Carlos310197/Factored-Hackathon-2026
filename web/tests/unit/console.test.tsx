@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Console } from "@/components/staff/Console";
 
 const redirect = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock("@/lib/staff/redirect", () => ({ redirectToStaffLogin: redirect }));
 vi.mock("@/lib/realtime/useChannel", () => ({ useChannel: () => "polling" }));
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });

@@ -3,6 +3,7 @@ import { redirectToStaffLogin } from "@/lib/staff/redirect";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isDemoMessage } from "@/lib/demo/bridge";
 import { SCENARIOS, type Scenario } from "@/lib/demo/scenarios";
+import { StaffSignOut } from "../staff/StaffSignOut";
 import { TraceList } from "../trace/TraceList";
 import { HandoffTicker } from "./HandoffTicker";
 import { PhoneFrame } from "./PhoneFrame";
@@ -79,6 +80,7 @@ export function DemoStage() {
             </button>
           ))}
         </nav>
+        <StaffSignOut className="text-c-muted hover:text-c-ink" />
       </header>
       {notice && <p role="alert" className="mb-3 rounded-[var(--radius-control)] bg-c-alert-tint text-c-alert px-3 py-2 text-sm font-semibold">{notice}</p>}
       <div className={`grid gap-6 items-start ${act === 3 ? "grid-cols-[260px_340px_1fr]" : "grid-cols-[340px_1fr]"}`}>
