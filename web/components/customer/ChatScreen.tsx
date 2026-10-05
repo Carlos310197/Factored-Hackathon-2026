@@ -43,6 +43,8 @@ export function ChatScreen({ sid, lang, embed }: { sid: string; lang: Lang; embe
     store.getState().applyEvent(ev.data);
   }, { as: "customer", onResync: resync });
 
+  useEffect(() => { if (status === "live") notifyParent({ type: "demo:realtime" }); }, [status]); // the subscribe-only token is in use
+
   /** The composer never locks: each message shows at once and its turn runs after the previous one (ordered queue). */
   const send = useCallback((text: string, clientId = newClientMessageId()) => {
     const body = text.trim();
@@ -50,7 +52,7 @@ export function ChatScreen({ sid, lang, embed }: { sid: string; lang: Lang; embe
     store.getState().sendOptimistic(clientId, body);
     setInFlight((n) => n + 1);
     queue.current = queue.current.then(async () => {
-      notifyParent({ type: "demo:turn-start" });
+      notifyParent({ type: "demo:turn-start", text: body });
       const r = await api.send(body, clientId);
       if (r.kind === "reply") { store.getState().applyReply(clientId, r.reply); notifyParent({ type: "demo:turn-reply", turn_id: r.reply.turn_id }); resync(); }
       else if (r.kind === "expired") store.getState().expire();

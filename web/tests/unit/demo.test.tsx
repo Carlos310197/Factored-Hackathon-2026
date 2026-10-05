@@ -1,12 +1,15 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { DemoStage } from "@/components/demo/DemoStage";
 import { ScenarioRail } from "@/components/demo/ScenarioRail";
 import { SignInPanel } from "@/components/demo/SignInPanel";
 import { SCENARIOS } from "@/lib/demo/scenarios";
 
-afterEach(cleanup);
+vi.mock("@/components/trace/TraceList", () => ({ TraceList: () => null }));
+vi.mock("@/components/demo/HandoffTicker", () => ({ HandoffTicker: () => null }));
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe("SCENARIOS", () => {
   it("covers the eight definition-of-done cases with the tag names used by tag_scenarios.py", () => {
@@ -20,7 +23,7 @@ describe("SCENARIOS", () => {
 describe("SignInPanel", () => {
   it("shows each step's state and the decoded claims as text", () => {
     render(<SignInPanel steps={{ otp: true, token: true, realtime: false, firstTurn: false }}
-      claims={{ sub: "CLI-0421", sid: "S-9f2c", lang: "es", scopes: ["dispute:create", "inquiry:read"], exp: Math.floor(Date.now() / 1000) + 900 }} />);
+      claimsAt={Date.now()} claims={{ sub: "CLI-0421", sid: "S-9f2c", lang: "es", scopes: ["dispute:create", "inquiry:read"], exp: Math.floor(Date.now() / 1000) + 900 }} />);
     expect(screen.getByText("OTP verified").closest("li")).toHaveAttribute("data-done", "true");
     expect(screen.getByText("Realtime token issued").closest("li")).toHaveAttribute("data-done", "false");
     expect(screen.getByText("CLI-0421 (sub)")).toBeInTheDocument();
@@ -43,5 +46,63 @@ describe("ScenarioRail", () => {
     render(<ScenarioRail users={users} onStart={vi.fn()} activeKey="clarify" nextStep="Tengo un problema con un pago" onPrefill={onPrefill} />);
     await userEvent.click(screen.getByRole("button", { name: "Put in composer: Tengo un problema con un pago" }));
     expect(onPrefill).toHaveBeenCalledWith("Tengo un problema con un pago");
+  });
+});
+
+describe("ScenarioRail chips", () => {
+  it("renders all eight scenario chips", () => {
+    render(<ScenarioRail users={[]} onStart={vi.fn()} activeKey={null} nextStep={null} onPrefill={vi.fn()} />);
+    expect(screen.getAllByRole("button")).toHaveLength(8);
+  });
+});
+
+describe("DemoStage", () => {
+  const post = vi.fn();
+  const fromPhone = (data: object) => act(() => { window.dispatchEvent(new MessageEvent("message", { data, origin: window.location.origin })); });
+  function setup() {
+    post.mockClear();
+    vi.spyOn(HTMLIFrameElement.prototype, "contentWindow", "get").mockReturnValue({ postMessage: post } as never);
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => url.includes("demo-users")
+      ? { ok: true, json: async () => ({ data: [{ username: "ana.mx", lang: "es", scenarios: ["clarify", "dispute_filed"] }] }) }
+      : { ok: true, json: async () => ({ data: { sub: "C", sid: "S1", lang: "es", scopes: ["inquiry:read"], exp: 0 } }) }));
+    render(<DemoStage />);
+  }
+  const open = async (name: RegExp) => {
+    await userEvent.click(screen.getByRole("button", { name: /3 · Scenarios/ }));
+    await waitFor(() => expect(screen.getByRole("button", { name: name })).toBeEnabled());
+    await userEvent.click(screen.getByRole("button", { name: name }));
+  };
+
+  it("puts the first scripted message in the composer when the new session appears", async () => {
+    setup();
+    await open(/ambiguous/);
+    expect(post).not.toHaveBeenCalled();
+    fromPhone({ type: "demo:session", sid: "S1" });
+    expect(post).toHaveBeenCalledWith({ type: "demo:prefill", text: "Tengo un problema con un pago" }, window.location.origin);
+  });
+
+  it("advances the script only for the scripted message", async () => {
+    setup();
+    await open(/dispute filed/);
+    fromPhone({ type: "demo:session", sid: "S1" });
+    fromPhone({ type: "demo:turn-start", text: "hola, una pregunta" });
+    fromPhone({ type: "demo:turn-reply", turn_id: "T1" });
+    expect(screen.queryByText("Next message")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Put in composer: Me cobraron/ })).toBeInTheDocument();
+    fromPhone({ type: "demo:turn-start", text: "Me cobraron dos veces la misma compra, quiero reclamar el segundo cobro" });
+    fromPhone({ type: "demo:turn-reply", turn_id: "T2" });
+    expect(screen.getByRole("button", { name: "Put in composer: Confirmar y enviar" })).toBeInTheDocument();
+  });
+
+  it("marks realtime only when the phone's channel is live and says when a fetch fails", async () => {
+    setup();
+    fromPhone({ type: "demo:session", sid: "S1" });
+    expect(screen.getByText("Realtime token issued").closest("li")).toHaveAttribute("data-done", "false");
+    fromPhone({ type: "demo:realtime" });
+    expect(screen.getByText("Realtime token issued").closest("li")).toHaveAttribute("data-done", "true");
+    fromPhone({ type: "demo:auth", step: "token_issued" });
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false })));
+    fromPhone({ type: "demo:auth", step: "token_issued" });
+    expect(await screen.findByRole("alert")).toHaveTextContent(/claims/);
   });
 });

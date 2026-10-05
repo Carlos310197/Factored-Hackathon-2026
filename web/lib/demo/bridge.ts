@@ -1,7 +1,8 @@
 export type DemoMessage =
   | { type: "demo:auth"; step: "otp_verified" | "token_issued" }
   | { type: "demo:session"; sid: string }
-  | { type: "demo:turn-start" }
+  | { type: "demo:realtime" }
+  | { type: "demo:turn-start"; text: string }
   | { type: "demo:turn-reply"; turn_id: string | null }
   | { type: "demo:prefill"; text: string };
 
