@@ -4,14 +4,14 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Phase
 
-- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), **Agent core units 12–24 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing, OpenAI on Bedrock, LangGraph workflow and agent service, AgentCore runtime entrypoint, local serving builder and demo identities, container image + local compose stack + terminal chat) and **Transaction resolver units 26–28 complete** (features and splits, history sampler, simulator). Agent core continues with unit 25, the resolver with units 29–39. Evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
+- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), **Agent core units 12–25 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing, OpenAI on Bedrock, LangGraph workflow and agent service, AgentCore runtime entrypoint, local serving builder and demo identities, container image + local compose stack + terminal chat, and unit 25: live checks, the definition-of-done run and the README) and **Transaction resolver units 26–28 complete** (features and splits, history sampler, simulator). Agent core is done (12–25); the resolver continues with units 29–39. Evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
 - Region: **us-east-1** for all our AWS resources and Snowflake. The organizer bucket (theirs) stays in us-east-2.
-- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-05). Agent suite: `cd agent && uv run pytest` → 191 passed (2026-10-05). Container contract: `cd agent && uv run pytest -m container` → 4 passed against `docker compose up` (2026-10-05).
+- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-05). Agent suite: `cd agent && uv run pytest` → 195 passed (2026-10-05). Container contract: `cd agent && uv run pytest -m container` → 4 passed against `docker compose up` (2026-10-05).
 - Submission deadline: **2026-10-05**.
 
 ## Current Goal
 
-- Continue the transaction resolver at `feature-specs/29-resolver-agent-hooks.md` (Agent-Core Changes I: extract hints, dev writer, `understand.v2`); `31-resolver-model.md` needs only `26` and can run in parallel. Agent core `25` and the as-is diagnosis (`40`) can also run in parallel. The UI (53+) and deployment (77+) follow the agent core.
+- Continue the transaction resolver at `feature-specs/29-resolver-agent-hooks.md` (Agent-Core Changes I: extract hints, dev writer, `understand.v2`); `31-resolver-model.md` needs only `26` and can run in parallel. The as-is diagnosis (`40`) can also run in parallel. The UI (53+) and deployment (77+) follow.
 
 ## Completed
 
@@ -151,6 +151,15 @@ Update this file whenever the current phase, the active unit or the implementati
   - **Bug fix in unit 14 (with a test):** `bankagent/identity/app.py`'s module entrypoint loaded **no** users and required the agent's `SERVING_URI`, so `python -m bankagent.identity.app` could not serve the demo identities the stack mounts. It now builds from `DEMO_USERS` + `IDP_ISSUER`/`IDP_AUDIENCE`/`IDP_KID` (`create_app_from_env`), pinned by `test_module_entrypoint_serves_demo_users_and_settings_from_env` in `tests/test_identity.py`;
   - Verified: `docker compose build && docker compose up -d` brings the four services up (the four DynamoDB tables created), `uv run pytest -m container` → 4 passed against it, `uv run pytest` → 191 passed, and the chat client logs in as `demo01` and exits cleanly;
   - All tests pass: 191/191 offline in agent/ (190 at branch point + 1 bug-fix test), 4/4 container against the stack.
+- 2026-10-05: **Unit 25: Agent Live Checks, Definition-of-Done Run and README** (`agent/scripts/smoke_serving.py`, `agent/README.md`, `agent/docs/smoke-results.md`; worktree `worktree-agent-live-checks`, branch `feature/25-agent-live-checks`):
+  - `scripts/smoke_serving.py`: per-turn serving read latency (`list_transactions` + `get_accounts`, 60-day window) against `SERVING_URI` (local dir or `s3://`). Measured: **local p50 12 ms / p95 14 ms** (20 customers, local dev set `local-20261005064514`) and **S3 p50 801 ms / p95 818 ms** (10 customers, pipeline export `37199535018-1`) — under the 2000 ms that would flag the spec §7.1 fallback;
+  - Bedrock smoke (`scripts/smoke_bedrock.py`, synthetic input): extract `openai.gpt-oss-20b` 2617 ms, compose `openai.gpt-oss-120b` 1847 ms. All three live smoke results (Jev 2026-10-04, Bedrock, S3) are now recorded in `agent/docs/smoke-results.md`;
+  - **Definition-of-done run (spec §11) recorded** in `agent/docs/smoke-results.md`: all 8 scenarios passed against the real serving set and real Jev + Bedrock (`docker compose up` + `scripts/chat.py`, fresh session per scenario) — ES account inquiry, PT decline explanation (real declined purchase), ES dispute filed after confirmation with read-back verification (`DSP-1791184095032DD240BD5`), ambiguous → clarify, unsupported → abstain, unauthorized → handoff with a `handoff.v1` packet that validates (`HND-17911841872171CD714E4`, priority critical), injection refused then handed off on repeat, expired token rejected (`auth_required`, no model call). Decision-record kinds per turn recorded alongside;
+  - **Bug fix (unit 21's code) with a test:** `Deps.clock`'s `default_factory=time.monotonic` stored a float instead of the callable, so every `/invocations` failed with `TypeError: 'float' object is not callable` (the harness always injected an explicit clock, hiding it). Fixed in `graph/deps.py`, pinned by `test_default_clock_wiring_survives_a_turn`;
+  - **Bug fix (unit 20's code) with tests:** malformed model JSON (decoder restart / split value mid-object) was silently salvaged by `llm/client.py`, producing replies missing their first clause (seen live twice). The boundary now rejects both shapes (`ambiguous JSON output`, duplicate keys → `invalid JSON output`) and the reply falls back to the fixed template; preamble tolerance kept (`test_restarted_json_object_is_rejected_not_salvaged`, `test_duplicate_keys_in_json_object_are_rejected`, `test_json_with_text_preamble_still_parses`);
+  - `agent/README.md`: setup, environment, models (gpt-oss on Bedrock Mantle), AgentCore authorizer notes, data/privacy, live-smoke rules and known limitations;
+  - Data-use gate cleared with the owner (organizers confirmed; the run used the real serving set, no fixture). Scenario data rule applied: the double-charge scenario uses `demo21` (`CLI-NS0BYNOKEL6S`, real duplicate pair at Tienda Don José 2026-06-15/16, picked by query and appended to the gitignored `config/demo_users.yaml`) because no generated demo identity has a repeat merchant pair; the PT decline uses `demo16` (real declined purchase at Gasolinera Express);
+  - All tests pass: 195/195 offline in agent/ (191 at branch point + 1 `Deps.clock` regression test + 3 LLM-boundary tests), 43/43 in root offline suite, 4/4 container against the stack.
 
 ## In Progress
 
@@ -163,7 +172,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | Units | Subsystem | Status | First dependency |
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
-| 12–25 | Agent core | 12–24 **done**; 25 next | none (16 uses a synthetic fixture; 23 uses the local drop) |
+| 12–25 | Agent core | **done**; 25 ran and recorded the definition-of-done run | none (16 uses a synthetic fixture; 23 uses the local drop) |
 | 26–39 | Transaction resolver | 26–28 **done** (features, splits, history sampler, simulator); 29 next | 12, 16 |
 | 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
@@ -193,7 +202,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 
 #### Open items and risks · agent-core §12
 
-- **Data-use approval:** confirm with the organizers (Slack `#technical-help`) that dataset records may be sent to Amazon Bedrock and to TypeSafe (Jev). This extends the pipeline spec's open item.
+- ~~**Data-use approval:** confirm with the organizers (Slack `#technical-help`) that dataset records may be sent to Amazon Bedrock and to TypeSafe (Jev). This extends the pipeline spec's open item.~~ **Resolved 2026-10-05:** the organizers confirmed; unit 25's definition-of-done run used the real serving set. The evaluation spec's extension to the persona provider stays open (see evaluation risks).
 - **Jev route:** TypeSafe's direct route is mock-tested only upstream, and the Decisions endpoint is alpha → live smoke test on day 1; pin `jev-1.13.0`.
 - **Jev language quality:** Spanish and Portuguese accuracy is unknown (English is its strongest) → measured in spec 2, with the gloss setting as the lever.
 - **AgentCore:** confirm whether the bearer token reaches the container, availability in us-east-1, and cold-start latency.
@@ -300,6 +309,15 @@ These record what Andrés deployed on 2026-10-01 (`docs/design/2026-10-01-infra-
    - Realtime: `infra/realtime/` keeps the TypeScript handler code and its Vitest tests only; esbuild bundles it, and the `realtime` root deploys it. The UI plan's TypeScript CDK app is not built.
    - Failure handling changes: Terraform doesn't roll back a failed apply; the deploy stops and the next push converges (architecture-context → Failure handling · deployment §7).
    - Units rewritten: 77, 81 (renamed `81-terraform-data-root.md`), 82–90; UI units 53, 59, 60; `code-standards.md` → Testing · deployment and Deployment; `architecture-context.md` → Stack, Decisions, System Boundaries, Terraform roots, Access Controls, Failure Handling; `project-overview.md` → definition of done.
+
+### 2026-10-05: LLM model defaults (agent core)
+
+`llm/models.yaml` ships `extract` = `openai.gpt-oss-20b` and `compose` = `openai.gpt-oss-120b` (effort `low`) over the
+Bedrock Mantle chat-completions endpoint, not the `openai.gpt-5-6-luna` / `openai.gpt-5-6-terra` roles the plan and
+`code-standards.md` named: the commercial GPT-5.6 models need special account access. `LLM_EXTRACT_MODEL` /
+`LLM_COMPOSE_MODEL` still override per role, and `test_model_defaults_and_env_override` pins the defaults. The
+gpt-oss models occasionally emit malformed JSON (decoder restarts / split values); `llm/client.py` rejects it and
+the reply falls back to the fixed template (unit 25 findings, tests in `tests/test_llm.py`).
 
 ### Agent-core plan (2026-09-29)
 
@@ -418,3 +436,4 @@ Records that the specs say to fill in at fixed points. Fill them here.
 - 2026-10-04: deployment specs converted to Terraform-only; Carlos added to `allowed_cidrs`. Terraform isn't installed on Carlos's laptop (a 1.15.2 binary was downloaded to a temp folder for the test run); install it (`brew install hashicorp/tap/terraform`) before Terraform units.
 - 2026-10-05: unit 28 (resolver simulator) landed in worktree `worktree-resolver-simulator`, branch `feature/28-resolver-simulator`. The simulator's rates are assumptions (simulate.yaml says so); unit 32 must generate 30,000 training and 3,000 simulated-validation cases from `sample_histories` + `simulate` (spec §5.1 sizes). Baseline at branch point was 180 agent tests; 187 with the 7 new ones.
 - 2026-10-05: unit 24 (container image, local stack, terminal chat) landed in worktree `worktree-container-local-stack`, branch `feature/24-container-local-stack`. To run the stack from `agent/`: generate the gitignored local artifacts (`uv run python scripts/build_local_serving.py --data-dir <repo>/data/data --out .serving`, then `uv run python scripts/pick_demo_users.py`), `export JEV_API_KEY=…` and `AWS_PROFILE=<your profile>`, `docker compose up -d`, then `uv run pytest -m container`. No `default` AWS profile exists on the laptop, so `AWS_PROFILE` must be exported (the compose defaults to `default`). Baseline at branch point was 190 agent tests; 191 with the identity entrypoint fix.
+- 2026-10-05: unit 25 (agent live checks, definition-of-done run, README) landed in worktree `worktree-agent-live-checks`, branch `feature/25-agent-live-checks`. Owner-approved live runs: S3 serving read latency (p50 801 ms / p95 818 ms on export `37199535018-1`; local 12/14 ms), the Bedrock smoke (extract 2617 ms, compose 1847 ms), and the 8-scenario definition-of-done run against real Jev + Bedrock on the real serving set (transcripts, decision-record kinds and the validated `handoff.v1` packet in `agent/docs/smoke-results.md`). Two bugs found here and fixed in their owning units with tests: `Deps.clock`'s default (every `/invocations` 500'd before any node ran) and `llm/client.py` silently replying from a salvaged fragment of malformed model JSON. Data-use gate resolved (organizers confirmed). Agent core is now complete (12–25). Demo note: `demo21` (`CLI-NS0BYNOKEL6S`, a real double charge at Tienda Don José 2026-06-15/16) was appended to the gitignored `config/demo_users.yaml`; re-running `pick_demo_users.py` regenerates the 20 and drops it. Baseline at branch point was 191 agent tests; 195 with the 4 regression tests.
