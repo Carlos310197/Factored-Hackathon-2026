@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [react()],
-  resolve: { alias: { "@": path.resolve(__dirname, ".") } },
+  resolve: { alias: { "@": path.resolve(__dirname, "."), "server-only": path.resolve(__dirname, "tests/helpers/empty.ts") } },
   test: {
     include: ["tests/unit/**/*.test.{ts,tsx}"],
     // Node by default; component tests (.tsx) opt in with a `// @vitest-environment jsdom` docblock
