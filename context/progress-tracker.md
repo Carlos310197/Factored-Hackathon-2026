@@ -4,9 +4,9 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Phase
 
-- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–17 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store). Agent core continues with units 18–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
+- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), and **Agent core units 12–18 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet). Agent core continues with units 19–25. Resolver, evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
 - Region: **us-east-1** for all our AWS resources and Snowflake. The organizer bucket (theirs) stays in us-east-2.
-- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04). Agent suite: `cd agent && uv run pytest` → 63 passed (2026-10-04).
+- Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-04). Agent suite: `cd agent && uv run pytest` → 84 passed (2026-10-04).
 - Submission deadline: **2026-10-05**.
 
 ## Current Goal
@@ -81,6 +81,12 @@ Update this file whenever the current phase, the active unit or the implementati
   - `docker-compose.yml`: DynamoDB Local for testing;
   - 6 tests covering table creation, conditional puts, GSI queries, TTL, and codec roundtrip;
   - All tests pass: 63/63 in agent/, 43/43 in root offline suite.
+- 2026-10-04: **Unit 18: Write Tools, Handoff Packet and Reply Id Guard** (`agent/src/bankagent/tools/write.py`, `agent/src/bankagent/handoff/`, `agent/src/bankagent/guards.py`):
+  - `tools/write.py`: WriteTools with dispute intake (policy re-evaluated), handoff creation, read-back verification; exceptions AlreadyDisputed, PolicyRejected, WriteFailed, HandoffFailed;
+  - `handoff/packet.py`: handoff.v1 schema (pydantic), priority_for(codes), build_packet() with verified facts from receipts, max 3 open questions;
+  - `guards.py`: unknown_ids() output guard (spec §6.4 layer 4) — replies may mention only ids belonging to the session;
+  - 21 tests covering dispute write, verification, scope enforcement, policy rejection, human review routing, escalation, read-back on unknown outcomes, handoff packet shape and priority, id guard;
+  - All tests pass: 84/84 in agent/, 43/43 in root offline suite.
 
 ## In Progress
 
