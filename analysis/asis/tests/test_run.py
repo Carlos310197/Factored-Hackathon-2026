@@ -21,6 +21,7 @@ def test_reconcile_passes_on_exact_match_and_fails_beyond_tolerance(con):
 def test_charts_are_written(con, tmp_path):
     names = render_all(metrics.collect(con), tmp_path)
     assert names and all((tmp_path / n).stat().st_size > 1000 for n in names)
+    assert "asis-dispute-handling.png" in names  # the three dispute numbers for slide 1
 
 
 def test_report_tags_artifacts_and_states_reconciliation(con):
