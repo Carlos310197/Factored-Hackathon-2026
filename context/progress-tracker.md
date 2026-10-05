@@ -448,6 +448,7 @@ Added in the plan's Phase C (they continue the same numbering):
 - `latest.json` now also carries `git_sha` (`GITHUB_SHA`), `contract_hash` (SHA-256 of the exported columns, in order, canonical JSON) and `dq_summary` (META.DQ_RESULTS counts by status for the run). Older keys unchanged.
 - The agent computes the same hash from `CONTRACT` and refuses a pointer whose hash differs (`ServingError` → data unavailable + human); a pointer without a hash is still served.
 - `tests/test_contract_parity.py` (root suite): the agent's `CONTRACT` equals dbt `curated/schema.yml` plus the seed CSV header, per table and in order, and both sides hash the same way.
+- Verified live 2026-10-05: pipeline run `37378614273-1` (commit `57b728f`) green; `latest.json` carries `git_sha`, `contract_hash` `9d9a5ffe…578d` (equals the agent's `contract_hash()`), `dq_summary` `{pass: 55, warn: 3}` (dbt: 77 pass, 3 warn = known source nulls in complaints `claimed_amount` and interactions `duration_seconds` / `customer_detected_accent`, severity warn by design). The new agent code accepts the live pointer.
 
 ### 2026-10-05: Judge-review quick wins (eval prices, copy, Jev egress)
 
