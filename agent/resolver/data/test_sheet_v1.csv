@@ -1,0 +1,476 @@
+case_id,lang,instruction,describe_this,style_hint,candidates,message
+test-3-000000,es,Describe this transaction (it is in the list below).,2026-03-03 · 945.11 USD · Deposit · Approved · Transfer · Brasília,say roughly how much; give the date; mention the city,"1) 2026-03-09 · 526.21 USD · Deposit · Approved · Branch · Ciudad de México
+2) 2026-03-03 · 945.11 USD · Deposit · Approved · Transfer · Brasília
+3) 2026-02-09 · 3143.23 USD · Deposit · Approved · POS · Ciudad de México
+4) 2026-01-26 · 105.34 USD · Withdrawal · Approved · App · Ciudad de México
+5) 2026-01-22 · 868.55 USD · Adjustment · Approved · Branch · Ciudad de México",
+test-3-000001,es,Describe this transaction (it is in the list below).,2026-01-16 · 6151.34 USD · Transfer · Approved · ATM · Monterrey,don't say the amount; don't say when; say what kind of transaction it was; mention the city,"1) 2026-01-23 · Super Ahorro · 64.91 USD · Purchase · Approved · App · Monterrey
+2) 2026-01-16 · 6151.34 USD · Transfer · Approved · ATM · Monterrey",
+test-3-000002,es,Describe this transaction. It is NOT in the list below: write as if you believe it is yours.,2026-02-16 · 1443.8 USD · Payment · Approved · Web · Tijuana,say roughly how much; don't say when; say what kind of transaction it was,1) 2026-02-23 · Internet Plus · 441.71 USD · Purchase · Declined · ATM · Tijuana,
+test-3-000003,pt,Describe this transaction (it is in the list below).,2026-05-01 · 208.68 USD · Purchase · Approved · Web · Ciudad de México,say roughly how much; say when loosely ('last week'),"1) 2026-05-08 · Farmacia Salud · 46.77 USD · Purchase · Approved · POS · Ciudad de México
+2) 2026-05-06 · 541.41 USD · Transfer · Approved · POS · Ciudad de México
+3) 2026-05-02 · 385.51 USD · Withdrawal · Approved · POS · Ciudad de México
+4) 2026-05-01 · 208.68 USD · Purchase · Approved · Web · Ciudad de México
+5) 2026-04-13 · Farmacia Salud · 44.37 USD · Purchase · Approved · ATM · Ciudad de México
+6) 2026-04-10 · Mercado Central · 64.01 USD · Purchase · Approved · ATM · Ciudad de México
+7) 2026-03-10 · Restaurante El Buen Sabor · 226.65 USD · Purchase · Approved · POS · Ciudad de México",
+test-3-000004,es,Describe this transaction (it is in the list below).,2026-03-03 · 13601367.87 COP · Deposit · Pending · ATM · Barranquilla,don't say the amount; don't say when; say what kind of transaction it was,"1) 2026-03-20 · 5604887.72 COP · Payment · Approved · POS · Barranquilla
+2) 2026-03-03 · 13601367.87 COP · Deposit · Pending · ATM · Barranquilla
+3) 2026-02-25 · 18533563.78 COP · Deposit · Approved · ATM · Barranquilla",
+test-3-000005,pt,Describe this transaction (it is in the list below).,2026-03-17 · 779188.26 COP · Withdrawal · Approved · POS · Cartagena,give the exact amount; give the date; mention the city,"1) 2026-04-07 · 674413.85 COP · Withdrawal · Approved · ATM · Cartagena
+2) 2026-03-27 · 534840.62 COP · Payment · Approved · POS · Cartagena
+3) 2026-03-17 · 779188.26 COP · Withdrawal · Approved · POS · Cartagena",
+test-3-000006,pt,Describe this transaction (it is in the list below).,2026-03-26 · 28898265.01 COP · Transfer · Approved · App · Cali,"round the amount; don't say when; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-03-26 · 28898265.01 COP · Transfer · Approved · App · Cali
+2) 2026-03-25 · 1661762.19 COP · Withdrawal · Approved · POS · Cali",
+test-3-000007,es,Describe this transaction (it is in the list below).,2026-01-12 · 3013785.77 ARS · Transfer · Approved · ATM · Buenos Aires,"give the exact amount; don't say when; say where it happened (ATM, shop, app, web, branch)","1) 2026-01-20 · 1915449.97 ARS · Transfer · Approved · ATM · Buenos Aires
+2) 2026-01-12 · 3013785.77 ARS · Transfer · Approved · ATM · Buenos Aires
+3) 2025-12-29 · 1703144.37 ARS · Transfer · Approved · App · Buenos Aires
+4) 2025-12-19 · 1493242.41 ARS · Deposit · Approved · POS · Buenos Aires",
+test-3-000008,es,Describe this transaction (it is in the list below).,2026-04-25 · 460.38 USD · Withdrawal · Approved · ATM · Mendoza,don't say the amount; say when loosely ('last month'),"1) 2026-05-12 · 827.88 USD · Payment · Approved · ATM · Mendoza
+2) 2026-05-11 · 917855.43 ARS · Deposit · Approved · POS
+3) 2026-04-25 · 460.38 USD · Withdrawal · Approved · ATM · Mendoza",
+test-3-000009,pt,Describe this transaction (it is in the list below).,2026-04-30 · 86.73 USD · Withdrawal · Approved · App · Guadalajara,give no details: just say there is a charge you want to ask about,"1) 2026-06-08 · 6573.69 USD · Transfer · Approved · POS · Guadalajara
+2) 2026-04-30 · 86.73 USD · Withdrawal · Approved · App · Guadalajara",
+test-3-000010,pt,Describe this transaction (it is in the list below).,2026-03-24 · Estación de Servicio · 286.21 USD · Purchase · Approved · ATM,name the merchant loosely (a typo or no accents); give the exact amount; say when loosely ('this week'),"1) 2026-03-24 · Estación de Servicio · 286.21 USD · Purchase · Approved · ATM
+2) 2026-02-28 · 1639.65 USD · Payment · Approved · POS · Guadalajara
+3) 2026-02-12 · Centro Comercial · 295.36 USD · Purchase · Approved · POS · Guadalajara
+4) 2026-02-06 · 1512.94 USD · Payment · Approved · Web · Guadalajara",
+test-3-000011,es,Describe this transaction (it is in the list below).,2026-04-05 · Farmacia Salud · 580906.83 COP · Purchase · Approved · POS · Medellín,give no details: just say there is a charge you want to ask about,"1) 2026-04-10 · 7618924.08 COP · Payment · Approved · POS · Medellín
+2) 2026-04-09 · 858.74 USD · Transfer · Approved · POS · Medellín
+3) 2026-04-05 · Farmacia Salud · 580906.83 COP · Purchase · Approved · POS · Medellín",
+test-3-000012,pt,Describe this transaction (it is in the list below).,2026-02-16 · Taxi Seguro · 838888.76 COP · Purchase · Approved · ATM,"name the merchant; give the exact amount; don't say when; say where it happened (ATM, shop, app, web, branch)","1) 2026-02-18 · 3125.44 USD · Deposit · Approved · Web · Cali
+2) 2026-02-16 · Taxi Seguro · 838888.76 COP · Purchase · Approved · ATM
+3) 2026-02-13 · 9119.24 USD · Transfer · Approved · ATM · Cali",
+test-3-000013,es,Describe this transaction (it is in the list below).,2026-04-17 · 1807357.54 COP · Withdrawal · Approved · Web · Cartagena,"give the exact amount; get the date wrong by one day; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-04-17 · 1807357.54 COP · Withdrawal · Approved · Web · Cartagena
+2) 2026-03-15 · 5223265.86 COP · Payment · Approved · Web · Cartagena",
+test-3-000014,pt,Describe this transaction (it is in the list below).,2026-04-13 · 1435.94 USD · Payment · Declined · POS · Monterrey,"round the amount; give the date; say where it happened (ATM, shop, app, web, branch)","1) 2026-06-04 · 3462.8 USD · Deposit · Approved · ATM · Monterrey
+2) 2026-04-21 · 464.9 USD · Adjustment · Approved · Web · Brasília
+3) 2026-04-13 · 1435.94 USD · Payment · Declined · POS · Monterrey",
+test-3-000015,es,Describe this transaction (it is in the list below).,2026-02-09 · 1298.73 USD · Payment · Approved · POS · Guadalajara,round the amount; don't say when; say what kind of transaction it was,"1) 2026-02-09 · 1298.73 USD · Payment · Approved · POS · Guadalajara
+2) 2026-02-07 · 2135.81 USD · Deposit · Approved · Branch · Guadalajara
+3) 2026-01-25 · Servicios Públicos · 430.38 USD · Purchase · Approved · Web
+4) 2026-01-22 · 3478.53 USD · Deposit · Approved · POS · Guadalajara
+5) 2026-01-17 · Cine Premium · 269.36 USD · Purchase · Approved · POS · Guadalajara
+6) 2026-01-10 · 3540.22 USD · Deposit · Approved · POS
+7) 2026-01-09 · 45.5 USD · Withdrawal · Declined · POS · Guadalajara
+8) 2026-01-06 · 50.71 USD · Withdrawal · Approved · POS · Guadalajara
+9) 2026-01-02 · 160.63 USD · Withdrawal · Approved · POS · Guadalajara",
+test-3-000016,es,Describe this transaction (it is in the list below).,2026-05-11 · 257.26 USD · Payment · Approved · ATM · Tijuana,don't say the amount; get the date wrong by one day; say what kind of transaction it was; mention the city,"1) 2026-05-11 · 257.26 USD · Payment · Approved · ATM · Tijuana
+2) 2026-05-07 · 462.21 USD · Withdrawal · Approved · POS · Tijuana
+3) 2026-04-28 · 581.94 USD · Payment · Approved · Web · Tijuana
+4) 2026-04-07 · Teatro Nacional · 152.24 USD · Purchase · Approved · POS · Tijuana
+5) 2026-03-25 · 2364.74 USD · Deposit · Approved · POS · Tijuana",
+test-3-000017,pt,Describe this transaction (it is in the list below).,2026-04-06 · Cine Premium · 425.22 USD · Purchase · Approved · ATM · Cali,don't name the merchant; don't say the amount; give the date; say what kind of transaction it was,"1) 2026-05-04 · 1235.75 USD · Transfer · Approved · POS · Monterrey
+2) 2026-04-06 · Cine Premium · 425.22 USD · Purchase · Approved · ATM · Cali",
+test-3-000018,pt,Describe this transaction (it is in the list below).,2026-05-30 · 304.61 USD · Payment · Approved · POS · Ciudad de México,give no details: just say there is a charge you want to ask about,"1) 2026-05-30 · 304.61 USD · Payment · Approved · POS · Ciudad de México
+2) 2026-05-10 · 466.68 USD · Payment · Approved · ATM · Ciudad de México",
+test-3-000019,pt,Describe this transaction. It is NOT in the list below: write as if you believe it is yours.,2026-03-06 · 1543.65 USD · Deposit · Approved · POS · Ciudad de México,give the exact amount; don't say when; say what kind of transaction it was,"1) 2026-03-29 · 1485.87 USD · Payment · Approved · POS · Ciudad de México
+2) 2026-03-13 · 281.6 USD · Withdrawal · Declined · Web · Ciudad de México",
+test-3-000020,es,Describe this transaction. It is NOT in the list below: write as if you believe it is yours.,2026-02-21 · 825.87 USD · Payment · Approved · POS · Guadalajara,don't say the amount; give the date,1) 2026-02-12 · 556.07 USD · Adjustment · Approved · POS · Guadalajara,
+test-3-000021,es,Describe this transaction (it is in the list below).,2026-01-26 · 277135.81 COP · Purchase · Approved · ATM · Medellín,give no details: just say there is a charge you want to ask about,"1) 2026-01-27 · Internet Plus · 922156.72 COP · Purchase · Approved · POS · Medellín
+2) 2026-01-26 · 277135.81 COP · Purchase · Approved · ATM · Medellín",
+test-3-000022,pt,Describe this transaction. It is NOT in the list below: write as if you believe it is yours.,2025-12-24 · 831221.29 COP · Payment · Approved · ATM,"give the exact amount; don't say when; say where it happened (ATM, shop, app, web, branch)","1) 2026-02-11 · 13213331.0 COP · Transfer · Approved · ATM
+2) 2026-01-08 · 106721.55 COP · Purchase · Approved · ATM · Cartagena",
+test-3-000023,pt,Describe this transaction (it is in the list below).,2026-04-08 · 291.77 USD · Withdrawal · Approved · App · Tijuana,round the amount; get the date wrong by one day; say what kind of transaction it was,"1) 2026-04-08 · 291.77 USD · Withdrawal · Approved · App · Tijuana
+2) 2026-03-30 · 6240.49 USD · Transfer · Approved · Web · Tijuana
+3) 2026-03-02 · 9606.05 USD · Transfer · Approved · POS · Tijuana",
+test-3-000024,es,Describe this transaction. It is NOT in the list below: write as if you believe it is yours.,2026-03-11 · 299.9 USD · Payment · Approved · Web · Puebla,give the exact amount; get the date wrong by one day; say what kind of transaction it was; mention the city,"1) 2026-03-30 · Estación de Servicio · 245.3 USD · Purchase · Approved · POS · Puebla
+2) 2026-03-25 · Uber · 277.12 USD · Purchase · Declined · POS · Puebla
+3) 2026-02-17 · Restaurante El Buen Sabor · 412.96 USD · Purchase · Approved · POS · Puebla",
+test-3-000025,es,Describe this transaction (it is in the list below).,2026-04-07 · Ferretería · 333.06 USD · Purchase · Approved · POS · Buenos Aires,name the merchant; round the amount; don't say when; say what kind of transaction it was; mention the city,"1) 2026-04-08 · 18726.4 ARS · Withdrawal · Approved · Web · Buenos Aires
+2) 2026-04-07 · Ferretería · 333.06 USD · Purchase · Approved · POS · Buenos Aires
+3) 2026-03-11 · 1703382.97 ARS · Deposit · Approved · ATM · Los Angeles",
+test-3-000026,pt,Describe this transaction (it is in the list below).,2026-04-21 · Cine Premium · 6220.08 ARS · Purchase · Approved · Transfer · Mendoza,don't name the merchant; round the amount; don't say when; say what kind of transaction it was,"1) 2026-05-20 · 181867.54 ARS · Adjustment · Approved · ATM
+2) 2026-05-17 · 638747.14 ARS · Payment · Approved · ATM · Mendoza
+3) 2026-04-29 · 633896.57 ARS · Payment · Approved · Web · Mendoza
+4) 2026-04-21 · Cine Premium · 6220.08 ARS · Purchase · Approved · Transfer · Mendoza",
+test-3-000027,es,Describe this transaction (it is in the list below).,2026-03-27 · 19225271.65 COP · Deposit · Approved · POS · Cartagena,don't say the amount; give the date; say what kind of transaction it was; mention the city,"1) 2026-04-14 · 2579326.91 COP · Payment · Approved · POS · Cartagena
+2) 2026-03-27 · 19225271.65 COP · Deposit · Approved · POS · Cartagena
+3) 2026-03-03 · 1633914.33 COP · Deposit · Approved · ATM · Cartagena",
+test-3-000028,es,Describe this transaction (it is in the list below).,2026-05-21 · 1625993.58 COP · Withdrawal · Approved · ATM · Barranquilla,"say roughly how much; say when loosely ('this week'); say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-05-21 · 1625993.58 COP · Withdrawal · Approved · ATM · Barranquilla
+2) 2026-04-23 · 2840237.91 COP · Payment · Approved · POS · Barranquilla
+3) 2026-04-15 · 895398.89 COP · Payment · Approved · Web · Barranquilla",
+test-3-000029,pt,Describe this transaction (it is in the list below).,2026-05-09 · 5485.14 USD · Transfer · Approved · ATM · Monterrey,round the amount; say when loosely ('last month'),"1) 2026-05-14 · 462.17 USD · Withdrawal · Approved · ATM · Monterrey
+2) 2026-05-09 · 5485.14 USD · Transfer · Approved · ATM · Monterrey",
+test-3-000030,es,Describe this transaction (it is in the list below).,2026-01-28 · 133592.62 ARS · Withdrawal · Approved · POS · Córdoba,round the amount; don't say when; say what kind of transaction it was,"1) 2026-02-16 · 1855239.98 ARS · Transfer · Approved · POS · Córdoba
+2) 2026-01-28 · 133592.62 ARS · Withdrawal · Approved · POS · Córdoba",
+test-3-000031,pt,Describe this transaction (it is in the list below).,2026-03-19 · 586061.18 ARS · Payment · Approved · ATM · Mendoza,round the amount; don't say when; say what kind of transaction it was,"1) 2026-04-01 · Internet Plus · 97622.33 ARS · Purchase · Approved · POS · Mendoza
+2) 2026-03-19 · 586061.18 ARS · Payment · Approved · ATM · Mendoza
+3) 2026-03-13 · 2443037.71 ARS · Transfer · Approved · Web
+4) 2026-03-08 · 54685.78 ARS · Withdrawal · Approved · ATM · Mendoza",
+test-3-000032,es,Describe this transaction (it is in the list below).,2026-02-12 · Mercado Central · 26.11 USD · Purchase · Approved · POS · Tijuana,don't name the merchant; give the exact amount; don't say when; say what kind of transaction it was,"1) 2026-02-12 · Mercado Central · 26.11 USD · Purchase · Approved · POS · Tijuana
+2) 2026-02-10 · Teatro Nacional · 380.67 USD · Purchase · Approved · ATM · Tijuana
+3) 2026-01-24 · Internet Plus · 192.82 USD · Purchase · Declined · Branch · Tijuana",
+test-3-000033,pt,Describe this transaction (it is in the list below).,2026-05-01 · 285714.7 COP · Withdrawal · Approved · POS · Cali,say roughly how much; don't say when; mention the city,"1) 2026-05-01 · 285714.7 COP · Withdrawal · Approved · POS · Cali
+2) 2026-04-27 · 931234.41 COP · Withdrawal · Approved · POS",
+test-3-000034,pt,Describe this transaction (it is in the list below).,2026-01-13 · 1284.77 USD · Transfer · Approved · ATM · Tijuana,give the exact amount; don't say when; mention the city,"1) 2026-02-03 · 82.72 USD · Adjustment · Approved · ATM · Tijuana
+2) 2026-02-02 · Conciertos Live · 291.02 USD · Purchase · Approved · App · Valencia
+3) 2026-02-01 · 84.68 USD · Withdrawal · Approved · POS · Tijuana
+4) 2026-01-13 · 1284.77 USD · Transfer · Approved · ATM · Tijuana
+5) 2026-01-13 · 392.98 USD · Withdrawal · Approved · POS · Tijuana",
+test-3-000035,es,Describe this transaction (it is in the list below).,2026-03-04 · 10434862.89 COP · Transfer · Approved · POS · Medellín,give the exact amount; say when loosely ('this week'),"1) 2026-03-04 · 10434862.89 COP · Transfer · Approved · POS · Medellín
+2) 2026-02-24 · 21881851.57 COP · Transfer · Approved · Branch · Medellín",
+test-3-000036,es,Describe this transaction (it is in the list below).,2026-04-06 · 7291.44 USD · Transfer · Approved · POS · Querétaro,round the amount; don't say when; say what kind of transaction it was; mention the city,"1) 2026-04-06 · 7291.44 USD · Transfer · Approved · POS · Querétaro
+2) 2026-04-01 · 1502.94 USD · Payment · Approved · POS · Querétaro
+3) 2026-04-01 · 1361.21 USD · Payment · Approved · Web · Querétaro",
+test-3-000037,pt,Describe this transaction (it is in the list below).,2026-03-23 · Servicios Públicos · 94342.03 ARS · Purchase · Approved · POS · Rosario,"don't name the merchant; don't say the amount; don't say when; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-04-19 · Servicios Públicos · 150831.83 ARS · Purchase · Approved · POS · Rosario
+2) 2026-03-23 · Servicios Públicos · 94342.03 ARS · Purchase · Approved · POS · Rosario",
+test-3-000038,pt,Describe this transaction (it is in the list below).,2026-04-27 · Cable TV · 73788.0 ARS · Purchase · Approved · App · Buenos Aires,name the merchant loosely (a typo or no accents); say roughly how much; say when loosely ('last month'); mention the city,"1) 2026-04-28 · Restaurante El Buen Sabor · 51821.1 ARS · Purchase · Approved · ATM
+2) 2026-04-27 · Cable TV · 73788.0 ARS · Purchase · Approved · App · Buenos Aires",
+test-3-000039,es,Describe this transaction (it is in the list below).,2026-01-07 · 374060.54 ARS · Payment · Approved · App · Mendoza,say roughly how much; give the date; say what kind of transaction it was,"1) 2026-01-18 · 68533.15 ARS · Adjustment · Approved · POS · Mendoza
+2) 2026-01-07 · 374060.54 ARS · Payment · Approved · App · Mendoza
+3) 2025-12-23 · Conciertos Live · 126198.42 ARS · Purchase · Approved · POS · Mendoza",
+test-3-000040,pt,Describe this transaction. It is NOT in the list below: write as if you believe it is yours.,2026-04-13 · Empresa Telefónica · 452.4 USD · Purchase · Approved · ATM · Ciudad de México,name the merchant; round the amount; say when loosely ('last month'),"1) 2026-05-17 · 55.4 USD · Withdrawal · Approved · ATM · Ciudad de México
+2) 2026-05-05 · Tienda Don José · 484.39 USD · Purchase · Approved · ATM · Ciudad de México
+3) 2026-05-02 · 771.6 USD · Transfer · Approved · POS · Ciudad de México",
+test-3-000041,pt,Describe this transaction (it is in the list below).,2026-04-13 · Internet Plus · 1288464.23 COP · Purchase · Approved · Transfer · Cali,name the merchant loosely (a typo or no accents); give the exact amount; give the date; say what kind of transaction it was,"1) 2026-04-13 · Internet Plus · 1288464.23 COP · Purchase · Approved · Transfer · Cali
+2) 2026-04-11 · Streaming Music · 983755.57 COP · Purchase · Approved · Transfer · Cali
+3) 2026-04-10 · 25187448.17 COP · Transfer · Declined · POS · Cali
+4) 2026-02-18 · Taxi Seguro · 239093.1 COP · Purchase · Approved · ATM · Cali",
+test-3-000042,es,Describe this transaction (it is in the list below).,2026-05-31 · Servicios Públicos · 1610607.07 COP · Purchase · Pending · ATM · Cartagena,don't name the merchant; round the amount; don't say when; say what kind of transaction it was,"1) 2026-05-31 · Servicios Públicos · 1610607.07 COP · Purchase · Pending · ATM · Cartagena
+2) 2026-05-05 · 9572083.75 COP · Transfer · Approved · ATM · Cartagena
+3) 2026-04-30 · Gasolinera Express · 334.1 USD · Purchase · Approved · POS",
+test-3-000043,pt,Describe this transaction (it is in the list below).,2026-04-06 · Super Ahorro · 10.61 USD · Purchase · Approved · Web · Puebla,don't name the merchant; don't say the amount; don't say when; say what kind of transaction it was; mention the city,"1) 2026-04-20 · Ferretería · 56.86 USD · Purchase · Approved · POS · Puebla
+2) 2026-04-06 · Super Ahorro · 10.61 USD · Purchase · Approved · Web · Puebla",
+test-3-000044,es,Describe this transaction (it is in the list below).,2026-03-26 · 6127304.03 COP · Payment · Approved · POS · Barranquilla,round the amount; get the date wrong by one day; say what kind of transaction it was; mention the city,"1) 2026-03-26 · 6127304.03 COP · Payment · Approved · POS · Barranquilla
+2) 2026-02-20 · 21297714.93 COP · Transfer · Approved · POS · Barranquilla
+3) 2026-02-10 · 2598287.75 COP · Deposit · Approved · Web · Barranquilla",
+test-3-000045,es,Describe this transaction (it is in the list below).,2026-01-16 · 10831294.48 COP · Transfer · Approved · ATM · Bogotá,give the exact amount; say when loosely ('last month'); mention the city,"1) 2026-02-24 · 6930.36 USD · Transfer · Approved · ATM
+2) 2026-02-16 · 30218888.21 COP · Transfer · Approved · ATM · Bogotá
+3) 2026-01-16 · 10831294.48 COP · Transfer · Approved · ATM · Bogotá",
+test-3-000046,pt,Describe this transaction (it is in the list below).,2026-01-23 · 5174529.64 COP · Payment · Approved · POS · Cali,don't say the amount; say when loosely ('last month'); say what kind of transaction it was; mention the city,"1) 2026-02-16 · 2329191.29 COP · Adjustment · Approved · App · Cali
+2) 2026-02-05 · 21248605.81 COP · Transfer · Approved · ATM · Cali
+3) 2026-01-23 · 5174529.64 COP · Payment · Approved · POS · Cali",
+test-3-000047,es,Describe this transaction (it is in the list below).,2026-05-19 · Restaurante El Buen Sabor · 113075.06 ARS · Purchase · Approved · ATM · La Plata,name the merchant loosely (a typo or no accents); round the amount; say when loosely ('last week'); say what kind of transaction it was; mention the city,"1) 2026-05-19 · Restaurante El Buen Sabor · 113075.06 ARS · Purchase · Approved · ATM · La Plata
+2) 2026-04-14 · Óptica Visión · 18594.59 ARS · Purchase · Approved · POS · Barranquilla",
+test-3-000048,es,Describe this transaction. It is NOT in the list below: write as if you believe it is yours.,2025-12-29 · 4071931.57 COP · Payment · Approved · ATM · Medellín,"give the exact amount; don't say when; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch); mention the city",1) 2026-01-12 · 5372975.39 COP · Payment · Approved · POS · Medellín,
+test-3-000049,pt,Describe this transaction (it is in the list below).,2026-01-26 · 3780.73 USD · Transfer · Declined · Web · Barranquilla,"give the exact amount; say when loosely ('last month'); say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-01-26 · 3780.73 USD · Transfer · Declined · Web · Barranquilla
+2) 2026-01-06 · 460.36 USD · Withdrawal · Approved · ATM · Barranquilla",
+test-3-000050,es,Describe this transaction (it is in the list below).,2026-02-26 · 7435.85 ARS · Withdrawal · Approved · Web · Mendoza,"give the exact amount; give the date; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-03-05 · Streaming Music · 79294.56 ARS · Purchase · Approved · POS · Mendoza
+2) 2026-02-26 · 7435.85 ARS · Withdrawal · Approved · Web · Mendoza",
+test-3-000051,pt,Describe this transaction (it is in the list below).,2026-04-26 · 33.18 USD · Withdrawal · Declined · POS · Tijuana,give no details: just say there is a charge you want to ask about,"1) 2026-05-13 · 203.76 USD · Withdrawal · Declined · POS · Tijuana
+2) 2026-05-12 · Laboratorio Central · 376.91 USD · Purchase · Approved · POS · Tijuana
+3) 2026-04-26 · 33.18 USD · Withdrawal · Declined · POS · Tijuana",
+test-3-000052,pt,Describe this transaction (it is in the list below).,2026-04-03 · 141.79 USD · Withdrawal · Approved · POS · Monterrey,"say roughly how much; give the date; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-04-24 · 1458.21 USD · Deposit · Approved · POS · Monterrey
+2) 2026-04-03 · 141.79 USD · Withdrawal · Approved · POS · Monterrey",
+test-3-000053,es,Describe this transaction (it is in the list below).,2026-01-20 · 4737605.75 COP · Payment · Approved · Web,round the amount; don't say when,"1) 2026-02-21 · 1099730.38 COP · Withdrawal · Approved · ATM · Barranquilla
+2) 2026-01-20 · 4737605.75 COP · Payment · Approved · Web
+3) 2026-01-18 · Cine Premium · 1936358.25 COP · Purchase · Approved · POS · Barranquilla",
+test-3-000054,pt,Describe this transaction (it is in the list below).,2026-02-12 · 171.36 USD · Withdrawal · Approved · POS · Guadalajara,round the amount; don't say when; say what kind of transaction it was,"1) 2026-03-27 · 1049.92 USD · Deposit · Approved · POS · Córdoba
+2) 2026-03-13 · 4547.38 USD · Transfer · Approved · POS · Guadalajara
+3) 2026-03-03 · 1235.36 USD · Payment · Declined · POS · Guadalajara
+4) 2026-02-12 · 171.36 USD · Withdrawal · Approved · POS · Guadalajara
+5) 2026-02-11 · Teatro Nacional · 277.31 USD · Purchase · Approved · ATM · Guadalajara",
+test-3-000055,pt,Describe this transaction. It is NOT in the list below: write as if you believe it is yours.,2026-02-18 · 19311208.07 COP · Deposit · Approved · POS · Barranquilla,round the amount; don't say when; say what kind of transaction it was,1) 2026-03-09 · 945725.82 COP · Withdrawal · Approved · App · Barranquilla,
+test-3-000056,es,Describe this transaction (it is in the list below).,2026-01-22 · Internet Plus · 140690.72 ARS · Purchase · Approved · POS · Rosario,"name the merchant; say roughly how much; don't say when; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-01-22 · Internet Plus · 140690.72 ARS · Purchase · Approved · POS · Rosario
+2) 2025-12-31 · 66345.79 ARS · Adjustment · Approved · Web · Rosario
+3) 2025-12-17 · 198339.57 ARS · Payment · Approved · POS · Rosario",
+test-3-000057,es,Describe this transaction (it is in the list below).,2026-06-03 · 407.3 USD · Withdrawal · Approved · ATM · Querétaro,"don't say the amount; give the date; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-06-03 · 407.3 USD · Withdrawal · Approved · ATM · Querétaro
+2) 2026-04-23 · 67.5 USD · Withdrawal · Approved · POS · Querétaro",
+test-3-000058,pt,Describe this transaction (it is in the list below).,2026-02-20 · 5821.46 USD · Transfer · Approved · POS · Barranquilla,"give the exact amount; say when loosely ('this week'); say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-02-20 · 5821.46 USD · Transfer · Approved · POS · Barranquilla
+2) 2026-01-20 · Centro Comercial · 1830561.83 COP · Purchase · Approved · App · Barranquilla
+3) 2026-01-17 · Empresa Telefónica · 93214.82 COP · Purchase · Approved · Web · Barranquilla
+4) 2026-01-17 · 4888564.27 COP · Payment · Approved · ATM · Barranquilla",
+test-3-000059,pt,Describe this transaction (it is in the list below).,2026-04-18 · 7358.39 USD · Transfer · Approved · POS · Puebla,"don't say the amount; give the date; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-04-18 · 7358.39 USD · Transfer · Approved · POS · Puebla
+2) 2026-03-23 · 6618.73 USD · Transfer · Approved · App · Puebla",
+test-3-000060,es,Describe this transaction. It is NOT in the list below: write as if you believe it is yours.,2026-03-25 · Estación de Servicio · 116862.1 ARS · Purchase · Pending · POS · La Plata,"name the merchant; say roughly how much; don't say when; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-03-31 · 488209.34 ARS · Transfer · Approved · Transfer · La Plata
+2) 2026-03-30 · 25064.25 ARS · Withdrawal · Approved · ATM",
+test-3-000061,es,Describe this transaction (it is in the list below).,2026-04-30 · Conciertos Live · 66894.38 ARS · Purchase · Approved · Web · Sevilla,"don't name the merchant; say roughly how much; get the date wrong by one day; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-05-23 · 21179.55 ARS · Withdrawal · Approved · Branch
+2) 2026-05-14 · 307385.43 ARS · Deposit · Approved · App · Rosario
+3) 2026-05-02 · 71261.91 ARS · Withdrawal · Approved · ATM · Rosario
+4) 2026-04-30 · Conciertos Live · 66894.38 ARS · Purchase · Approved · Web · Sevilla
+5) 2026-04-22 · 619949.74 ARS · Deposit · Approved · ATM · Rosario
+6) 2026-04-14 · 9125.43 ARS · Withdrawal · Approved · Web · Rosario
+7) 2026-04-13 · 170347.71 ARS · Withdrawal · Approved · POS · Rosario
+8) 2026-03-28 · 203930.64 ARS · Transfer · Approved · POS · New York",
+test-3-000062,es,Describe this transaction (it is in the list below).,2026-05-08 · 212.78 USD · Withdrawal · Approved · POS · Bogotá,don't say the amount; don't say when,"1) 2026-05-08 · 212.78 USD · Withdrawal · Approved · POS · Bogotá
+2) 2026-04-28 · 665.44 USD · Transfer · Approved · POS · Bogotá
+3) 2026-04-24 · 13020053.81 COP · Transfer · Approved · ATM · Bogotá",
+test-3-000063,pt,Describe this transaction (it is in the list below).,2026-04-16 · 4871222.16 COP · Transfer · Approved · POS · Cartagena,"give the amount in US dollars; don't say when; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-04-16 · 4871222.16 COP · Transfer · Approved · POS · Cartagena
+2) 2026-04-09 · 1773928.98 COP · Withdrawal · Approved · Web · Cartagena
+3) 2026-03-11 · 420010.46 COP · Withdrawal · Approved · ATM · Cartagena",
+test-3-000064,es,Describe this transaction (it is in the list below).,2026-02-15 · 363881.9 ARS · Payment · Approved · Web,"give the exact amount; say when loosely ('last month'); say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-03-17 · 101189.45 ARS · Transfer · Approved · ATM · Mendoza
+2) 2026-03-06 · 1836497.33 ARS · Transfer · Approved · POS
+3) 2026-02-15 · 363881.9 ARS · Payment · Approved · Web
+4) 2026-01-22 · Conciertos Live · 109379.34 ARS · Purchase · Approved · ATM · Mendoza",
+test-3-000065,pt,Describe this transaction (it is in the list below).,2026-04-23 · 4900.97 USD · Transfer · Approved · POS · Querétaro,"say roughly how much; don't say when; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-05-22 · 43.68 USD · Withdrawal · Approved · ATM
+2) 2026-04-23 · 4900.97 USD · Transfer · Approved · POS · Querétaro",
+test-3-000066,es,Describe this transaction (it is in the list below).,2026-03-09 · 813312.16 COP · Withdrawal · Approved · App · Medellín,give no details: just say there is a charge you want to ask about,"1) 2026-04-17 · 16863228.96 COP · Transfer · Approved · POS · Medellín
+2) 2026-03-09 · 813312.16 COP · Withdrawal · Approved · App · Medellín",
+test-3-000067,pt,Describe this transaction (it is in the list below).,2026-02-19 · 3116440.28 ARS · Transfer · Approved · POS · Rosario,don't say the amount; don't say when; say what kind of transaction it was; mention the city,"1) 2026-04-01 · 1361236.41 ARS · Transfer · Approved · Web · Rosario
+2) 2026-03-30 · 336189.08 ARS · Payment · Approved · Web · Rosario
+3) 2026-02-24 · Óptica Visión · 121509.0 ARS · Purchase · Approved · Web · Rosario
+4) 2026-02-19 · 3116440.28 ARS · Transfer · Approved · POS · Rosario",
+test-3-000068,pt,Describe this transaction (it is in the list below).,2026-03-08 · 6998.61 USD · Transfer · Approved · ATM · Monterrey,give the exact amount; say when loosely ('last month'); say what kind of transaction it was; mention the city,"1) 2026-03-25 · 2888.48 USD · Deposit · Approved · POS · Monterrey
+2) 2026-03-08 · 6998.61 USD · Transfer · Approved · ATM · Monterrey
+3) 2026-02-27 · 428.99 USD · Withdrawal · Approved · POS · Monterrey",
+test-3-000069,es,Describe this transaction (it is in the list below).,2026-04-25 · 423.11 USD · Withdrawal · Approved · Web · Guadalajara,give the exact amount; give the date,"1) 2026-04-28 · Taxi Seguro · 168.44 USD · Purchase · Reversed · ATM · Guadalajara
+2) 2026-04-25 · 423.11 USD · Withdrawal · Approved · Web · Guadalajara
+3) 2026-03-24 · Estación de Servicio · 151.5 USD · Purchase · Approved · POS · Barcelona",
+test-3-000070,pt,Describe this transaction (it is in the list below).,2026-04-28 · 1778.64 USD · Transfer · Approved · POS · Ciudad de México,give the exact amount; get the date wrong by one day; say what kind of transaction it was,"1) 2026-05-18 · 658.11 USD · Payment · Approved · ATM · Ciudad de México
+2) 2026-05-14 · 345.32 USD · Withdrawal · Approved · Web · Ciudad de México
+3) 2026-04-28 · 1778.64 USD · Transfer · Approved · POS · Ciudad de México
+4) 2026-04-21 · 4512.96 USD · Deposit · Approved · App · Ciudad de México",
+test-3-000071,es,Describe this transaction (it is in the list below).,2026-04-22 · Super Ahorro · 468.49 USD · Purchase · Approved · Web · Tijuana,name the merchant; don't say the amount; say when loosely ('last week'); say what kind of transaction it was,"1) 2026-04-22 · Super Ahorro · 468.49 USD · Purchase · Approved · Web · Tijuana
+2) 2026-04-22 · 185.17 USD · Withdrawal · Approved · Web · Tijuana
+3) 2026-03-26 · 1228.01 USD · Payment · Approved · POS · Tijuana",
+test-3-000072,pt,Describe this transaction (it is in the list below).,2026-03-14 · 8689.5 USD · Transfer · Declined · POS · Tijuana,"give the exact amount; don't say when; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-04-17 · 206.93 USD · Withdrawal · Approved · POS
+2) 2026-03-14 · 8689.5 USD · Transfer · Declined · POS · Tijuana",
+test-3-000073,es,Describe this transaction (it is in the list below).,2026-01-28 · 1624343.4 COP · Withdrawal · Approved · App,"round the amount; don't say when; say where it happened (ATM, shop, app, web, branch)","1) 2026-03-01 · 26142786.43 COP · Transfer · Approved · POS · Cartagena
+2) 2026-02-10 · 656583.48 COP · Withdrawal · Approved · ATM
+3) 2026-01-28 · 1624343.4 COP · Withdrawal · Approved · App",
+test-3-000074,es,Describe this transaction (it is in the list below).,2026-05-16 · 3083.87 USD · Deposit · Approved · Web · Cartagena,give no details: just say there is a charge you want to ask about,"1) 2026-05-22 · 297.47 USD · Withdrawal · Declined · ATM · Cartagena
+2) 2026-05-16 · 3083.87 USD · Deposit · Approved · Web · Cartagena
+3) 2026-05-02 · 5020.35 USD · Transfer · Approved · POS · Buenos Aires",
+test-3-000075,pt,Describe this transaction (it is in the list below).,2026-03-05 · Streaming Music · 542187.95 COP · Purchase · Approved · POS · Barranquilla,name the merchant; give the exact amount; don't say when; say what kind of transaction it was,"1) 2026-04-09 · 1419867.4 COP · Withdrawal · Approved · POS · Barranquilla
+2) 2026-03-05 · Streaming Music · 542187.95 COP · Purchase · Approved · POS · Barranquilla",
+test-3-000076,es,Describe this transaction (it is in the list below).,2026-04-21 · Taxi Seguro · 1131681.94 COP · Purchase · Approved · App · Medellín,don't name the merchant; round the amount; say when loosely ('this week'); say what kind of transaction it was; mention the city,"1) 2026-04-21 · Taxi Seguro · 1131681.94 COP · Purchase · Approved · App · Medellín
+2) 2026-04-12 · 5666353.19 COP · Payment · Approved · POS · Medellín
+3) 2026-04-04 · 7891165.25 COP · Deposit · Approved · ATM · Medellín",
+test-3-000077,pt,Describe this transaction (it is in the list below).,2026-04-20 · 1897101.15 COP · Withdrawal · Declined · POS · Cartagena,give the exact amount; give the date; say what kind of transaction it was; mention the city,"1) 2026-05-22 · Restaurante El Buen Sabor · 1184952.82 COP · Purchase · Approved · ATM
+2) 2026-05-09 · Estación de Servicio · 581772.96 COP · Purchase · Approved · App · Cartagena
+3) 2026-05-04 · 341775.4 COP · Withdrawal · Approved · POS · Cartagena
+4) 2026-04-28 · 14940812.16 COP · Transfer · Approved · ATM · Cartagena
+5) 2026-04-20 · 1897101.15 COP · Withdrawal · Declined · POS · Cartagena",
+test-3-000078,pt,Describe this transaction (it is in the list below).,2026-03-17 · 2618.47 USD · Deposit · Approved · POS · Querétaro,give the exact amount; say when loosely ('last month'); say what kind of transaction it was,"1) 2026-03-18 · Servicios Públicos · 351.92 USD · Purchase · Approved · POS · Querétaro
+2) 2026-03-17 · 2618.47 USD · Deposit · Approved · POS · Querétaro",
+test-3-000079,es,Describe this transaction (it is in the list below).,2026-03-28 · 1198827.2 COP · Payment · Approved · POS · Bogotá,round the amount; don't say when,"1) 2026-04-14 · Boutique Moda · 533733.61 COP · Purchase · Approved · ATM · Bogotá
+2) 2026-04-06 · Restaurante El Buen Sabor · 300381.61 COP · Purchase · Approved · Web
+3) 2026-03-28 · 1198827.2 COP · Payment · Approved · POS · Bogotá
+4) 2026-03-17 · 902.61 USD · Adjustment · Approved · Web · Bogotá
+5) 2026-02-21 · Restaurante El Buen Sabor · 1090369.97 COP · Purchase · Pending · ATM · Bogotá",
+test-3-000080,es,Describe this transaction (it is in the list below).,2026-04-07 · 2362.54 USD · Transfer · Approved · Web · Monterrey,round the amount; get the date wrong by one day; say what kind of transaction it was; mention the city,"1) 2026-04-18 · 334.02 USD · Withdrawal · Approved · POS · Monterrey
+2) 2026-04-07 · 2362.54 USD · Transfer · Approved · Web · Monterrey",
+test-3-000081,pt,Describe this transaction (it is in the list below).,2026-04-06 · 2469.5 USD · Transfer · Approved · POS · Ciudad de México,give the exact amount; don't say when,"1) 2026-04-06 · 2469.5 USD · Transfer · Approved · POS · Ciudad de México
+2) 2026-03-25 · 2552.9 USD · Transfer · Approved · POS · Ciudad de México",
+test-3-000082,pt,Describe this transaction (it is in the list below).,2026-05-14 · Gasolinera Express · 385.54 USD · Purchase · Approved · POS · Tijuana,name the merchant; round the amount; say when loosely ('last week'),"1) 2026-05-14 · Gasolinera Express · 385.54 USD · Purchase · Approved · POS · Tijuana
+2) 2026-05-12 · Ferretería · 100.4 USD · Purchase · Approved · POS · Tijuana",
+test-3-000083,es,Describe this transaction (it is in the list below).,2026-04-02 · 186678.86 COP · Withdrawal · Approved · ATM · Bogotá,"give the exact amount; say when loosely ('this month'); say where it happened (ATM, shop, app, web, branch)","1) 2026-04-08 · 470.23 USD · Withdrawal · Approved · POS · Bogotá
+2) 2026-04-02 · 186678.86 COP · Withdrawal · Approved · ATM · Bogotá
+3) 2026-03-24 · 12310002.74 COP · Deposit · Approved · ATM
+4) 2026-03-08 · 3649189.21 COP · Adjustment · Approved · POS · Bogotá",
+test-3-000084,es,Describe this transaction (it is in the list below).,2026-01-28 · 19712.78 ARS · Withdrawal · Approved · POS · Mendoza,round the amount; say when loosely ('last month'); mention the city,"1) 2026-02-06 · 479716.28 ARS · Payment · Approved · App · Mendoza
+2) 2026-02-04 · 3128880.51 ARS · Transfer · Approved · ATM · Mendoza
+3) 2026-01-28 · 19712.78 ARS · Withdrawal · Approved · POS · Mendoza",
+test-3-000085,pt,Describe this transaction (it is in the list below).,2026-02-05 · 2726519.36 ARS · Transfer · Approved · App · Buenos Aires,round the amount; say when loosely ('last week'); mention the city,"1) 2026-02-12 · Cine Premium · 479.96 USD · Purchase · Approved · ATM · Buenos Aires
+2) 2026-02-05 · 2726519.36 ARS · Transfer · Approved · App · Buenos Aires
+3) 2026-01-30 · 376.82 USD · Payment · Approved · Web · Buenos Aires
+4) 2026-01-29 · 89770.87 ARS · Withdrawal · Approved · POS · Buenos Aires",
+test-3-000086,es,Describe this transaction (it is in the list below).,2026-01-25 · 300234.61 ARS · Payment · Declined · Web · La Plata,give the exact amount; don't say when; say what kind of transaction it was,"1) 2026-03-02 · 123264.28 ARS · Withdrawal · Approved · ATM · La Plata
+2) 2026-02-25 · 943977.98 ARS · Deposit · Approved · ATM · La Plata
+3) 2026-02-05 · 123410.74 ARS · Deposit · Approved · App
+4) 2026-01-25 · 300234.61 ARS · Payment · Declined · Web · La Plata
+5) 2026-01-16 · 769335.56 ARS · Transfer · Approved · POS · La Plata",
+test-3-000087,pt,Describe this transaction. It is NOT in the list below: write as if you believe it is yours.,2026-05-07 · 2351.64 USD · Deposit · Approved · ATM · Querétaro,"say roughly how much; say when loosely ('last week'); say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-04-30 · 563.94 USD · Payment · Approved · Web · Querétaro
+2) 2026-03-19 · 3157.35 USD · Transfer · Approved · Transfer",
+test-3-000088,pt,Describe this transaction (it is in the list below).,2026-03-23 · Conciertos Live · 1450657.83 COP · Purchase · Approved · Web · Medellín,name the merchant loosely (a typo or no accents); round the amount; get the date wrong by one day; say what kind of transaction it was,"1) 2026-04-15 · 5958498.98 COP · Payment · Approved · ATM · Medellín
+2) 2026-03-23 · Conciertos Live · 1450657.83 COP · Purchase · Approved · Web · Medellín",
+test-3-000089,pt,Describe this transaction (it is in the list below).,2026-04-06 · 3967841.64 COP · Payment · Approved · App · Barranquilla,"give the exact amount; don't say when; say where it happened (ATM, shop, app, web, branch)","1) 2026-04-24 · 7937244.73 COP · Payment · Declined · POS · Barranquilla
+2) 2026-04-06 · 3967841.64 COP · Payment · Approved · App · Barranquilla",
+test-3-000090,es,Describe this transaction (it is in the list below).,2026-05-31 · Servicios Públicos · 336.99 USD · Purchase · Declined · POS · Barranquilla,"name the merchant loosely (a typo or no accents); don't say the amount; say when loosely ('last month'); say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-05-31 · Servicios Públicos · 336.99 USD · Purchase · Declined · POS · Barranquilla
+2) 2026-05-23 · 290.58 USD · Withdrawal · Approved · POS · Barranquilla",
+test-3-000091,pt,Describe this transaction (it is in the list below).,2026-01-12 · Mercado Central · 220.34 USD · Purchase · Approved · Web · Guadalajara,"name the merchant loosely (a typo or no accents); round the amount; get the date wrong by one day; say where it happened (ATM, shop, app, web, branch)","1) 2026-01-15 · Cable TV · 346.1 USD · Purchase · Approved · Web · Guadalajara
+2) 2026-01-12 · Mercado Central · 220.34 USD · Purchase · Approved · Web · Guadalajara
+3) 2025-12-24 · 1872.16 USD · Deposit · Approved · ATM · Guadalajara",
+test-3-000092,es,Describe this transaction (it is in the list below).,2026-02-19 · 952.78 USD · Transfer · Approved · App · Salvador,"don't say the amount; get the date wrong by one day; say where it happened (ATM, shop, app, web, branch)","1) 2026-02-19 · 952.78 USD · Transfer · Approved · App · Salvador
+2) 2026-02-13 · 498.47 USD · Withdrawal · Approved · ATM · Querétaro",
+test-3-000093,es,Describe this transaction (it is in the list below).,2026-04-30 · 6819849.19 COP · Payment · Approved · POS · Medellín,give the amount in US dollars; don't say when; mention the city,"1) 2026-05-22 · 2591210.35 COP · Payment · Approved · ATM · Medellín
+2) 2026-05-19 · 2532031.57 COP · Payment · Approved · POS
+3) 2026-05-19 · 851441.67 COP · Withdrawal · Pending · Web
+4) 2026-05-15 · 37468141.21 COP · Transfer · Approved · ATM · Sevilla
+5) 2026-05-07 · Taxi Seguro · 380963.43 COP · Purchase · Approved · POS · Medellín
+6) 2026-04-30 · 6819849.19 COP · Payment · Approved · POS · Medellín
+7) 2026-04-21 · 17387990.4 COP · Transfer · Approved · Web · Medellín
+8) 2026-04-15 · 8424817.97 COP · Deposit · Approved · ATM · Medellín
+9) 2026-04-14 · 115.05 USD · Purchase · Approved · Web · Medellín
+10) 2026-04-07 · 5053413.85 COP · Deposit · Approved · App · Medellín
+11) 2026-04-06 · 7449137.04 COP · Payment · Approved · POS · Medellín
+12) 2026-04-04 · 4159.85 USD · Transfer · Approved · POS · Medellín",
+test-3-000094,pt,Describe this transaction (it is in the list below).,2026-03-27 · Tienda Don José · 91344.77 COP · Purchase · Approved · Transfer · Cartagena,name the merchant; give the exact amount; get the date wrong by one day; say what kind of transaction it was,"1) 2026-03-27 · Tienda Don José · 91344.77 COP · Purchase · Approved · Transfer · Cartagena
+2) 2026-03-14 · 7734227.39 COP · Transfer · Approved · POS · Cartagena",
+test-3-000105,pt,Describe this transaction (it is in the list below).,2026-01-22 · 1574.38 USD · Transfer · Approved · ATM,give the exact amount; don't say when; say what kind of transaction it was,"1) 2026-03-19 · 1051.75 USD · Payment · Approved · POS · Cali
+2) 2026-03-17 · 24284878.56 COP · Transfer · Approved · Web · Cali
+3) 2026-03-13 · 14388522.17 COP · Deposit · Approved · POS · Cali
+4) 2026-03-11 · 441.3 USD · Withdrawal · Reversed · ATM
+5) 2026-02-16 · 54.3 USD · Withdrawal · Approved · POS · Cali
+6) 2026-01-30 · 170.77 USD · Withdrawal · Approved · Web · Cali
+7) 2026-01-22 · 1574.38 USD · Transfer · Approved · ATM",
+test-3-000107,es,Describe this transaction (it is in the list below).,2026-03-23 · 1736784.53 ARS · Transfer · Approved · POS · Córdoba,"say roughly how much; don't say when; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-04-03 · 1719076.86 ARS · Deposit · Approved · ATM · Córdoba
+2) 2026-03-23 · 1736784.53 ARS · Transfer · Approved · POS · Córdoba",
+test-3-000108,es,Describe this transaction. It is NOT in the list below: write as if you believe it is yours.,2026-04-02 · 79.13 USD · Withdrawal · Pending · App · Querétaro,give no details: just say there is a charge you want to ask about,"1) 2026-03-17 · Ferretería · 46.31 USD · Purchase · Approved · Web
+2) 2026-03-03 · Teatro Nacional · 74.56 USD · Purchase · Approved · POS · Querétaro
+3) 2026-03-02 · 424.87 USD · Deposit · Approved · ATM",
+test-3-000110,pt,Describe this transaction. It is NOT in the list below: write as if you believe it is yours.,2026-02-03 · 7449.61 USD · Transfer · Approved · POS · Tijuana,"don't say the amount; don't say when; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-02-17 · 63.87 USD · Withdrawal · Approved · ATM · Tijuana
+2) 2026-02-03 · Servicios Públicos · 153.37 USD · Purchase · Approved · ATM · Brasília
+3) 2026-01-27 · 4831.41 USD · Transfer · Approved · ATM
+4) 2026-01-25 · Tienda General · 128.94 USD · Purchase · Approved · Web · Tijuana
+5) 2026-01-13 · 1198.16 USD · Payment · Approved · ATM · Tijuana
+6) 2026-01-09 · 4221.9 USD · Transfer · Approved · Transfer · Tijuana
+7) 2025-12-26 · 8374.81 USD · Transfer · Approved · Web · Tijuana
+8) 2025-12-26 · 2119.95 USD · Deposit · Approved · ATM",
+test-3-000112,es,Describe this transaction. It is NOT in the list below: write as if you believe it is yours.,2026-01-04 · 324.26 USD · Transfer · Approved · Transfer · Monterrey,give the exact amount; get the date wrong by one day; mention the city,"1) 2026-02-01 · Restaurante El Buen Sabor · 408.71 USD · Purchase · Approved · ATM
+2) 2026-01-15 · Tienda Don José · 238.03 USD · Purchase · Approved · ATM · Monterrey
+3) 2026-01-06 · 164.83 USD · Withdrawal · Approved · ATM · Monterrey",
+test-3-000115,pt,Describe this transaction (it is in the list below).,2025-12-20 · 5907.34 USD · Transfer · Approved · App · Querétaro,"don't say the amount; give the date; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2025-12-20 · 5907.34 USD · Transfer · Approved · App · Querétaro
+2) 2025-12-20 · 9778.51 USD · Transfer · Approved · ATM · Querétaro",
+test-3-000116,pt,Describe this transaction. It is NOT in the list below: write as if you believe it is yours.,2026-01-31 · Mercado Central · 1718489.52 COP · Purchase · Approved · Transfer · Bogotá,name the merchant loosely (a typo or no accents); round the amount; don't say when; say what kind of transaction it was; mention the city,"1) 2026-03-07 · Super Ahorro · 43454.78 COP · Purchase · Approved · Web · Bogotá
+2) 2026-03-02 · 19637103.23 COP · Deposit · Approved · POS · Bogotá",
+test-3-000120,es,Describe this transaction (it is in the list below).,2026-04-15 · 2518379.05 COP · Payment · Approved · App · Barranquilla,"round the amount; get the date wrong by one day; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-04-15 · 2518379.05 COP · Payment · Approved · App · Barranquilla
+2) 2026-04-14 · 412844.23 COP · Payment · Approved · ATM · Barranquilla",
+test-3-000121,pt,Describe this transaction (it is in the list below).,2026-02-09 · 1031.72 USD · Payment · Approved · Transfer · Querétaro,give the exact amount; give the date,"1) 2026-03-08 · 1167.9 USD · Payment · Approved · App · Querétaro
+2) 2026-02-09 · 1031.72 USD · Payment · Approved · Transfer · Querétaro
+3) 2026-01-29 · 74.68 USD · Purchase · Approved · ATM · Querétaro
+4) 2026-01-27 · 1520.03 USD · Payment · Approved · ATM · Querétaro",
+test-3-000122,es,Describe this transaction (it is in the list below).,2026-02-02 · 6006.57 USD · Transfer · Approved · ATM · Puebla,"round the amount; don't say when; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-03-22 · 1271.99 USD · Payment · Reversed · ATM · Puebla
+2) 2026-02-19 · 8794.47 USD · Transfer · Approved · ATM · Puebla
+3) 2026-02-02 · 6006.57 USD · Transfer · Approved · ATM · Puebla",
+test-3-000124,pt,Describe this transaction (it is in the list below).,2026-01-02 · 487.51 USD · Withdrawal · Approved · ATM,"say roughly how much; give the date; say where it happened (ATM, shop, app, web, branch)","1) 2026-02-02 · Super Ahorro · 474.57 USD · Purchase · Approved · POS
+2) 2026-01-02 · 487.51 USD · Withdrawal · Approved · ATM",
+test-3-000127,es,Describe this transaction. It is NOT in the list below: write as if you believe it is yours.,2026-03-05 · Conciertos Live · 322.57 USD · Purchase · Approved · ATM · Ciudad de México,"don't name the merchant; round the amount; give the date; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch); mention the city",1) 2026-02-16 · 175.72 USD · Payment · Approved · ATM · Ciudad de México,
+test-3-000133,es,Describe this transaction (it is in the list below).,2026-02-28 · 1541194.27 COP · Transfer · Approved · ATM · Cali,don't say the amount; don't say when; say what kind of transaction it was,"1) 2026-04-16 · 27465025.92 COP · Transfer · Approved · App · Cali
+2) 2026-03-17 · Streaming Music · 1151340.34 COP · Purchase · Approved · ATM
+3) 2026-02-28 · 1541194.27 COP · Transfer · Approved · ATM · Cali",
+test-3-000134,pt,Describe this transaction (it is in the list below).,2026-02-25 · 188.54 USD · Withdrawal · Approved · ATM · Monterrey,don't say the amount; don't say when; say what kind of transaction it was; mention the city,"1) 2026-03-23 · Internet Plus · 198.4 USD · Purchase · Approved · POS · Monterrey
+2) 2026-03-04 · 1474.18 USD · Payment · Approved · POS · Monterrey
+3) 2026-02-25 · 188.54 USD · Withdrawal · Approved · ATM · Monterrey",
+test-3-000135,es,Describe this transaction (it is in the list below).,2026-02-24 · 21819.07 ARS · Withdrawal · Approved · App · Córdoba,"don't say the amount; don't say when; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-03-24 · 35261.32 ARS · Withdrawal · Approved · Web · Córdoba
+2) 2026-02-24 · 21819.07 ARS · Withdrawal · Approved · App · Córdoba",
+test-3-000136,pt,Describe this transaction (it is in the list below).,2026-02-10 · 74866.83 ARS · Withdrawal · Approved · ATM,round the amount; get the date wrong by one day; say what kind of transaction it was,"1) 2026-02-10 · 74866.83 ARS · Withdrawal · Approved · ATM
+2) 2026-01-20 · 118636.51 ARS · Withdrawal · Approved · POS",
+test-3-000144,es,Describe this transaction (it is in the list below).,2026-03-10 · 104825.37 ARS · Withdrawal · Approved · POS · La Plata,"round the amount; get the date wrong by one day; say where it happened (ATM, shop, app, web, branch)","1) 2026-03-10 · 104825.37 ARS · Withdrawal · Approved · POS · La Plata
+2) 2026-02-23 · 127.72 USD · Withdrawal · Approved · POS · La Plata
+3) 2026-02-05 · 2250.55 USD · Deposit · Approved · POS · La Plata",
+test-3-000147,pt,Describe this transaction (it is in the list below).,2026-03-05 · 658371.28 ARS · Payment · Approved · App · Mendoza,round the amount; don't say when; say what kind of transaction it was; mention the city,"1) 2026-04-10 · Super Ahorro · 76398.21 ARS · Purchase · Approved · App · Mendoza
+2) 2026-03-05 · 658371.28 ARS · Payment · Approved · App · Mendoza
+3) 2026-02-18 · 38861.15 ARS · Payment · Approved · ATM · Mendoza",
+test-3-000157,es,Describe this transaction (it is in the list below).,2026-01-19 · 542262.92 COP · Withdrawal · Approved · App,"round the amount; don't say when; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-03-11 · 1435955.82 COP · Withdrawal · Approved · Web · Cali
+2) 2026-01-30 · 1965285.38 COP · Withdrawal · Approved · App · Cali
+3) 2026-01-19 · 542262.92 COP · Withdrawal · Approved · App",
+test-3-000162,pt,Describe this transaction (it is in the list below).,2026-02-08 · 4076.27 USD · Deposit · Approved · Branch,give the exact amount; don't say when,"1) 2026-02-12 · 826.67 USD · Payment · Approved · Web · Puebla
+2) 2026-02-08 · 4076.27 USD · Deposit · Approved · Branch
+3) 2026-02-03 · 1309.7 USD · Payment · Approved · POS · Puebla
+4) 2026-01-19 · 186.09 USD · Deposit · Approved · POS · Puebla
+5) 2025-12-26 · 498.29 USD · Transfer · Approved · App · Puebla
+6) 2025-12-17 · 1723.57 USD · Transfer · Approved · App · Puebla",
+test-3-000163,es,Describe this transaction (it is in the list below).,2026-04-15 · 27003068.3 COP · Transfer · Approved · ATM,"give the exact amount; get the date wrong by one day; say where it happened (ATM, shop, app, web, branch)","1) 2026-05-05 · 18953982.91 COP · Deposit · Approved · POS · Barranquilla
+2) 2026-04-28 · 30782778.1 COP · Transfer · Approved · POS · Barranquilla
+3) 2026-04-20 · 8781983.17 COP · Deposit · Declined · ATM · Barranquilla
+4) 2026-04-15 · 27003068.3 COP · Transfer · Approved · ATM
+5) 2026-04-15 · 2039206.3 COP · Payment · Approved · App · Barranquilla",
+test-3-000167,pt,Describe this transaction (it is in the list below).,2026-03-29 · 133.18 USD · Transfer · Approved · ATM · Tijuana,"give the exact amount; don't say when; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-04-09 · 2315.3 USD · Deposit · Approved · POS · Tijuana
+2) 2026-04-07 · 2091.72 USD · Transfer · Approved · POS · Tijuana
+3) 2026-03-29 · 133.18 USD · Transfer · Approved · ATM · Tijuana",
+test-3-000170,es,Describe this transaction (it is in the list below).,2026-03-14 · 1226.66 USD · Payment · Approved · App · Tijuana,"give the exact amount; give the date; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-03-20 · 7815.23 USD · Transfer · Approved · POS · Tijuana
+2) 2026-03-19 · Tienda Don José · 212.31 USD · Purchase · Approved · POS · Tijuana
+3) 2026-03-14 · 1226.66 USD · Payment · Approved · App · Tijuana
+4) 2026-03-14 · 1010.82 USD · Payment · Reversed · POS",
+test-3-000174,pt,Describe this transaction (it is in the list below).,2026-02-02 · 934612.17 COP · Withdrawal · Approved · ATM · Medellín,round the amount; say when loosely ('last week'); say what kind of transaction it was; mention the city,"1) 2026-02-02 · 934612.17 COP · Withdrawal · Approved · ATM · Medellín
+2) 2025-12-16 · 567876.47 COP · Withdrawal · Approved · ATM · Medellín",
+test-3-000179,es,Describe this transaction (it is in the list below).,2026-05-06 · 1778042.64 COP · Withdrawal · Approved · Web · Cartagena,round the amount; say when loosely ('last month'); say what kind of transaction it was; mention the city,"1) 2026-06-02 · 701947.14 COP · Withdrawal · Approved · POS
+2) 2026-05-13 · 718776.11 COP · Withdrawal · Approved · POS · Cartagena
+3) 2026-05-06 · 1778042.64 COP · Withdrawal · Approved · Web · Cartagena",
+test-3-000183,pt,Describe this transaction (it is in the list below).,2025-12-16 · 50377.75 ARS · Withdrawal · Approved · POS · Mendoza,"round the amount; give the date; say where it happened (ATM, shop, app, web, branch)","1) 2026-02-02 · 314492.79 ARS · Payment · Approved · Web · Mendoza
+2) 2026-02-02 · 72302.77 ARS · Withdrawal · Approved · ATM · Mendoza
+3) 2026-01-07 · 932988.18 ARS · Deposit · Approved · ATM · Mendoza
+4) 2025-12-16 · 50377.75 ARS · Withdrawal · Approved · POS · Mendoza",
+test-3-000184,es,Describe this transaction (it is in the list below).,2026-04-06 · 68.82 USD · Withdrawal · Approved · POS · Tijuana,say roughly how much; don't say when; say what kind of transaction it was,"1) 2026-04-19 · 3499.11 USD · Deposit · Approved · ATM · Tijuana
+2) 2026-04-06 · 68.82 USD · Withdrawal · Approved · POS · Tijuana
+3) 2026-04-06 · 1110.09 USD · Deposit · Approved · App · Tijuana
+4) 2026-03-27 · 282.59 USD · Withdrawal · Approved · Branch · Tijuana",
+test-3-000187,pt,Describe this transaction (it is in the list below).,2026-02-09 · 5317.5 USD · Transfer · Approved · POS · Barranquilla,"round the amount; say when loosely ('last month'); say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-02-17 · 357207.18 COP · Deposit · Approved · ATM
+2) 2026-02-15 · 703.51 USD · Deposit · Approved · POS
+3) 2026-02-09 · 5317.5 USD · Transfer · Approved · POS · Barranquilla
+4) 2026-01-19 · 23700910.07 COP · Transfer · Approved · Transfer · Houston",
+test-3-000188,es,Describe this transaction (it is in the list below).,2026-04-06 · 2912.34 USD · Deposit · Approved · Web · Tijuana,round the amount; say when loosely ('this month'),"1) 2026-04-15 · 4024.47 USD · Deposit · Approved · Web · Tijuana
+2) 2026-04-06 · 2912.34 USD · Deposit · Approved · Web · Tijuana",
+test-3-000191,pt,Describe this transaction (it is in the list below).,2025-12-29 · 30236190.48 COP · Transfer · Approved · POS · Medellín,"round the amount; get the date wrong by one day; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-01-14 · 9315154.15 COP · Transfer · Approved · Branch · Medellín
+2) 2025-12-29 · 30236190.48 COP · Transfer · Approved · POS · Medellín",
+test-3-000192,es,Describe this transaction (it is in the list below).,2026-03-24 · 5000.24 USD · Transfer · Approved · POS · Querétaro,"round the amount; give the date; say where it happened (ATM, shop, app, web, branch)","1) 2026-04-11 · 6937.74 USD · Transfer · Approved · App · Querétaro
+2) 2026-03-24 · 5000.24 USD · Transfer · Approved · POS · Querétaro
+3) 2026-03-12 · 612.47 USD · Payment · Approved · POS · Querétaro",
+test-3-000193,pt,Describe this transaction (it is in the list below).,2026-03-27 · 5026477.49 COP · Deposit · Approved · ATM · Cali,"give the exact amount; give the date; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch)","1) 2026-03-30 · 14797356.08 COP · Deposit · Approved · Web · Cali
+2) 2026-03-27 · 5026477.49 COP · Deposit · Approved · ATM · Cali
+3) 2026-02-28 · 1840650.52 COP · Withdrawal · Approved · ATM",
+test-3-000194,es,Describe this transaction (it is in the list below).,2026-02-19 · 6129522.29 COP · Payment · Approved · POS · Cali,give the exact amount; don't say when,"1) 2026-02-28 · 792206.05 COP · Withdrawal · Approved · POS · Cali
+2) 2026-02-19 · 6129522.29 COP · Payment · Approved · POS · Cali
+3) 2026-02-10 · 1340802.71 COP · Withdrawal · Approved · ATM · Cali
+4) 2026-02-05 · 5875445.64 COP · Payment · Approved · POS · Cali
+5) 2026-02-03 · 5634339.81 COP · Payment · Approved · ATM · Cali
+6) 2026-01-30 · 1885807.68 COP · Withdrawal · Approved · ATM · Cali
+7) 2026-01-30 · Ferretería · 304938.29 COP · Purchase · Approved · Web · Cali
+8) 2026-01-02 · 14383718.06 COP · Transfer · Approved · ATM · Cali",
+test-3-000198,pt,Describe this transaction (it is in the list below).,2026-03-19 · 3059491.76 ARS · Transfer · Approved · POS · Córdoba,"say roughly how much; don't say when; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-04-30 · 152526.49 ARS · Withdrawal · Approved · POS · Córdoba
+2) 2026-04-24 · 2230559.46 ARS · Transfer · Approved · Web · Ciudad de México
+3) 2026-04-18 · 324685.75 ARS · Deposit · Approved · App · Córdoba
+4) 2026-03-19 · 3059491.76 ARS · Transfer · Approved · POS · Córdoba",
+test-3-000199,es,Describe this transaction (it is in the list below).,2026-04-27 · 8757.76 USD · Transfer · Approved · ATM · Tijuana,don't say the amount; get the date wrong by one day,"1) 2026-04-27 · 8757.76 USD · Transfer · Approved · ATM · Tijuana
+2) 2026-04-23 · 8027.11 USD · Transfer · Approved · POS · Tijuana
+3) 2026-03-18 · 1494.38 USD · Payment · Approved · ATM · Tijuana
+4) 2026-03-12 · 173.5 USD · Withdrawal · Approved · ATM · Tijuana",
+test-3-000205,pt,Describe this transaction (it is in the list below).,2026-02-08 · 1055.09 USD · Payment · Approved · App · Bogotá,give the exact amount; don't say when; say what kind of transaction it was,"1) 2026-03-24 · 835.56 USD · Payment · Approved · App · Bogotá
+2) 2026-02-16 · 567091.19 COP · Withdrawal · Approved · POS · Bogotá
+3) 2026-02-08 · 1055.09 USD · Payment · Approved · App · Bogotá",
+test-3-000214,es,Describe this transaction (it is in the list below).,2026-04-17 · 1179739.73 COP · Adjustment · Approved · ATM · Cali,give the exact amount; don't say when,"1) 2026-05-04 · 3105603.1 COP · Adjustment · Approved · ATM · São Paulo
+2) 2026-04-17 · 1179739.73 COP · Adjustment · Approved · ATM · Cali
+3) 2026-03-24 · 34512507.39 COP · Transfer · Approved · POS · Cali",
+test-3-000219,pt,Describe this transaction (it is in the list below).,2026-02-02 · 9510977.44 COP · Transfer · Approved · App · Medellín,"round the amount; don't say when; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-02-20 · 8629887.25 COP · Deposit · Approved · ATM · Medellín
+2) 2026-02-08 · 26781298.31 COP · Transfer · Approved · POS · Medellín
+3) 2026-02-02 · 9510977.44 COP · Transfer · Approved · App · Medellín",
+test-3-000222,es,Describe this transaction (it is in the list below).,2026-04-07 · 389.77 USD · Withdrawal · Approved · Web · Ciudad de México,"don't say the amount; don't say when; say where it happened (ATM, shop, app, web, branch)","1) 2026-04-07 · 389.77 USD · Withdrawal · Approved · Web · Ciudad de México
+2) 2026-03-30 · 24.91 USD · Withdrawal · Approved · POS · Ciudad de México",
+test-3-000224,pt,Describe this transaction (it is in the list below).,2026-01-19 · Tienda Don José · 133.49 USD · Purchase · Approved · Branch · Puebla,name the merchant loosely (a typo or no accents); round the amount; don't say when; say what kind of transaction it was,"1) 2026-02-02 · Uber · 123.61 USD · Purchase · Approved · POS · Puebla
+2) 2026-01-19 · Tienda Don José · 133.49 USD · Purchase · Approved · Branch · Puebla",
+test-3-000232,es,Describe this transaction (it is in the list below).,2025-12-24 · 591.18 USD · Transfer · Approved · Branch · Bogotá,"round the amount; get the date wrong by one day; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-01-27 · 301.9 USD · Transfer · Approved · ATM · Bogotá
+2) 2025-12-24 · 591.18 USD · Transfer · Approved · Branch · Bogotá",
+test-3-000237,pt,Describe this transaction (it is in the list below).,2026-02-28 · 45801.05 ARS · Withdrawal · Approved · ATM · La Plata,"give the exact amount; give the date; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-04-24 · 36150.96 ARS · Withdrawal · Approved · ATM · La Plata
+2) 2026-02-28 · 45801.05 ARS · Withdrawal · Approved · ATM · La Plata",
+test-3-000239,es,Describe this transaction (it is in the list below).,2026-05-29 · 2189441.67 ARS · Transfer · Approved · Web · Miami,don't say the amount; say when loosely ('last month'); say what kind of transaction it was,"1) 2026-05-29 · 2189441.67 ARS · Transfer · Approved · Web · Miami
+2) 2026-05-05 · 2310896.33 ARS · Transfer · Approved · Transfer",
+test-3-000241,pt,Describe this transaction (it is in the list below).,2025-12-15 · 5974.32 USD · Transfer · Approved · Web · Puebla,"round the amount; don't say when; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2025-12-15 · 5974.32 USD · Transfer · Approved · Web · Puebla
+2) 2025-12-13 · 2361.37 USD · Transfer · Approved · POS · Puebla",
+test-3-000244,es,Describe this transaction (it is in the list below).,2026-04-28 · 2720514.67 ARS · Transfer · Approved · App · Buenos Aires,don't say the amount; don't say when; say what kind of transaction it was,"1) 2026-04-28 · 2720514.67 ARS · Transfer · Approved · App · Buenos Aires
+2) 2026-03-13 · 139736.76 ARS · Withdrawal · Approved · POS · Buenos Aires
+3) 2026-03-04 · 1200228.22 ARS · Transfer · Approved · App · Buenos Aires",
+test-3-000245,pt,Describe this transaction (it is in the list below).,2026-02-18 · 2411.6 USD · Transfer · Approved · POS · Ciudad de México,say roughly how much; get the date wrong by one day; say what kind of transaction it was; mention the city,"1) 2026-02-18 · 2411.6 USD · Transfer · Approved · POS · Ciudad de México
+2) 2026-02-14 · 7446.44 USD · Transfer · Approved · ATM · Ciudad de México",
+test-3-000253,es,Describe this transaction (it is in the list below).,2026-04-06 · 3461.99 USD · Transfer · Approved · POS · Bogotá,"give the exact amount; get the date wrong by one day; say where it happened (ATM, shop, app, web, branch)","1) 2026-05-06 · 452.86 USD · Withdrawal · Approved · Web · Bogotá
+2) 2026-05-05 · 5699.59 USD · Transfer · Approved · ATM · Bogotá
+3) 2026-04-23 · 80.37 USD · Withdrawal · Approved · Web · Bogotá
+4) 2026-04-06 · 3461.99 USD · Transfer · Approved · POS · Bogotá
+5) 2026-04-05 · 26513221.14 COP · Transfer · Approved · Branch · Bogotá",
+test-3-000255,pt,Describe this transaction (it is in the list below).,2026-04-22 · 11102854.92 COP · Deposit · Approved · POS · Barranquilla,"give the amount in US dollars; don't say when; say where it happened (ATM, shop, app, web, branch)","1) 2026-05-13 · 826696.38 COP · Withdrawal · Approved · Web · Barranquilla
+2) 2026-05-05 · 11042019.66 COP · Deposit · Approved · Transfer · Barranquilla
+3) 2026-04-22 · 11102854.92 COP · Deposit · Approved · POS · Barranquilla
+4) 2026-04-11 · 2046808.03 COP · Payment · Approved · Web · Barranquilla",
+test-3-000260,es,Describe this transaction (it is in the list below).,2026-03-09 · 720897.55 COP · Withdrawal · Approved · POS · Medellín,"don't say the amount; give the date; say what kind of transaction it was; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-03-09 · 720897.55 COP · Withdrawal · Approved · POS · Medellín
+2) 2026-02-27 · 713661.48 COP · Withdrawal · Approved · POS · Medellín
+3) 2026-02-21 · 14206561.05 COP · Transfer · Approved · POS · Medellín
+4) 2026-02-16 · 803710.23 COP · Withdrawal · Approved · POS · Medellín
+5) 2026-01-22 · 13121480.89 COP · Deposit · Declined · Web · Medellín",
+test-3-000261,pt,Describe this transaction (it is in the list below).,2026-03-08 · 1656.4 USD · Payment · Approved · POS · Monterrey,"give the exact amount; get the date wrong by one day; say where it happened (ATM, shop, app, web, branch); mention the city","1) 2026-03-08 · 1656.4 USD · Payment · Approved · POS · Monterrey
+2) 2026-02-16 · 1024.45 USD · Deposit · Approved · POS · Monterrey
+3) 2026-02-04 · 906.32 USD · Payment · Approved · App · Monterrey",
+test-3-000268,es,Describe this transaction (it is in the list below).,2025-12-26 · 3680.24 USD · Deposit · Approved · App · Monterrey,give the exact amount; don't say when; say what kind of transaction it was,"1) 2026-02-10 · 3487.99 USD · Deposit · Approved · ATM
+2) 2025-12-26 · 3680.24 USD · Deposit · Approved · App · Monterrey
+3) 2025-12-18 · 157.12 USD · Withdrawal · Approved · Branch · Monterrey",
+test-3-000271,pt,Describe this transaction (it is in the list below).,2026-02-03 · Internet Plus · 1101800.07 COP · Purchase · Approved · Web · Barranquilla,don't name the merchant; don't say the amount; don't say when; say what kind of transaction it was; mention the city,"1) 2026-02-16 · Internet Plus · 1735047.99 COP · Purchase · Approved · Web · Barranquilla
+2) 2026-02-03 · Internet Plus · 1101800.07 COP · Purchase · Approved · Web · Barranquilla
+3) 2026-01-24 · 4809671.65 COP · Payment · Approved · POS · Barranquilla
+4) 2026-01-20 · Cable TV · 1764136.95 COP · Purchase · Approved · Web · Barranquilla
+5) 2026-01-19 · 3982546.43 COP · Payment · Declined · Web",
+test-3-000275,es,Describe this transaction (it is in the list below).,2026-04-30 · 1515.38 USD · Payment · Approved · POS · Guadalajara,give the exact amount; give the date; say what kind of transaction it was; mention the city,"1) 2026-05-24 · 146.31 USD · Deposit · Declined · ATM · Guadalajara
+2) 2026-05-23 · 676.12 USD · Deposit · Approved · ATM · Guadalajara
+3) 2026-04-30 · 1515.38 USD · Payment · Approved · POS · Guadalajara
+4) 2026-04-01 · 6565.8 USD · Transfer · Approved · App · Guadalajara
+5) 2026-04-01 · 1581.7 USD · Transfer · Approved · Transfer · Guadalajara
+6) 2026-03-31 · 3082.38 USD · Transfer · Approved · POS · Guadalajara",
+test-3-000283,pt,Describe this transaction (it is in the list below).,2026-01-12 · 169190.66 ARS · Withdrawal · Approved · Web · La Plata,don't say the amount; don't say when,"1) 2026-02-12 · 4455.0 USD · Transfer · Approved · ATM · La Plata
+2) 2026-01-27 · 1395838.68 ARS · Deposit · Approved · Web · La Plata
+3) 2026-01-20 · 639892.86 ARS · Payment · Approved · Web · La Plata
+4) 2026-01-18 · 4086.61 USD · Transfer · Approved · Branch · La Plata
+5) 2026-01-12 · 169190.66 ARS · Withdrawal · Approved · Web · La Plata
+6) 2025-12-28 · 80304.34 ARS · Withdrawal · Approved · Web · La Plata",
+test-3-000289,es,Describe this transaction (it is in the list below).,2026-06-03 · Tienda Don José · 300.06 USD · Purchase · Approved · Web · Monterrey,name the merchant; give the exact amount; say when loosely ('last week'); say what kind of transaction it was,"1) 2026-06-03 · Tienda Don José · 300.06 USD · Purchase · Approved · Web · Monterrey
+2) 2026-06-01 · 296.9 USD · Withdrawal · Approved · ATM · Monterrey
+3) 2026-05-12 · 409.99 USD · Payment · Approved · POS · Monterrey
+4) 2026-04-24 · 1458.21 USD · Deposit · Approved · POS · Monterrey",

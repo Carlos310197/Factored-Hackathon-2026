@@ -4,3 +4,6 @@
 config/demo_users.yaml
 __pycache__/
 .pytest_cache/
+.serving-full/
+resolver_runs/
+mlruns/

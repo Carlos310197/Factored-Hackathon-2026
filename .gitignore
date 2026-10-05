@@ -29,3 +29,5 @@ worktrees/
 *.tfstate.*
 *.tfplan
 
+# resolver datasets are committed (transaction fields only)
+!agent/resolver/data/
