@@ -13,16 +13,16 @@ class VerifyOutcome:
     promises_unverified: bool
 
 
-# Jev is a third party: it never gets customer or product ids, or fraud signals (architecture-context invariant).
+# Third parties (Jev, and Bedrock in a second AWS account) never get customer or product ids, or fraud signals.
 # Claims are about transactions, amounts, statuses and dispute/complaint/handoff ids, which stay.
 REDACTED_FIELDS = frozenset({"customer_id", "product_id", "is_fraud", "fraud_score"})
 
 
-def _redact(value):
+def redact(value):
     if isinstance(value, dict):
-        return {k: _redact(v) for k, v in value.items() if k not in REDACTED_FIELDS}
+        return {k: redact(v) for k, v in value.items() if k not in REDACTED_FIELDS}
     if isinstance(value, list):
-        return [_redact(v) for v in value]
+        return [redact(v) for v in value]
     return value
 
 
@@ -45,7 +45,7 @@ def build_verify_request(
     """
     # Build state
     state = {
-        "receipts": [_redact(r) for r in receipts],
+        "receipts": [redact(r) for r in receipts],
         "claims": claims,
         "reply_text": reply_text,
     }

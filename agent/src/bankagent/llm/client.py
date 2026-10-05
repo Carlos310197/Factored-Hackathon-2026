@@ -107,8 +107,8 @@ def _mantle_client(region: str):
     return openai.OpenAI(
         base_url=base_url,
         api_key=api_key,
-        timeout=30.0,
-        max_retries=1,
+        timeout=30.0,   # ceiling only: every call passes its role's timeout (models.yaml) or the turn budget's remainder
+        max_retries=0,  # retries are explicit in the graph (extract → original text, compose → one regeneration)
     )
 
 
@@ -125,12 +125,12 @@ def call_json(client, cfg: RoleConfig, system: str, user: str, schema: dict) -> 
     )
     try:
         try:
-            resp = client.chat.completions.create(**request)
+            resp = client.chat.completions.create(**request, timeout=cfg.timeout_s)
         except (openai.AuthenticationError, openai.PermissionDeniedError):
             if not hasattr(client, "refresh"):
                 raise
             client.refresh()  # stale Mantle token: mint a fresh one and retry once
-            resp = client.chat.completions.create(**request)
+            resp = client.chat.completions.create(**request, timeout=cfg.timeout_s)
     except openai.APIError as e:
         raise LLMError(f"{type(e).__name__}: {e}") from e
     except openai.APIConnectionError as e:

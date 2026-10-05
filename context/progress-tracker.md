@@ -453,6 +453,20 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-05: Review fixes (turn budget, LLM redaction, disclosures)
+
+- **Turn budget 20 → 15 s** (`AgentService` default): the Jev client retries once at 3 s, so a closing verify can take 6 s; 15 + 6 ≈ 21 s stays under the BFF's 25 s. `test_worst_case_turn_fits_inside_the_bff_wait` encodes the arithmetic. The earlier "~23 s" claim was wrong.
+- **Bedrock payloads redacted like Jev's:** compose and handoff open-questions receipts go through `decisions.verify.redact` (no `customer_id`, `product_id`, fraud fields), since inference runs through a role in account `040684487035`. Test checks every non-extract LLM call.
+- README: the egress row names the second account; limitations add the missing spend cap (public demo identities, no per-session turn limit).
+
+### 2026-10-05: Agent hardening (timeouts, confirmation binding, alarms, capacity)
+
+- **Timeouts made true:** every LLM call passes its role's `timeout_s` (extract 10 s, compose 20 s); the client's SDK retries are off (`max_retries=0`, graph-level retries stay explicit); a compose call is capped at the turn budget's remainder and no regeneration starts once the budget is spent. With Jev at 3 s, a turn ends within about 23 s, under the BFF's 25 s.
+- **Confirmation bound to the card:** `check_eligibility` stores `card_hash` (SHA-256 of `confirmation_payload`: merchant, date, amount, currency, reason); `file_dispute` recomputes it from the freshly read transaction and, on a mismatch, files nothing and shows the new card (`file_dispute` → `confirm`). The human-review path clears the hash (no confirmation there).
+- **Alarms:** `infra/terraform/agent/alarms.tf` adds metric filters and alarms on the runtime log group for `turn failed` (≥3 in 5 min), `reply fell back to template` (≥5 in 15 min; new warning log line in `reply`) and `decision record write failed` (≥1); optional `alarm_email` → SNS topic. Also fixed `runtime_environment_has_no_secret_values`, broken on `main` since the cross-account Bedrock change (expected env lacked `BEDROCK_ROLE_ARN` / `BEDROCK_EXTERNAL_ID`).
+- **Alarms applied 2026-10-05** (targeted apply of the 8 alarm resources only; runtime untouched): 3 metric filters, 3 alarms, SNS topic `lb-demo-agent-alarms` with an email subscription. The address lives in the git-ignored `infra/terraform/agent/alarms.auto.tfvars` (keep it there, or a full apply removes the topic). `TurnFailed` and `AuditWriteFailed` watch log lines the deployed agent already writes; `TemplateFallback` starts counting after the next agent deploy.
+- **Capacity:** README table from Service Quotas and Terraform. Our account's on-demand Bedrock quotas for gpt-oss and Ministral read 0; Mantle/cross-account limits are not visible. Lambda account concurrency is 10.
+
 ### 2026-10-05: Evidence and targets in the docs
 
 - README: a "What success looks like" table (dispute intake vs the 37 h baseline, unsafe k/N, complete handoff packets, safe automated resolution with CI, wrong-transaction disputes ≤ 2 %), each mapped to the metric that measures it; more limitations (best-effort decision records, unsalted demo password hashes, no audit of staff reads, pipeline re-export and RAW growth).
