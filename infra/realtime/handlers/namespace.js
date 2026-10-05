@@ -3,7 +3,8 @@ import { util } from "@aws-appsync/utils";
 // UI spec §3 rule 4: customers only their own /session/<sid>; agents any session, /queue/all and traces.
 const STAFF_NAMESPACES = ["session", "queue", "trace"];
 
-export function allowed(segments, c) {
+// Not exported: APPSYNC_JS namespace code may export only its handlers (onSubscribe/onPublish).
+function allowed(segments, c) {
   if (!c || !segments || segments.length === 0 || segments.indexOf("") !== -1) return false;
   const ns = segments[0];
   if (c.role === "agent") return STAFF_NAMESPACES.indexOf(ns) !== -1;
@@ -15,7 +16,8 @@ export function onSubscribe(ctx) {
   const identity = ctx.identity || {};
   // Unit 53 left open which field carries the authorizer context, so read both.
   const c = identity.handlerContext || identity.resolverContext;
-  console.log("identity keys:", Object.keys(identity));
+  // Object.keys(ctx.identity) is [] in APPSYNC_JS, so name the field that carried the context.
+  console.log("auth context field:", identity.handlerContext ? "handlerContext" : identity.resolverContext ? "resolverContext" : "none");
   if (!allowed(ctx.info.channel.segments, c)) {
     util.unauthorized();
   }
@@ -27,3 +29,4 @@ export function onPublish(ctx) {
   if (identity.handlerContext || identity.resolverContext) util.unauthorized();
   return ctx.events;
 }
+

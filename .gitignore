@@ -2,6 +2,7 @@
 .env
 .key.p8
 data/
+!infra/terraform/data/
 *.pdf
 # python / dbt build output
 .venv/
@@ -42,3 +43,4 @@ worktrees/
 eval/runs/*/tmp/
 infra/realtime/node_modules/
 infra/realtime/dist/
+infra/terraform/realtime/.build/

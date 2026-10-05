@@ -8,8 +8,10 @@ vi.mock("@aws-appsync/utils", () => ({ util: { unauthorized } }));
 const ns = await import("../handlers/namespace.js");
 
 describe("namespace channel rules", () => {
+  // the rule is private to the handler code (APPSYNC_JS exports handlers only), so run the shared cases through onSubscribe
   it.each(CASES)("%s", (_name, segments, c, ok) => {
-    expect(ns.allowed(segments, c)).toBe(ok);
+    const sub = () => ns.onSubscribe({ identity: c ? { handlerContext: c } : {}, info: { channel: { segments } } });
+    if (ok) expect(sub).not.toThrow(); else expect(sub).toThrow("Unauthorized");
   });
 
   it("onSubscribe reads handlerContext or resolverContext and refuses others' channels", () => {
