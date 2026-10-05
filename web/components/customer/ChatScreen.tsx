@@ -78,7 +78,7 @@ export function ChatScreen({ sid, lang, embed }: { sid: string; lang: Lang; embe
     messages: s.messages,
     isRunning: busy || s.running,
     convertMessage: (m) => ({ id: m.id, role: ROLE[m.role], content: [{ type: "text", text: m.text }], createdAt: new Date(m.ts),
-      metadata: { custom: { role: m.role, text: m.text, meta: m.meta, author: m.author, status: m.status } satisfies MessageCustom } }),
+      metadata: { custom: { role: m.role, text: m.text, meta: m.meta, author: m.author, ts: m.ts, status: m.status } satisfies MessageCustom } }),
     onNew: async (m) => { send(m.content.map((p) => (p.type === "text" ? p.text : "")).join("")); },
   });
 

@@ -27,3 +27,10 @@ export function fmtAge(fromIso: string, now: Date = new Date()): string {
   if (mins < 60 * 24) return `${Math.floor(mins / 60)} h`;
   return `${Math.floor(mins / (60 * 24))} d`;
 }
+
+/** Message time in the viewer's own timezone ("" when the stamp can't be read). */
+export function fmtTime(iso: string, lang: Lang, timeZone?: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat(lang === "pt" ? "pt-BR" : "es-MX", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(d);
+}
