@@ -1,4 +1,10 @@
 """Tests for failure paths and edge cases."""
+from dataclasses import fields
+
+from langgraph.checkpoint.memory import InMemorySaver
+
+from bankagent.graph.deps import Deps
+from bankagent.service import AgentService
 from tests.fakes import FakeLLM
 from tests.fixtures.serving_fixture import C1, t
 from tests.harness import CTX_ES, CTX_ES2, CTX_READ_ONLY, make_harness
@@ -135,3 +141,12 @@ def test_recursion_limit_returns_safe_reply(ddb_store, serving_root):
     h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}], recursion_limit=2)
     r = h.turn("¿Mi saldo?")
     assert r["reply_text"].startswith("Tuve un problema procesando tu mensaje.") and r["awaiting"] == "none"
+
+
+def test_default_clock_wiring_survives_a_turn(ddb_store, serving_root):
+    """Regression (unit 25): `Deps.clock`'s default_factory stored a float instead of the callable, so a turn
+    built with the runtime's default wiring (no explicit clock) died at `deps.clock()` before any node ran."""
+    h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}])
+    deps = Deps(**{f.name: getattr(h.service.deps, f.name) for f in fields(Deps) if f.name != "clock"})
+    r = AgentService(deps, InMemorySaver()).handle_turn(CTX_ES, "¿Cuál es el saldo de mi tarjeta?")
+    assert r["reply_text"] == "[answer]"
