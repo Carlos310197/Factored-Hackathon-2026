@@ -16,7 +16,8 @@ export function onSubscribe(ctx) {
   const identity = ctx.identity || {};
   // Unit 53 left open which field carries the authorizer context, so read both.
   const c = identity.handlerContext || identity.resolverContext;
-  console.log("identity keys:", Object.keys(identity));
+  // Object.keys(ctx.identity) is [] in APPSYNC_JS, so name the field that carried the context.
+  console.log("auth context field:", identity.handlerContext ? "handlerContext" : identity.resolverContext ? "resolverContext" : "none");
   if (!allowed(ctx.info.channel.segments, c)) {
     util.unauthorized();
   }
