@@ -29,3 +29,10 @@ def test_session_context_require_scope():
 def test_new_id_prefix_and_uniqueness():
     a, b = new_id("DSP"), new_id("DSP")
     assert a.startswith("DSP-") and b.startswith("DSP-") and a != b
+
+
+def test_resolver_settings_default_off():
+    s = Settings.from_env({"SERVING_URI": "/tmp/serving"})
+    assert s.resolver_artifact is None and s.thresholds_file is None
+    on = Settings.from_env({"SERVING_URI": "/tmp/s", "RESOLVER_ARTIFACT": "/a", "THRESHOLDS_FILE": "/t.yaml"})
+    assert on.resolver_artifact == "/a" and on.thresholds_file == "/t.yaml"

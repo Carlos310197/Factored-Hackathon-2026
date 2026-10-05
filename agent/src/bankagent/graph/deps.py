@@ -43,3 +43,7 @@ class Deps:
     
     # Timing
     clock: Callable[[], float] = field(default_factory=lambda: time.monotonic)
+
+    # Resolver (resolver spec 3.2): scores as evidence for Jev; None runs Jev alone with understand.v1
+    resolver: Any = None  # bankagent.resolver.model.Resolver
+    understand_qs_scored: dict | None = None  # understand.v2, used only on turns that have resolver scores

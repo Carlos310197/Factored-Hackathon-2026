@@ -16,6 +16,8 @@ class Settings:
     issuer: str
     audience: str
     jwks_url: str
+    resolver_artifact: str | None = None  # a resolver artifact directory; unset = Jev alone (resolver spec 6.4)
+    thresholds_file: str | None = None  # e.g. decisions/thresholds.v2.yaml once the resolver is adopted
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] = os.environ) -> "Settings":
@@ -30,4 +32,6 @@ class Settings:
             issuer=env.get("IDP_ISSUER", "http://localhost:8081"),
             audience=env.get("IDP_AUDIENCE", "bankagent"),
             jwks_url=env.get("IDP_JWKS_URL", "http://localhost:8081/jwks.json"),
+            resolver_artifact=env.get("RESOLVER_ARTIFACT") or None,
+            thresholds_file=env.get("THRESHOLDS_FILE") or None,
         )
