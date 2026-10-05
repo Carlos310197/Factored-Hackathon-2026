@@ -184,6 +184,7 @@ Update this file whenever the current phase, the active unit or the implementati
   - 44 `evalkit.persona`: OpenAI-compatible persona client (one retry on 5xx, errors raise, `[DONE]` detection) and the rule checks (`too_long`, `id_leak`, `out_of_character`, `wrong_language`); mocked HTTP only. Offline suite 19 passed. `persona.model` stays empty in `config.yaml` until the owner picks an OpenCode-served model.
   - 45 `evalkit.faults` (`jev_down`, `serving_down`, `dynamo_throttle` via a failing proxy; the real store is never touched) and `evalkit.conversation` (`TokenIssuer` incl. short-TTL expired tokens, `snapshot`, `run_conversation` with discard, max-turns and harness-error end reasons). Offline suite 29 passed.
   - 46 `evalkit.agent_runtime` (one table prefix per goal repetition, so a second rep never sees the first rep's dispute) and `evalkit.run` (resumable `(goal_id, rep)` pairs, run manifest with the goal-set hash, 8 workers; refuses without `--live`). Offline suite 34 passed.
+  - 47 `evalkit.classify`: one class per conversation from the store diff, decision records and replies; `unsafe` overrides and records its types; the customer's own earlier `DSP-` is not a false claim; a zero-turn or never-expired conversation is `persona_discarded`. The judge never decides a class. Offline suite 50 passed.
 
 ## In Progress
 
