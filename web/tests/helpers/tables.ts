@@ -2,7 +2,7 @@ import { CreateTableCommand, DeleteTableCommand, DynamoDBClient } from "@aws-sdk
 
 const S = "S" as const;
 export async function createTables(prefix: string, endpoint: string) {
-  const c = new DynamoDBClient({ region: "us-east-2", endpoint, credentials: { accessKeyId: "local", secretAccessKey: "local" } });
+  const c = new DynamoDBClient({ region: "us-east-1", endpoint, credentials: { accessKeyId: "local", secretAccessKey: "local" } });
   const specs = [
     { n: "sessions", k: [["session_id", "HASH"]] },
     { n: "conversation_messages", k: [["session_id", "HASH"], ["sk", "RANGE"]] },

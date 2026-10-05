@@ -2,10 +2,8 @@ import "server-only";
 import { PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { ChatMessage, type MessageMeta } from "@/lib/contract";
 import { newClientMessageId } from "@/lib/ids";
-import { doc, isConditionFailure, isoMicro, tableName } from "./ddb";
+import { doc, isConditionFailure, isoMicro, tableName, ttl } from "./ddb";
 
-const TTL_S = 90 * 86400;
-const ttl = () => Math.floor(Date.now() / 1000) + TTL_S;
 
 type Item = Record<string, unknown>;
 const toMessage = (i: Item): ChatMessage => ChatMessage.parse({

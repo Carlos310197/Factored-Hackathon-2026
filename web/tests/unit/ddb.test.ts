@@ -1,5 +1,5 @@
-import { PutCommand } from "@aws-sdk/lib-dynamodb";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTables } from "../helpers/tables";
 
 const endpoint = process.env.DYNAMODB_ENDPOINT;
@@ -51,8 +51,12 @@ run("DynamoDB access", () => {
 
   it("claim is atomic: the second agent gets a conflict", async () => {
     await d.doc().send(new PutCommand({ TableName: d.tableName("handoffs"), Item: PACKET("H1") }));
-    expect((await h.claim("H1", "agent.ana")).claimed_by).toBe("agent.ana");
-    await expect(h.claim("H1", "agent.luis")).rejects.toBeInstanceOf(d.ConflictError);
+    const rs = await Promise.allSettled([h.claim("H1", "agent.ana"), h.claim("H1", "agent.luis")]);
+    expect(rs.filter((x) => x.status === "fulfilled")).toHaveLength(1);
+    const lost = rs.find((x) => x.status === "rejected") as PromiseRejectedResult;
+    expect(lost.reason).toBeInstanceOf(d.ConflictError);
+    await expect(h.getHandoff("nope")).resolves.toBeNull();
+    await expect(h.takeover("nope", "agent.ana", "Ana")).rejects.toBeInstanceOf(d.NotFoundError);
   });
 
   it("takeover sets control and writes a system message; return by a non-holder is 409 and control is unchanged", async () => {
@@ -79,6 +83,26 @@ run("DynamoDB access", () => {
     expect(p.status).toBe("resolved");
     expect(p.resolution?.code).toBe("resolved_by_agent");
     expect((await s.getSession("S-1"))?.control).toBe("agent");
+  });
+
+  it("resolve on a stale read conflicts and leaves control unchanged", async () => {
+    await d.doc().send(new PutCommand({ TableName: d.tableName("handoffs"), Item: PACKET("H1") }));
+    await h.claim("H1", "agent.ana");
+    const client = d.doc();
+    const orig = client.send.bind(client) as (c: unknown) => Promise<unknown>;
+    let armed = true;
+    const spy = vi.spyOn(client, "send").mockImplementation((async (cmd: unknown) => {
+      const out = await orig(cmd);
+      if (armed && cmd instanceof GetCommand) { // resolve has read status=claimed; a takeover lands before its write
+        armed = false;
+        await h.takeover("H1", "agent.ana", "Ana R.");
+      }
+      return out;
+    }) as never);
+    await expect(h.resolve("H1", "agent.ana", "resolved_by_agent", "x")).rejects.toBeInstanceOf(d.ConflictError);
+    spy.mockRestore();
+    expect((await s.getSession("S-1"))?.control).toBe("human:agent.ana");
+    expect((await h.getHandoff("H1"))?.status).toBe("in_takeover");
   });
 
   it("lists decision records for a turn", async () => {

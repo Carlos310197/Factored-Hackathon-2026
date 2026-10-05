@@ -4,6 +4,9 @@ import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { env } from "./env";
 
 export class ConflictError extends Error {}
+export class NotFoundError extends Error {}
+
+export const ttl = () => Math.floor(Date.now() / 1000) + 90 * 86400;
 
 let client: DynamoDBDocumentClient | undefined;
 export function doc(): DynamoDBDocumentClient {
@@ -20,6 +23,7 @@ export function isoMicro(d: Date = new Date()): string {
 }
 
 export function isConditionFailure(e: unknown): boolean {
-  const name = (e as { name?: string })?.name;
-  return name === "ConditionalCheckFailedException" || name === "TransactionCanceledException";
+  const x = e as { name?: string; CancellationReasons?: { Code?: string }[] };
+  if (x?.name === "ConditionalCheckFailedException") return true;
+  return x?.name === "TransactionCanceledException" && !!x.CancellationReasons?.some((r) => r.Code === "ConditionalCheckFailed");
 }
