@@ -4,14 +4,14 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Phase
 
-- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), **Agent core units 12–25 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing, OpenAI on Bedrock, LangGraph workflow and agent service, AgentCore runtime entrypoint, local serving builder and demo identities, container image + local compose stack + terminal chat, and unit 25: live checks, the definition-of-done run and the README) and **Transaction resolver units 26–37 complete** (features and splits, history sampler, simulator, extract hints and `understand.v2`, test sheet and CLI, model, training, dev-set builder, finalize, systems and tuning, Jev runs and report, graph integration). Agent core is done (12–25); the resolver's remaining units 38–39 are live runs. Evaluation, UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `eval/` or `web/` code yet.
+- **Data pipeline built (units 01–11)**, **Terraform infrastructure deployed** (state, OIDC, serving bucket, Snowflake objects, ECS web hosting shell), **Agent core units 12–25 complete** (scaffold, Jev client, identity tokens, dispute policy, serving reader and read tools, DynamoDB store, write tools and handoff packet, Jev question sets/thresholds/routing, OpenAI on Bedrock, LangGraph workflow and agent service, AgentCore runtime entrypoint, local serving builder and demo identities, container image + local compose stack + terminal chat, and unit 25: live checks, the definition-of-done run and the README) and **Transaction resolver units 26–37 complete** (features and splits, history sampler, simulator, extract hints and `understand.v2`, test sheet and CLI, model, training, dev-set builder, finalize, systems and tuning, Jev runs and report, graph integration). Agent core is done (12–25); the resolver's remaining units 38–39 are live runs. **Evaluation units 40–50 complete** (as-is diagnosis run on the local drop; `eval/` goal generator, persona, conversation runner, run CLI, classifier, metrics, judge and report, all offline; 51–52 are `[live]`). UI and the remaining Terraform roots (`data`, `identity`, `agent`, `realtime`, `ops`) are not started: there is no `web/` code yet.
 - Region: **us-east-1** for all our AWS resources and Snowflake. The organizer bucket (theirs) stays in us-east-2.
 - Offline suite: `uv run pytest -m "not snowflake"` → 43 passed, 6 deselected (2026-10-05). Agent suite: `cd agent && uv run pytest` → 195 passed (2026-10-05). Container contract: `cd agent && uv run pytest -m container` → 4 passed against `docker compose up` (2026-10-05).
 - Submission deadline: **2026-10-05**.
 
 ## Current Goal
 
-- Transaction resolver units 38 (train, dev set, finalize, tune; about 600 Bedrock + 600 Jev calls) and 39 (freeze, evaluate once; Andrés's completed sheet needed first) are `[live]`: each step needs the owner's approval. Send `agent/resolver/data/test_sheet_v1.csv` and `TEST_SHEET_README.md` to Andrés. The as-is diagnosis (`40`) can also run in parallel. The UI (53+) and deployment (77+) follow.
+- Transaction resolver units 38 (train, dev set, finalize, tune; about 600 Bedrock + 600 Jev calls) and 39 (freeze, evaluate once; Andrés's completed sheet needed first) are `[live]`: each step needs the owner's approval. Send `agent/resolver/data/test_sheet_v1.csv` and `TEST_SHEET_README.md` to Andrés. The evaluation's offline code (units 40–50) is done; its live runs (51–52) wait for 39's adoption decision. The UI (53+) and deployment (77+) follow.
 
 ## Completed
 
@@ -187,6 +187,8 @@ Update this file whenever the current phase, the active unit or the implementati
   - 47 `evalkit.classify`: one class per conversation from the store diff, decision records and replies; `unsafe` overrides and records its types; the customer's own earlier `DSP-` is not a false claim; a zero-turn or never-expired conversation is `persona_discarded`. The judge never decides a class. Offline suite 50 passed.
   - 48 `evalkit.metrics` (headline, family and slice metrics, goal-clustered bootstrap, variability, cost with `incomplete`/`not defined` states) and `evalkit.compare` (legacy-vs-new rows with the different-workloads label, fairness rows, projected savings that needs every input). All nine `REQUIRED_KEYS` exist in the real `asis_metrics.json` from unit 42. Offline suite 58 passed.
   - 49 `eval/judge_rubric.md` (judge.v1) and `evalkit.judge` (packet usefulness 0–2 ×4, reply language and faithfulness pass/fail, `human_sheet`, Cohen's κ, `validate`; the judge never decides a class). The plan's test stub was Anthropic-shaped; the agent's `call_json` now uses the OpenAI `chat.completions` shape (ADR 2026-10-05), so the stub in `test_judge.py` was adapted and the judge code is unchanged. Offline suite 62 passed. The 40-label human validation is unit 52.
+  - 50 `evalkit.report`: `suggest_cause`, `build`, `render` (all nine report sections, the different-workloads label on every legacy row, projections in their own section), `charts` (one series colour, one accent, direct labels) and the CLI that writes `classifications.jsonl`, `error_analysis.csv` and `reports/eval-<date>.md`. Offline suite 65 passed.
+  - Offline totals: `cd analysis && uv run pytest` → 25 passed; `cd eval && uv run pytest` → 65 passed. Units 51–52 (`[live]`) are not started: they need the owner's approval for every persona, Bedrock and Jev run, an OpenCode `persona.model`, `OPENCODE_API_KEY`, a local serving set, DynamoDB Local, and (for 52) the held-out freeze and Carlos's 40 judge labels. Hold 51 until unit 39 records the resolver adoption decision, so the eval runs against the final agent.
 
 ## In Progress
 
@@ -201,7 +203,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | 01–11 | Data pipeline | **done**, running daily and green | none |
 | 12–25 | Agent core | **done**; 25 ran and recorded the definition-of-done run | none (16 uses a synthetic fixture; 23 uses the local drop) |
 | 26–39 | Transaction resolver | 26–37 **done**; 38–39 are `[live]` and wait for the owner's approval | 12, 16 |
-| 40–52 | Evaluation (40–42, the as-is diagnosis, have no dependencies) | not started | 43+ need agent core 12–24 |
+| 40–52 | Evaluation | 40–50 **done** (offline code, branch `feature/40-50-evaluation`); 51–52 are `[live]` and wait for the owner's approval and for unit 39's adoption decision | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
 | 77–90 | Deployment | not started; Terraform `bootstrap`, `platform` and the `app` web shell already exist | 77 has none; the rest follow the agent core and UI |
 
