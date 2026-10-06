@@ -13,14 +13,17 @@ Read this file only for work in `web/`, or for agent changes that feed the UI (t
 
 ## BFF route handlers (`web/app/api/…`) · ui §6
 
+*(2026-10-06)* Judge-facing summary of every page, route and trust path: `docs/api.md`.
+
 Every handler parses its input with Zod, checks the cookie's JWT (signature, expiry, role or scope) before any logic, and returns `{data} | {error: {code, message}}`.
 
 | Route | Role | Does |
 |---|---|---|
-| `POST /api/auth/login`, `/otp`, `/staff-login`, `/logout` | public / any | Proxy to the identity service; set or clear the httpOnly cookie |
+| `POST /api/auth/login`, `/otp`, `/staff-login`, `/logout` | public / any | Proxy to the identity service; set or clear the httpOnly cookie. *(2026-10-06)* After a successful `/otp`, `after()` sends `{"warmup": true}` to the conversation's AgentCore session |
+| `GET /api/auth/demo-users` | public (demo only) | The login picker: customers only, never staff; 404 outside demo mode |
 | `GET /api/auth/realtime-token` | customer, agent | Returns a subscribe-only token (the only token JS ever sees) |
 | `GET /api/auth/debug-claims` | agent (demo only) | Decoded claims of the customer token in this browser's `cust_session` cookie (the embedded phone), for Act 1 (§9.1). Disabled outside demo builds. |
-| `POST /api/chat` | customer | If `control ≠ agent`: store the message and return `awaiting: human`. Otherwise invoke AgentCore with the Bearer JWT, the runtime session id and the message-id header, and return the §4.7 response. |
+| `POST /api/chat` | customer | If `control ≠ agent`: store the message and return `awaiting: human`. Otherwise invoke AgentCore with the Bearer JWT, the runtime session id and the message-id header, and return the §4.7 response. *(2026-10-06)* Logs one JSON line per call (`status`, `ms`, `sid`, `client_message_id`, `turn_id`). |
 | `GET /api/sessions/:sid/messages?after=` | owner customer, agent | History |
 | `POST /api/sessions/:sid/messages` | agent holding the takeover | Agent message |
 | `GET /api/handoffs?status=` | agent | Queue |

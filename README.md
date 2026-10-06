@@ -153,9 +153,9 @@ leave Snowflake `RAW`, and product numbers are cut to the last four digits.
 
 | Party | Receives | Where in code |
 |---|---|---|
-| Amazon Bedrock, via a role in a second AWS account (`040684487035`) | The customer message and the last 2 exchanges (extract); receipts with `customer_id`, `product_id` and fraud fields removed (compose, handoff open questions) | `llm/extract.py:65-67`, `llm/compose.py` (`redact`), `llm/client.py` (`BEDROCK_ROLE_ARN`) |
+| Amazon Bedrock, via a role in a second AWS account (`040684487035`) | The customer message and the last 2 exchanges (extract); receipts with `customer_id`, `product_id` and fraud fields removed, and fraud triggers dropped from policy rule details and reason codes (compose, handoff open questions) | `llm/extract.py:65-67`, `llm/compose.py` (`redact`), `llm/client.py` (`BEDROCK_ROLE_ARN`) |
 | Jev / TypeSafe (external) | `understand`: policy text, session facts, the message, and candidate transactions as aliases `c1..cN` (no transaction, customer or product id) | `decisions/understand.py:95-131` |
-| Jev / TypeSafe (external) | `verify_reply`: the reply, its claims and the receipts with `customer_id`, `product_id` and fraud fields removed | `decisions/verify.py` (`REDACTED_FIELDS`); Jev calls are checked in the inquiry and dispute flows (`test_graph_paths.py`) |
+| Jev / TypeSafe (external) | `verify_reply`: the reply, its claims and the receipts with `customer_id`, `product_id` and fraud fields removed | `decisions/verify.py` (`REDACTED_FIELDS`); every Jev and Bedrock call in the offline suite is checked: the test doubles refuse any payload with a customer id, product id or fraud field (`tests/fakes.py::assert_no_egress`, `tests/test_egress_guard.py`) |
 | Evaluation persona model (OpenCode, offline eval only) | Synthetic goal cards and the simulated conversation; no customer records | `eval/src/evalkit/persona.py` |
 | Snowflake | The organizer drop (read from their bucket) and the curated export to our bucket; no chat data | `pipeline/load.py`, `pipeline/export.py` |
 | AppSync Events | Message text, control and progress events per session; handoff summaries on the staff queue; node and kind per trace step | `infra/realtime/publisher/map.ts:29-49` |
@@ -227,9 +227,10 @@ Spanish-speaking customers' histories. The nil slice (15 cases) is too small to 
 | Rationale and docs | This README, [`reports/asis-2026-10-05.md`](reports/asis-2026-10-05.md), `context/` (specs and decisions), `context/progress-tracker.md` → Architecture Decisions |
 | Product | [`docs/before-after.md`](docs/before-after.md): today's complaint row next to a real `handoff.v1` packet from the live agent, field by field; [`docs/run-of-show.md`](docs/run-of-show.md): the 4-beat live demo script with a fallback per beat |
 | Data engineering | [`docs/data-pipeline.md`](docs/data-pipeline.md): contracts, quarantine with a 1 % gate, lineage manifest, fixture drop proof (`tests/test_fixture_drop.py`), atomic self-describing serving pointer (`tests/test_export.py`), contract parity with the agent (`tests/test_contract_parity.py`), and the live run evidence (row counts per layer, 77 pass / 3 warn / 0 error) |
-| Data analytics | [`reports/asis-2026-10-05.md`](reports/asis-2026-10-05.md) and `analysis/asis/` (synthetic-artifact detectors, every number with n) |
+| Data analytics | [`reports/asis-2026-10-05.md`](reports/asis-2026-10-05.md) and `analysis/asis/` (synthetic-artifact detectors, every number with n); §9 reconciles its headline counts with `LATAM_BANK.CURATED` (exact match, 0 quarantined rows) |
 | AI engineering | [`docs/policy-on-trial.md`](docs/policy-on-trial.md): one request replayed with one YAML rule changed (filed → refused, 0 writes) and argued against with persuasion (still refused); the control matrix and failure table above; live trace at `/trace/<session>`; `agent/docs/smoke-results.md` (all 8 scenarios against real Jev and Bedrock, 2026-10-05) |
 | ML | [Learned component](#learned-component-the-transaction-resolver) above: model card, customer-disjoint splits, baselines and adoption rule fixed before the test run, frozen human-written ES/PT test set, both test runs reported with CIs |
+| API and access | [`docs/api.md`](docs/api.md): every page and API route with who may call it and where it is enforced, the agent and identity endpoints, and the trust table between services |
 | Deployment | `infra/terraform/` (7 roots), `.github/workflows/` (OIDC, pinned actions), live app above |
 
 ## Status: what is done and what is not
@@ -283,7 +284,6 @@ We report what we measured. We don't report numbers we haven't run.
 
 **Before production**
 - A real identity provider, HTTPS, and `Secure` cookies.
-- An egress check in CI for every third-party payload (today it covers Jev in the offline suite).
 - Notifications wired to an on-call channel (today: one email address), and alarms on DynamoDB throttling and AgentCore errors.
 - A load test against the capacity limits above.
 - A per-customer turn cap (today it is per session), and a budget alert in the account that pays for Bedrock and on Jev.

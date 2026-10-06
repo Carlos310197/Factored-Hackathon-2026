@@ -4,6 +4,17 @@ import re
 from types import SimpleNamespace
 
 
+# Egress invariant (architecture-context): no third party (Jev, Bedrock in a second account) gets a customer id, a
+# product id or a fraud field. Enforced inside the fakes, so every graph test checks every outgoing payload.
+_FORBIDDEN = re.compile(r"\b(?:CLI|PRD)-[A-Z0-9]{6,}|fraud_score|is_fraud")
+
+
+def assert_no_egress(payload, to: str) -> None:
+    text = payload if isinstance(payload, str) else json.dumps(payload, ensure_ascii=False, default=str)
+    leaked = sorted(set(_FORBIDDEN.findall(text)))
+    assert not leaked, f"{to} would receive {leaked}"
+
+
 class _FakeChatCompletions:
     def __init__(self, owner: "FakeLLM"):
         self.o = owner
@@ -20,6 +31,8 @@ class _FakeChatCompletions:
         else:
             role = "open_questions"
         self.o.roles.append(role)
+        if role != "extract":  # extract reads the customer's own words; compose and open_questions read receipts
+            assert_no_egress(user, f"Bedrock ({role})")
         if role in self.o.fail:
             import openai
             raise openai.APIConnectionError(request=SimpleNamespace(method="POST", url="https://bedrock.test"))
@@ -106,6 +119,7 @@ class FakeJev:
 
     def decide(self, state, questions):
         kind = "understand" if "intent" in questions else "verify"
+        assert_no_egress([state, questions], f"Jev ({kind})")
         self.calls.append((kind, state, questions))
         if kind == "understand":
             spec = self.specs.pop(0)
