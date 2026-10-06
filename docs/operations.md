@@ -12,7 +12,7 @@
 - **Latency source:** the agent writes one plain line per turn, `turn_end <ms>` (agent time, from accepting the
   message to the reply). A metric filter turns it into `LBDemo/Agent TurnDurationMs`.
 - **Alarms** (`infra/terraform/agent/alarms.tf`): six alarms on the agent's own log lines, all sending to the SNS topic
-  `lb-demo-agent-alarms` (email), plus the monthly AWS Budget.
+  `lb-demo-agent-alarms` (email), plus the monthly AWS Budget (80 % actual / 100 % forecast).
 
 | Alarm | Fires on | Means |
 |---|---|---|
@@ -88,15 +88,16 @@ algún pago rechazado?" and "Gracias". Started 02:55:11 UTC against runtime v13.
 | Measure | Value | Source |
 |---|---|---|
 | Turns answered | 30 / 30 (HTTP 200), 0 errors | script |
+| Wall-clock duration | 51.7 s | script |
 | End-to-end latency (browser → web → agent → reply) | p50 3.2 s, p95 6.9 s, max 7.8 s | script |
 | Agent time per turn | p50 2.6 s, p95 5.7 s, max 7.1 s (n = 27 datapoints in the window) | `TurnDurationMs` |
 | Failed / slow turns | 0 / 0 | `TurnFailed`, `TurnSlow` |
 | Template fallbacks | 1 of 30 | `TemplateFallback` |
-| Login warm-ups | all succeeded (`warmup_ok`), none failed | `Requests` by `Outcome` |
+| Login warm-ups | all 10 succeeded (`warmup_ok`), none failed | `Requests` by `Outcome` |
 
 Reproduce (costs real Bedrock and Jev calls): `python3 scripts/load_test.py https://d21y0qq5d8ixnr.cloudfront.net --users 10`.
-Not measured: the saturation point. The first expected limit is the account's Lambda concurrency of 10, shared by the
-identity service and the realtime Lambdas.
+That is the size of a judge panel testing at once. Not measured: the saturation point. The first expected limit is the
+account's Lambda concurrency of 10, shared by the identity service and the realtime Lambdas.
 
 ## Reproduce
 
@@ -107,3 +108,14 @@ aws logs put-log-events --log-group-name $G --log-stream-name $ST --log-events \
   "[{\"timestamp\":$(($(date +%s)*1000)),\"message\":\"ALARM DRILL (synthetic): decision record write failed\"}]"
 aws cloudwatch describe-alarm-history --alarm-name lb-demo-agent-AuditWriteFailed --max-items 4
 ```
+
+## Capacity
+
+| Component | Limit we know of | Source |
+|---|---|---|
+| Web app | 1 Fargate Spot task (0.5 vCPU / 1 GB) behind CloudFront (HTTPS) and an ALB that only CloudFront can reach; a Spot interruption means about 1–2 min of downtime while a new task starts, the URL stays the same | `infra/terraform/app/ecs.tf` |
+| Agent runtime (AgentCore) | New sessions 25/s, data-plane calls 1,000/s (account quotas); each session runs in its own microVM | AWS Service Quotas, `bedrock-agentcore` |
+| LLM (Bedrock Mantle) | Not visible: the on-demand quotas listed for gpt-oss and Ministral in our account read 0, and inference runs through the Mantle endpoint (and a role in a second account), whose throughput limits Service Quotas doesn't show | AWS Service Quotas, `bedrock` |
+| Jev (TypeSafe) | No published rate limit; 3 s timeout per call, 2–3 calls per turn | `decisions/jev.py` |
+| Identity (mock IdP) | API Gateway throttle 10 req/s (burst 20); the account's Lambda concurrency is 10 in total, shared with the realtime authorizer and publisher | `infra/terraform/identity/api.tf`, AWS account settings |
+| DynamoDB | On-demand capacity, no provisioned limit | `infra/terraform/data/tables.tf` |
