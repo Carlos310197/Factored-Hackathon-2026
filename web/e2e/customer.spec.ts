@@ -85,3 +85,20 @@ test("login page has no serious accessibility issues", async ({ page }) => {
   await page.goto("/login");
   await noSeriousA11y(page);
 });
+
+test("my cases: the header opens a sheet with the customer's disputes, Escape closes it", async ({ page, context }) => {
+  await signInCustomer(context);
+  await mockApi(page, ({ url }) => {
+    if (url.pathname.endsWith("/messages")) return { json: { data: [] } };
+    if (url.pathname === "/api/customer/cases") return { json: { data: [{ dispute_id: "DSP-1759658400000A1B2C3D4", status: "pending_review",
+      created_at: "2026-10-05T10:00:00+00:00", reason: "duplicate_charge", amount: 184900, currency: "COP" }] } };
+  });
+  await page.goto("/chat");
+  await page.getByRole("button", { name: "Mis casos" }).click();
+  const sheet = page.getByRole("dialog", { name: "Mis casos" });
+  await expect(sheet.getByText("En revisión")).toBeVisible();
+  await expect(sheet.getByText("COP 184.900")).toBeVisible();
+  await noSeriousA11y(page);
+  await page.keyboard.press("Escape");
+  await expect(sheet).toBeHidden();
+});

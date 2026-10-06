@@ -58,6 +58,12 @@ export const HandoffRow = z.object({
   reason_codes: z.array(z.string()), language: Lang, created_at: z.string(), claimed_by: z.string().nullish(),
 });
 export type HandoffRow = z.infer<typeof HandoffRow>;
+/** A customer's dispute as the BFF exposes it (no statement, session or routing internals). */
+export const CustomerCase = z.object({
+  dispute_id: z.string(), status: z.string(), created_at: z.string(), reason: z.string(),
+  amount: z.number().nullish(), currency: z.string().nullish(),
+});
+export type CustomerCase = z.infer<typeof CustomerCase>;
 export const QueueEvent = HandoffRow.extend({ type: z.literal("handoff") });
 
 export const TraceEvent = z.discriminatedUnion("type", [

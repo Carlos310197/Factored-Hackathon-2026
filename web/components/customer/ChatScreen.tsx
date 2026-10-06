@@ -12,6 +12,7 @@ import { newClientMessageId } from "@/lib/ids";
 import { signOut } from "@/lib/signout";
 import { useChannel } from "@/lib/realtime/useChannel";
 import { AsOfBanner } from "./AsOfBanner";
+import { CasesPanel } from "./CasesPanel";
 import { ExpiredSheet } from "./ExpiredSheet";
 import { customerText, MessageView, type MessageCustom } from "./MessageView";
 
@@ -107,6 +108,7 @@ export function ChatScreen({ sid, lang: sessionLang, embed }: { sid: string; lan
               <span aria-hidden className="absolute -bottom-10 right-14 size-20 rounded-full bg-b-leaf" />
               <h1 className="relative text-lg font-extrabold tracking-tight">{d.bank}</h1>
               <span className="relative flex items-center gap-2">
+                <CasesPanel lang={lang} />
                 <button type="button" aria-label={`${lang.toUpperCase()}, ${d.switchLang}`} onClick={() => setManual({ lang: lang === "es" ? "pt" : "es", at: replyKey })}
                   className="min-h-11 min-w-11 rounded-full px-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-surface">
                   <span className="rounded-full bg-b-surface px-2.5 py-0.5 text-xs font-bold text-b-ink">{lang.toUpperCase()}</span>
