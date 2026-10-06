@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { AgentError, invokeAgent, runtimeSessionId } from "@/lib/server/agentcore";
+import { AgentError, invokeAgent, runtimeSessionId, warmAgent } from "@/lib/server/agentcore";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -42,5 +42,24 @@ describe("invokeAgent", () => {
   it("maps 401/403 to auth", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("no", { status: 403 })));
     await expect(call()).rejects.toMatchObject({ kind: "auth" });
+  });
+});
+
+describe("warmAgent", () => {
+  it("posts a warmup to this conversation's runtime session, with no message", async () => {
+    const fetchMock = vi.fn(async () => Response.json({ warm: true }));
+    vi.stubGlobal("fetch", fetchMock);
+    await warmAgent({ token: "tok", sid: "S-1" });
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const h = init.headers as Record<string, string>;
+    expect(h.authorization).toBe("Bearer tok");
+    expect(h["x-amzn-bedrock-agentcore-runtime-session-id"]).toBe(runtimeSessionId("S-1"));
+    expect(JSON.parse(String(init.body))).toEqual({ warmup: true });
+  });
+  it("never throws: a failed warm-up only means a cold first turn", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("down"); }));
+    await expect(warmAgent({ token: "t", sid: "S" })).resolves.toBeUndefined();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("no", { status: 500 })));
+    await expect(warmAgent({ token: "t", sid: "S" })).resolves.toBeUndefined();
   });
 });

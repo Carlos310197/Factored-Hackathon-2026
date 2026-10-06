@@ -490,6 +490,11 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-06: Login-time session warm-up
+
+- **Cause of the ~16 s first turn:** the in-graph time of a first turn was 5.3 s (later turns 3.4–5.6 s); the other ~11 s was before the graph. AgentCore starts a microVM per runtime session (= per conversation), and the agent built its runtime lazily on the first message, so every new conversation paid the cold start; the container-start model warm-up runs in that same new microVM and could not help.
+- **Fix:** after the OTP succeeds, the BFF (`after()`, never delaying the login response) sends `{"warmup": true}` to the same runtime session id. The agent verifies the token, builds the runtime (models start warming), and reads the caller's own accounts once (DuckDB and serving hot). No turn, no session row, no message, no turn-cap use; a failure just means a cold first turn. `runtime()` now builds under a lock (warm-up and first message can overlap).
+- Live (owner-approved): agent `lb-demo-agent:0f3d27d` = runtime v10, web `latam-bank-web:0f3d27d` (task def 10). Fresh logins through the app (demo14, demo15), first message 10 s later: 4.2 s and 7.4 s end to end, of which 3.4 s and 6.6 s in the graph (~0.8 s outside, vs ~11.6 s before). Cold sessions without warm-up measured 7.0–9.5 s on a long-running deploy: the ~16 s case is mostly right after a deploy; the remaining spread is model latency.
 ### 2026-10-06: Policy-on-trial exhibit
 
 - `agent/tests/test_policy_on_trial.py` + `docs/policy-on-trial.md` (linked from the README evidence map): one dispute request replayed through the real graph, policy and write tool with scripted, identical Jev answers. Shipped policy → filed (1 `create_dispute`); `window_days: 60 → 5` (the only change) → refused on `within_window`, 0 writes; persuasive wording plus most-favorable Jev answers → still refused, 0 writes. Labeled as replayed evidence.
