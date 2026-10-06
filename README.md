@@ -12,7 +12,13 @@ decision record you can open in the trace view; the write is best-effort (see Li
 
 ## Try it
 
-- **App:** https://d21y0qq5d8ixnr.cloudfront.net
+**Live app: https://d21y0qq5d8ixnr.cloudfront.net** (HTTPS through CloudFront, us-east-1)
+
+| Customer sign-in (`/login`) | Staff console (`/agent`) | Demo stage (`/demo`) |
+|---|---|---|
+| [![Customer sign-in](docs/screenshots/login.png)](docs/screenshots/login.png) | [![Staff console with a handoff packet](docs/screenshots/agent-console.png)](docs/screenshots/agent-console.png) | [![Demo stage](docs/screenshots/demo-stage.png)](docs/screenshots/demo-stage.png) |
+| Demo identities listed, password and code filled in; ES/PT switch | A live `handoff.v1` packet: the request, Jev's probabilities behind the handoff, policy checks and open questions; Packet / Conversation / Trace tabs | Phone with the live customer chat, "what just happened" checklist, scenarios and the handoff act |
+
 - **Customer chat:** `/login`. The 20 demo identities (`demo01`–`demo20`) are listed on the page, and their password and code
   are filled in for you. `demo01`–`demo08` are each tagged with a demo scenario. Portuguese speakers: `demo04`, `demo08`,
   `demo12`, `demo16`, `demo20` (pick Português on the login page).
@@ -232,13 +238,16 @@ Spanish-speaking customers' histories. The nil slice (15 cases) is too small to 
 
 | Judged area | Look at |
 |---|---|
+| Architecture | [System diagram](#architecture) with the 10 numbered flows; [`docs/diagrams/`](docs/diagrams/) for the pipeline, agent core and UI |
 | Rationale and docs | This README, [`reports/asis-2026-10-05.md`](reports/asis-2026-10-05.md), `context/` (specs and decisions), `context/progress-tracker.md` → Architecture Decisions |
 | Product | [`docs/before-after.md`](docs/before-after.md): today's complaint row next to a real `handoff.v1` packet from the live agent, field by field; [`docs/run-of-show.md`](docs/run-of-show.md): the 4-beat live demo script with a fallback per beat |
 | Data engineering | [`docs/data-pipeline.md`](docs/data-pipeline.md): contracts, quarantine with a 1 % gate, lineage manifest, fixture drop proof (`tests/test_fixture_drop.py`), atomic self-describing serving pointer (`tests/test_export.py`), contract parity with the agent (`tests/test_contract_parity.py`), and the live run evidence (row counts per layer, 77 pass / 3 warn / 0 error) |
 | Data analytics | [`reports/asis-2026-10-05.md`](reports/asis-2026-10-05.md) and `analysis/asis/` (synthetic-artifact detectors, every number with n); §9 reconciles its headline counts with `LATAM_BANK.CURATED` (exact match, 0 quarantined rows) |
 | AI engineering | [`docs/policy-on-trial.md`](docs/policy-on-trial.md): one request replayed with one YAML rule changed (filed → refused, 0 writes) and argued against with persuasion (still refused); the control matrix and failure table above; live trace at `/trace/<session>`; `agent/docs/smoke-results.md` (all 8 scenarios against real Jev and Bedrock, 2026-10-05) |
+| Measured quality | [`reports/eval-2026-10-05.md`](reports/eval-2026-10-05.md): held-out run, 360 conversations, every rate with its denominator and CI, error analysis and worked examples quoting decision records; [`reports/threshold-check-2026-10-05.md`](reports/threshold-check-2026-10-05.md): the hand-set Jev thresholds measured on that run |
 | ML | [Learned component](#learned-component-the-transaction-resolver) above: model card, customer-disjoint splits, baselines and adoption rule fixed before the test run, frozen human-written ES/PT test set, both test runs reported with CIs |
 | API and access | [`docs/api.md`](docs/api.md): every page and API route with who may call it and where it is enforced, the agent and identity endpoints, and the trust table between services |
+| Operations | [`docs/operations.md`](docs/operations.md): dashboard `lb-demo-ops`, the alarm table, a recorded alarm drill, a rollback rehearsal, a 10-user load test, and how to follow one message across the web server, the agent and the decision records |
 | Deployment | `infra/terraform/` (7 roots), `.github/workflows/` (OIDC, pinned actions), live app above |
 
 ## Status: what is done and what is not
@@ -248,9 +257,10 @@ Spanish-speaking customers' histories. The nil slice (15 cases) is too small to 
 | Data pipeline | Live, runs daily |
 | Agent, web, identity, realtime | Live in AWS us-east-1 |
 | Agent end-to-end check | All 8 scenarios against real Jev and Bedrock on 2026-10-05 (`agent/docs/smoke-results.md`) |
-| Evaluation harness (`eval/`) | Code done and tested offline; **no live evaluation run yet**, so no resolution, containment or cost metrics are reported |
-| Transaction resolver | Trained, calibrated and evaluated on the frozen test set (two runs, both reported). In the agent it is switched on by `RESOLVER_ARTIFACT` / `THRESHOLDS_FILE` (set in Docker Compose); the deployed runtime gets them with the next agent deploy |
-| Monitoring and alarms | Six CloudWatch alarms on the agent's log lines (turn failures, template fallbacks, decision-record write failures, turns over 20 s, a serving export older than 2 days, sessions hitting the turn cap; `infra/terraform/agent/alarms.tf`) emailing an SNS topic, plus a monthly AWS Budget (80 % actual / 100 % forecast). CloudWatch dashboard `lb-demo-ops` (`infra/terraform/agent/dashboard.tf`): turn latency p50/p95/max from a `turn_end <ms>` log line, turns per 5 min, every alarm metric and state, web load-balancer 5xx and p95. One alarm drill recorded in [`docs/operations.md`](docs/operations.md) |
+| Evaluation (`eval/`) | Held-out run on 2026-10-05 ([`reports/eval-2026-10-05.md`](reports/eval-2026-10-05.md)): a frozen set of 120 goals × 3 repetitions = 360 conversations with simulated ES/PT customers, against the live agent. Correct outcome **354/358** (98.9 %), safe automated resolution **182/185** (98.4 %), missed transfers **0/65**, unnecessary transfers **1/78**, unsafe outcomes **2/358** (both disclosed with their cause), turn latency p50 3.7 s / p95 7.8 s. The LLM judge is not validated yet (no human labels, no κ), so no headline number uses it; cost is incomplete until Jev has a published price |
+| Transaction resolver | Trained, calibrated and evaluated on the frozen test set (two runs, both reported); switched on in the deployed agent (`RESOLVER_ARTIFACT`, `THRESHOLDS_FILE=thresholds.v2.yaml`) |
+| Monitoring and alarms | Six CloudWatch alarms on the agent's log lines (turn failures, template fallbacks, decision-record write failures, turns over 20 s, a serving export older than 2 days, sessions hitting the turn cap; `infra/terraform/agent/alarms.tf`) emailing an SNS topic, plus a monthly AWS Budget (80 % actual / 100 % forecast). CloudWatch dashboard `lb-demo-ops` (`infra/terraform/agent/dashboard.tf`): turn latency p50/p95/max from a `turn_end <ms>` log line, turns per 5 min, every alarm metric and state, web load-balancer 5xx and p95. One alarm drill (log line → alarm → email in 64 s), one rollback rehearsal (back and forward in under 10 s each) and a 10-user load test, all in [`docs/operations.md`](docs/operations.md) |
+| Customer case list and conversation history | "My cases" (#81) and conversation list, end and new conversation (#83, #84) are merged and tested; not deployed yet (they need a data-table index, an identity release and a web release) |
 
 We report what we measured. We don't report numbers we haven't run.
 
@@ -276,8 +286,8 @@ We report what we measured. We don't report numbers we haven't run.
   the "data as of" date.
 - **Synthetic data:** escalation and SLA rates, wait times, CSAT and agent load are generator artifacts and are not used to
   argue for this system.
-- **Hosting:** plain HTTP behind the ALB (no domain, so no certificate), so session cookies are not `Secure`; one Fargate
-  Spot task.
+- **Hosting:** one Fargate Spot task behind CloudFront (HTTPS with the default CloudFront certificate, no custom domain);
+  a Spot interruption means 1–2 minutes of downtime.
 - **Spend cap is per session only:** the demo identities and the mock IdP are public, so anyone can drive Bedrock and
   Jev calls (Bedrock bills to the account that owns the Bedrock role). A session stops after 30 turns with a fixed reply
   and no model call, and an alarm fires when sessions keep hitting the cap; but a new login starts a new session, so the
