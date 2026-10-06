@@ -97,7 +97,6 @@ def test_copy_escapes_quotes_in_file_names():
 
 
 def test_rerun_over_same_drop_copies_nothing():
-    """Re-run idempotency at the RAW boundary: same files + same ETags -> every file skipped, no COPY, no new manifest rows."""
     import pipeline.load as L
 
     class Cur(FakeCur):

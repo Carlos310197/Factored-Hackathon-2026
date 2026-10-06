@@ -169,7 +169,6 @@ run "execution_role_trusts_agentcore_in_this_account" {
 run "least_privilege_data_access" {
   command = apply
 
-  # Every action granted, flattened.
   assert {
     condition     = !anytrue([for a in flatten([for s in data.aws_iam_policy_document.agent.statement : tolist(s.actions)]) : contains(["dynamodb:Scan", "dynamodb:*", "s3:*", "bedrock-mantle:*", "bedrock:*"], a)])
     error_message = "no Scan, no service wildcards"

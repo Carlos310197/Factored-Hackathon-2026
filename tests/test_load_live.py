@@ -19,7 +19,6 @@ def test_copy_and_manifest_roundtrip_on_fixture_db(cur):
     cur.execute("use database LATAM_FIXTURE")
     cur.execute("truncate table if exists RAW.CUSTOMERS")
     cur.execute("delete from META.RUN_MANIFEST where table_name = 'CUSTOMERS'")
-    # stage a tiny customers file into the internal fixture stage
     import tempfile, pathlib
     p = pathlib.Path(tempfile.mkdtemp()) / "customers.csv"
     p.write_text("customer_id,country,segment\nC1,MX,Retail\nC2,CO,Premium\n")

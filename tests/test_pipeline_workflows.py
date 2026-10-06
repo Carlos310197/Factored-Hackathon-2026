@@ -50,7 +50,6 @@ def test_dq_results_and_failed_steps_are_not_masked():
 
 
 def test_orphan_foreign_keys_fail_the_build_and_block_the_export():
-    """An orphan FK must stop the daily run before export: relationships tests are error severity and never excluded."""
     schema = yaml.safe_load(Path("dbt/models/staging/schema.yml").read_text())
     rels = {}
     for m in schema["models"]:

@@ -29,8 +29,7 @@ resource "aws_s3_bucket_public_access_block" "serving" {
   restrict_public_buckets = true
 }
 
-# Trust is read from the integration, so the circular dependency resolves in one apply:
-# the integration names this role up front (fixed name), the role then trusts the integration's identity.
+# Fixed role name breaks the cycle: the integration names the role, the role trusts the integration.
 resource "aws_iam_role" "snowflake_serving" {
   name = local.snowflake_role_name
   assume_role_policy = jsonencode({
@@ -74,8 +73,7 @@ data "aws_ssm_parameter" "organizer_secret" {
   name   = "/fh26/organizer/aws_secret"
 }
 
-# --- pipeline-runner: CI identity for PIPELINE_SVC. Separate from gha-deploy so each Snowflake user maps to one AWS identity.
-# No AWS permissions: every S3 write goes through Snowflake (SERVING_STAGE -> snowflake-serving role).
+# Separate from gha-deploy so each Snowflake user maps to one AWS identity; no AWS permissions.
 data "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
 }

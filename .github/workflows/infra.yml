@@ -11,7 +11,6 @@ permissions:
   id-token: write
   contents: read
 
-# Serialize runs per ref; with apply re-planning from HEAD, a cancelled pending run loses nothing.
 concurrency:
   group: infra-${{ github.ref }}
   cancel-in-progress: false

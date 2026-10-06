@@ -6,7 +6,6 @@ from evalkit.judge import (PACKET_FIELDS, REPLY_FIELDS, cohen_kappa, human_sheet
 
 
 def fake_client(data):
-    """Stub with the OpenAI chat.completions shape that bankagent.llm.client.call_json uses."""
     def create(**kw):
         message = SimpleNamespace(content=json.dumps(data))
         return SimpleNamespace(choices=[SimpleNamespace(message=message, finish_reason="stop")],

@@ -1,5 +1,3 @@
-"""Legacy (historical contact center) vs new system, on shared metrics only, plus the labeled
-projection. Every row is an offline simulation compared with a historical record."""
 from evalkit.metrics import SMALL_N, headline
 
 LABEL = "offline simulation vs historical record; different workloads"

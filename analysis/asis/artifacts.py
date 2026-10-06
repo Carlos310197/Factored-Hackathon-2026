@@ -1,7 +1,3 @@
-"""Synthetic-artifact detectors. A finding backed by a detector that holds is tagged
-"synthetic artifact" and is never used to argue for the new system."""
-
-
 def _a(name: str, holds: bool, evidence: str, query: str) -> dict:
     return {"name": name, "holds": bool(holds), "evidence": evidence, "query": " ".join(query.split())}
 
@@ -15,8 +11,7 @@ def _range_detector(c, name, query, max_range, label):
 
 
 def escalation_flat(c, min_n=1000, max_range=0.02):
-    """Escalation is about 10% in every slice. Slices are contact reasons; reason x channel buckets are
-    too small to be read as flat (sampling noise alone exceeds the limit)."""
+    """Slices are contact reasons: reason x channel buckets are too small to read as flat."""
     q = f"""select reason_category, avg((was_escalated = 'True')::int) from interactions
             group by all having count(*) >= {min_n}"""
     return _range_detector(c, "escalation_flat", q, max_range, "reason")
@@ -29,8 +24,6 @@ def sla_flat(c, min_n=500, max_range=0.06):
 
 
 def wait_constant(c, max_spread_s=30):
-    """The median wait is 2.0 min in every slice. The per-slice medians are compared; the p10-p90 spread
-    of individual waits is reported but does not decide."""
     q = """select reason_category, channel, quantile_cont(try_cast(wait_time_seconds as double), 0.5),
                   quantile_cont(try_cast(wait_time_seconds as double), 0.1),
                   quantile_cont(try_cast(wait_time_seconds as double), 0.9)
@@ -47,8 +40,7 @@ def wait_constant(c, max_spread_s=30):
 
 
 def csat_by_resolution(c, min_n=1000, max_within_share=0.15):
-    """CSAT is determined by was_resolved. Holds when the resolved-unresolved gap is large against how much
-    CSAT still varies across contact reasons within one resolution status."""
+    """Holds when the resolved-unresolved gap is large against CSAT variation across reasons within one status."""
     q = f"""select i.was_resolved, i.reason_category, avg(try_cast(s.main_score as double))
             from surveys s join interactions i using (interaction_id) where s.survey_type = 'CSAT'
             group by all having count(*) >= {min_n}"""

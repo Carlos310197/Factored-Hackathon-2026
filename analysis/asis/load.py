@@ -1,4 +1,3 @@
-"""DuckDB views over the raw organizer drop, normalized like the pipeline's staging layer."""
 from pathlib import Path
 
 import duckdb

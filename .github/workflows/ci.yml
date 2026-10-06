@@ -22,7 +22,7 @@ jobs:
       - run: uv sync
       - run: uv run pytest -m "not snowflake" -q
 
-  # Live proof against LATAM_FIXTURE. main only: pipeline-runner (PIPELINE_ROLE) never reaches PR code.
+  # main only: pipeline-runner never reaches PR code.
   fixture:
     needs: unit
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -1,4 +1,4 @@
-"""One simulated conversation against the agent's real entrypoint. Persona time is never counted."""
+"""Persona time is never counted in latency."""
 import secrets
 import time
 from dataclasses import dataclass
@@ -83,6 +83,6 @@ def run_conversation(card, rep: int, *, handle_fn, rt, store, persona, tokens: T
         rec["after"] = snapshot(store, card.customer_id, sid)
     except PersonaError as e:
         rec |= {"end_reason": "harness_error", "error": f"persona: {e}"}
-    except Exception as e:  # any agent or store failure the agent did not absorb is a harness error, never retried
+    except Exception as e:
         rec |= {"end_reason": "harness_error", "error": f"{type(e).__name__}: {e}"}
     return rec

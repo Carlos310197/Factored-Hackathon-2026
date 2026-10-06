@@ -1,5 +1,4 @@
-# Secret containers only: no aws_secretsmanager_secret_version, so values never reach state.
-# Values are set out of band by ./put-secrets.sh.
+# Containers only, so values never reach state; ./put-secrets.sh sets them.
 resource "aws_secretsmanager_secret" "jev" {
   name        = "lb-demo/jev"
   description = "Jev API credential"
@@ -8,7 +7,7 @@ resource "aws_secretsmanager_secret" "jev" {
   }
 }
 
-# Value is the RSA 2048 private key as a PEM string (identity/lambda_handler.py reads SecretString as PEM).
+# RSA 2048 private key as a PEM string.
 resource "aws_secretsmanager_secret" "idp_signing_key" {
   name        = "lb-demo/idp-signing-key"
   description = "Mock IdP RS256 signing key (PEM)"

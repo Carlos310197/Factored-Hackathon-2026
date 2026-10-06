@@ -1,4 +1,3 @@
-"""Goal cards and the generator. Labels come from the agent's own policy: labels by construction."""
 import argparse
 import csv
 import hashlib
@@ -152,7 +151,7 @@ class _Ctx:
 
 
 def _b_account(ctx, cust, lang, i, style="native", fault=None, outcome="resolve"):
-    # Cards and accounts only: loans and investments are not account-info products for this agent (dev run 2).
+    # Loans and investments are not account-info products for this agent.
     prods = [p for p in ctx.products.get(cust["customer_id"]) or [] if p["product_type"].startswith(ACCOUNT_PRODUCTS)]
     if not prods:
         return None

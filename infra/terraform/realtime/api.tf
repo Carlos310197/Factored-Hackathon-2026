@@ -1,4 +1,4 @@
-# AppSync Events API: browsers connect and subscribe through the Lambda authorizer; only IAM publishes.
+# Browsers subscribe through the Lambda authorizer; only IAM publishes.
 resource "aws_appsync_api" "this" {
   name = "lb-demo-realtime"
 
@@ -22,8 +22,7 @@ resource "aws_appsync_api" "this" {
     default_subscribe_auth_mode {
       auth_type = "AWS_LAMBDA"
     }
-    # ALL captures handler console.log but can write customer message text to CloudWatch: use it only for
-    # the unit-53 identity probe (-var appsync_log_level=ALL) and revert afterwards.
+    # ALL can write customer message text to CloudWatch; use it only briefly for debugging.
     log_config {
       cloudwatch_logs_role_arn = aws_iam_role.appsync_logs.arn
       log_level                = var.appsync_log_level
@@ -31,7 +30,6 @@ resource "aws_appsync_api" "this" {
   }
 }
 
-# The channel rule (customers only their own session, staff any) lives in the shared code handler.
 resource "aws_appsync_channel_namespace" "this" {
   for_each = toset(["session", "queue", "trace"])
 
@@ -48,8 +46,7 @@ resource "aws_lambda_permission" "appsync" {
   source_arn    = aws_appsync_api.this.api_arn
 }
 
-# AppSync writes to /aws/appsync/apis/<api_id>; declaring the group here gives it 30-day retention.
-# The role policy uses a prefix wildcard because api_id is unknown until the API exists (avoids a cycle).
+# The role policy uses a prefix wildcard: api_id is unknown until the API exists.
 resource "aws_cloudwatch_log_group" "appsync" {
   name              = "/aws/appsync/apis/${aws_appsync_api.this.api_id}"
   retention_in_days = 30

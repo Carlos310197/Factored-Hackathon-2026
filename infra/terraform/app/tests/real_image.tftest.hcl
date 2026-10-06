@@ -1,4 +1,4 @@
-# Separate file = separate state: the SSM parameter ignores value changes, so a run in app.tftest.hcl would keep the placeholder.
+# Separate file for separate state: the SSM parameter ignores value changes.
 mock_provider "aws" {
   mock_data "aws_ec2_managed_prefix_list" {
     defaults = { id = "pl-3b927c52" }
@@ -66,7 +66,7 @@ override_data {
 run "real_image_drops_the_command_override" {
   command = apply
 
-  # a fresh apply whose parameter already holds the pushed image (ECR url is mocked, so match on it)
+  # ECR url is mocked, so match on it
   variables {
     image = "mock-ecr-url:abc1234"
   }

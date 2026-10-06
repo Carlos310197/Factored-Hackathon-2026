@@ -1,5 +1,3 @@
-"""Builds the agent's real runtime for the harness: DynamoDB Local, the local serving set, live Claude and Jev, a
-JWKS that trusts the harness's own test-token key, and an optional fault."""
 import os
 
 

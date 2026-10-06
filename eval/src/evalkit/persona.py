@@ -1,4 +1,3 @@
-"""Simulated customer: a non-Claude chat model served through OpenCode's OpenAI-compatible API."""
 import argparse
 import json
 import os
@@ -77,8 +76,7 @@ def system_prompt(card) -> str:
 class PersonaClient:
     def __init__(self, base_url: str, api_key: str, model: str, temperature: float | None, timeout_s: float = 30.0,
                  http: httpx.Client | None = None, api: str = "chat"):
-        # api: "chat" (/chat/completions) or "responses" (/responses, which some OpenAI models need).
-        # temperature None means the model's own default (some models reject the parameter).
+        # Some OpenAI models need api="responses"; temperature None because some models reject it.
         self.base_url, self.api_key, self.model, self.temperature = base_url.rstrip("/"), api_key, model, temperature
         self.api = api
         self.http = http or httpx.Client(timeout=timeout_s)

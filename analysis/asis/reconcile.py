@@ -1,4 +1,3 @@
-"""Reconciliation with the curated marts. The curated numbers come from reconcile.sql."""
 TOLERANCE = 0.001
 KEYS = {"interactions_n": "demand.total", "complaints_n": "complaints.total",
         "transaccional_fcr": "quality.Transaccional.fcr", "disputes_n": "disputes.count",
@@ -13,5 +12,5 @@ def reconcile(metrics: dict, curated: dict | None) -> dict:
         ours, theirs = metrics[mkey]["value"], float(curated[ckey])
         diff = abs(ours - theirs) / max(abs(theirs), 1e-9)
         checks.append({"key": ckey, "ours": ours, "curated": theirs, "rel_diff": round(diff, 6), "ok": diff <= TOLERANCE})
-    context = {k: v for k, v in curated.items() if k not in KEYS}  # raw/quarantine counts that explain the result
+    context = {k: v for k, v in curated.items() if k not in KEYS}
     return {"status": "reconciled" if all(c["ok"] for c in checks) else "mismatch", "checks": checks, "context": context}

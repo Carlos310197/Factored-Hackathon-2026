@@ -1,4 +1,3 @@
-"""Post-apply smoke test: PIPELINE_SVC logs in via AWS workload identity and can reach both stages."""
 import pytest
 
 from pipeline.connect import get_connection

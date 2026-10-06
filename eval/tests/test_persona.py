@@ -137,7 +137,7 @@ def test_from_config_selects_the_api():
 
 
 def test_responses_api_leaves_room_for_reasoning_tokens():
-    # Dev run 2: a reasoning model spent its 300-token budget before writing the message ("response incomplete").
+    # A reasoning model can spend a 300-token budget before writing the message.
     seen = {}
 
     def h(req):

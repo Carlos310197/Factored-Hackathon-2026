@@ -1,4 +1,3 @@
-"""python -m evalkit.run: drive every (goal, rep) through the agent; resumable; one table prefix per rep."""
 import argparse
 import json
 import os
@@ -65,7 +64,7 @@ def _work(card_dict: dict) -> dict:
         from bankagent.app import handle
         return run_conversation(card, st["rep"], handle_fn=handle, rt=rt, store=store,
                                 persona=PersonaClient.from_config(st["cfg"]["persona"]), tokens=st["tokens"])
-    except Exception as e:  # runtime build failure: recorded, counted, never retried silently
+    except Exception as e:
         return {"goal_id": card.goal_id, "rep": st["rep"], "turns": [], "end_reason": "harness_error",
                 "error": f"{type(e).__name__}: {e}", "violations": [], "persona_usage": []}
 

@@ -1,4 +1,4 @@
-# Bootstrap: the trust chain CI uses. Applied once from a laptop via ./apply.sh, never from CI.
+# Applied from a laptop via ./apply.sh, never from CI.
 terraform {
   required_version = ">= 1.10"
   required_providers {
@@ -7,8 +7,7 @@ terraform {
   }
 }
 
-# The repo uses GitHub's immutable OIDC subject: owner@owner_id/repo@repo_id
-# (gh api repos/<owner>/<repo>/actions/oidc/customization/sub -> sub_claim_prefix).
+# GitHub's immutable OIDC subject: owner@owner_id/repo@repo_id.
 variable "github_sub_prefix" {
   type    = string
   default = "repo:Carlos310197@66190532/factored-hackathon-2026-aignostics@1389485180"
@@ -28,7 +27,6 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# Password comes from SNOWFLAKE_PASSWORD (apply.sh reads it from the snow CLI config).
 provider "snowflake" {
   organization_name = "RLQHFPF"
   account_name      = "AXC97788"
@@ -43,10 +41,9 @@ locals {
   gha_subjects = ["${var.github_sub_prefix}:ref:refs/heads/main"]
 }
 
-# --- Terraform state ---
 resource "aws_s3_bucket" "tfstate" {
-  bucket        = "fh26-tfstate-${local.account_id}-use1" # -use1: S3 kept the old name pinned to us-east-2 after deletion
-  force_destroy = true                                    # region move 2026-10-01; state is backed up and re-uploaded by hand-off steps
+  bucket        = "fh26-tfstate-${local.account_id}-use1" # -use1: the old name stays pinned to us-east-2
+  force_destroy = true
 }
 
 resource "aws_s3_bucket_versioning" "tfstate" {
@@ -64,7 +61,6 @@ resource "aws_s3_bucket_public_access_block" "tfstate" {
   restrict_public_buckets = true
 }
 
-# --- GitHub Actions -> AWS ---
 resource "aws_iam_openid_connect_provider" "github" {
   url            = "https://token.actions.githubusercontent.com"
   client_id_list = ["sts.amazonaws.com"]
@@ -94,7 +90,6 @@ resource "aws_iam_role_policy_attachment" "gha_deploy_admin" {
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
 
-# --- AWS role -> Snowflake (workload identity, no stored secret) ---
 resource "snowflake_execute" "tf_deploy_user" {
   execute = "CREATE USER TF_DEPLOY TYPE = SERVICE WORKLOAD_IDENTITY = (TYPE = AWS ARN = '${aws_iam_role.gha_deploy.arn}') DEFAULT_ROLE = ACCOUNTADMIN"
   revert  = "DROP USER TF_DEPLOY"
@@ -107,7 +102,7 @@ resource "snowflake_execute" "tf_deploy_grant" {
   depends_on = [snowflake_execute.tf_deploy_user]
 }
 
-# --- Organizer keys: from local .env once; CI reads them, never sets them ---
+# Organizer keys: CI reads them, never sets them.
 resource "aws_ssm_parameter" "organizer_key_id" {
   name  = "/fh26/organizer/aws_key_id"
   type  = "SecureString"

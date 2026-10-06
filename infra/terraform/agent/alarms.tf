@@ -1,7 +1,3 @@
-# Alarms on the agent's own log lines (runtime log group). A spike in template fallbacks is what a stale Bedrock token
-# or a Jev outage looks like from the customer's side; turn failures are uncaught errors; an audit write failure means
-# a decision record is missing from the trace.
-
 variable "alarm_email" {
   description = "Optional address subscribed to the alarm topic (confirm the SNS email). Empty: alarms show in the console only."
   type        = string
@@ -69,7 +65,7 @@ variable "monthly_budget_usd" {
   default     = 100
 }
 
-# Spend guard for the public demo (Bedrock inference itself bills to the account that owns the Bedrock role).
+# Bedrock inference bills to the AI Account, not to this budget.
 resource "aws_budgets_budget" "account" {
   count        = var.alarm_email == "" ? 0 : 1
   name         = "lb-demo-monthly"

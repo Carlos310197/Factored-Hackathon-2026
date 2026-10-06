@@ -27,7 +27,6 @@ def test_common_fields_and_database_override():
     assert kw["database"] == "LATAM_FIXTURE"
 
 def test_named_connection_for_local_dev():
-    # snow CLI connection (account/user/password live in its config.toml, not in .env)
     env = {k: v for k, v in BASE.items() if k not in ("SNOWFLAKE_ACCOUNT", "SNOWFLAKE_USER")}
     kw = build_connect_kwargs({**env, "SNOWFLAKE_CONNECTION_NAME": "sbx"})
     assert kw["connection_name"] == "sbx"

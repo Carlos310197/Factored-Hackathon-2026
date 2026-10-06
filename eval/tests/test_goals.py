@@ -131,8 +131,7 @@ def test_heldout_account_goals_have_no_loans_or_investments(heldout, universe):
 
 
 def test_nonexistent_charge_goals_are_about_a_purchase_the_customer_made(heldout):
-    # Dev run 3: "I don't recognize this charge" is routed to a human as possible unauthorized use, which is correct
-    # agent behavior, so the goal must not invite it.
+    # "I don't recognize this charge" correctly routes to a human, so the goal must not invite it.
     goals = [c for c in heldout if c.group == "bad_nonexistent"]
     assert goals
     for c in goals:
