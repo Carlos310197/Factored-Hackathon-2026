@@ -490,6 +490,11 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-06: Agent deploy with the adopted resolver (runtime v5)
+
+- Image `lb-demo-agent:de5fd31` (main after #38 and #53); full `terraform apply` of the agent root: runtime env now `LLM_EXTRACT_MODEL=mistral.ministral-3-14b-instruct`, `RESOLVER_ARTIFACT`, `THRESHOLDS_FILE=thresholds.v2.yaml`; IAM model scope with Ministral; alarms TurnSlow, StalePointer, TurnCapReached created (6 total). Endpoint `live` READY on version 5. The cross-account Bedrock role allows Ministral (owner-confirmed).
+- Live smoke through the ALB (demo02, owner-approved): turn 1 decision records show extract on Ministral (0.8 s), the resolver model step, Jev understand (0.16 s), then **compose timed out** (cold first call through the cross-account path, ~13 s left of the 15 s budget) → template reply with localized status ("Activa"), 15.1 s. Turn 2: model-written clarification in 3.2 s. Known: the first turn on a fresh container can fall back to the template; the clarification chip label is a raw technical string (date · merchant · unformatted amount · English type/status/channel · city).
+
 ### 2026-10-05: Public ALB (stable URL), team IPs removed
 
 - `infra/terraform/app`: internet-facing ALB `latam-bank-web` (HTTP 80, no domain so no certificate) → IP target group on 3000, health check `/login`; the task security group admits port 3000 only from the ALB's security group. `allowed_cidrs` (the two home IPs) is gone from code, tests and this tracker; the ECS service is updated in place (no replacement), still Fargate Spot. Output `url`; `bin/app-url` prints the ALB address. Applied by `infra.yml` on merge (run 37390425272: 7 added, 1 changed, 2 destroyed). Verified live: `http://latam-bank-web-1521424170.us-east-1.elb.amazonaws.com` target healthy, `/login` 200, customer login + OTP 200 and `/chat` 200 with the cookie, the task's own IP no longer answers on 3000.
