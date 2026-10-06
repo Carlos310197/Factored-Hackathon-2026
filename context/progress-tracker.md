@@ -253,6 +253,7 @@ Update this file whenever the current phase, the active unit or the implementati
 - 2026-10-06: **Customer "Mis casos" / "Meus casos"** (branch `feat/customer-cases`): a `/chat` header button opens a sheet with the customer's 20 newest disputes (short id, reason, amount, date, status pill). New `GET /api/customer/cases` (customer id only from the token; `disputes` GSI `by_customer`, newest first) returns `CustomerCase` (`dispute_id, status, created_at, reason, amount?, currency?`); dispute items carry no merchant or transaction date, so neither is shown. Web task role gains read-only `GetItem`/`Query` on `disputes` and its indexes (needs an `app` apply). Tests `cases-route.test.ts`, `cases-panel.test.tsx`, e2e `my cases`.
 - 2026-10-06: **Conversation sessions backend**: IdP `POST /auth/session/new` (customer token in, same customer/scopes/expiry, new `sid`); `sessions.by_customer` GSI (`tables.json` regenerated, tftest assertion); BFF `GET /api/customer/sessions`, `POST …/end`, `POST …/new`, `POST …/:sid/hide`; `/api/chat` 409 `session_ended`; owners read past transcripts. Tests: identity (2), DynamoDB Local (`sessions-ddb.test.ts`, 4), routes (`customer-sessions-routes.test.ts`, 9), chat and messages route cases.
 - 2026-10-05: **Threshold check** (`eval/src/evalkit/thresholds_check.py`, `python -m evalkit.thresholds_check --run runs/20261005-heldout --goals goals/heldout_v1.jsonl --thresholds ../agent/src/bankagent/decisions/thresholds.v2.yaml --out ../reports/threshold-check-2026-10-05.md`): measures the hand-set Jev handoff thresholds on recorded scores, no model calls. Held-out: unauthorized use 24/24 caught, 9/324 false alarms; legal 12/12, 0/336; asks-for-human 12/12, 8/336 (6 from Dynamo-throttle goals); injection 21/24, 19/324 (18 from other-customer goals), scores overlap. Measured, not tuned; new values need a separate calibration set. `cd eval && uv run pytest` → 83 passed.
+- 2026-10-06: **Repo sanitization** (public repo): staff passwords no longer follow a pattern in code (`tag_scenarios.py` reads `STAFF_PASSWORD` and writes only the hash; staff entries carry no `demo_password`); the AI Account's role ARN and external id moved from `agent/main.tf` locals to variables fed by the gitignored `ai_account.auto.tfvars`; tests and docs use placeholders and "the AI Account". Older commits still hold the old values; the role's trust policy only admits `lb-demo-agent-exec`.
 
 ## In Progress
 
@@ -422,11 +423,12 @@ the reply falls back to the fixed template (unit 25 findings, tests in `tests/te
 
 ### 2026-10-05: Bedrock inference runs in a second account
 
-The hackathon account has limited Bedrock model access, so the agent's LLM calls run in account `040684487035`.
+The hackathon account has limited Bedrock model access, so the agent's LLM calls run in a second account, the AI Account.
 When `BEDROCK_ROLE_ARN` is set, `llm/client.py` `_bedrock_session()` assumes that role (with `BEDROCK_EXTERNAL_ID`)
 and mints the Mantle token from the assumed credentials; when it is unset, it uses this account's credentials as
-before. The `agent` root sets both env vars (`main.tf` locals) and grants `lb-demo-agent-exec` `sts:AssumeRole` on
-`arn:aws:iam::040684487035:role/argos-bedrock-role`. That role (managed outside this repo) must trust
+before. The `agent` root sets both env vars from the variables `bedrock_role_arn` and `bedrock_external_id` (values in the
+gitignored `ai_account.auto.tfvars`, never in the repo) and grants `lb-demo-agent-exec` `sts:AssumeRole` on that
+role. That role (managed outside this repo) must trust
 `arn:aws:iam::762197749808:role/lb-demo-agent-exec` with the external id and allow `bedrock-mantle:CallWithBearerToken`
 plus `bedrock-mantle:CreateInference` on its own projects. Inference quotas and cost now land on that account.
 
@@ -581,7 +583,7 @@ Agent suite 319 passed; root offline 46; eval 65. Live (owner-approved): Mantle 
 ### 2026-10-05: Review fixes (turn budget, LLM redaction, disclosures)
 
 - **Turn budget 20 → 15 s** (`AgentService` default): the Jev client retries once at 3 s, so a closing verify can take 6 s; 15 + 6 ≈ 21 s stays under the BFF's 25 s. `test_worst_case_turn_fits_inside_the_bff_wait` encodes the arithmetic. The earlier "~23 s" claim was wrong.
-- **Bedrock payloads redacted like Jev's:** compose and handoff open-questions receipts go through `decisions.verify.redact` (no `customer_id`, `product_id`, fraud fields), since inference runs through a role in account `040684487035`. Test checks every non-extract LLM call.
+- **Bedrock payloads redacted like Jev's:** compose and handoff open-questions receipts go through `decisions.verify.redact` (no `customer_id`, `product_id`, fraud fields), since inference runs through a role in the AI Account. Test checks every non-extract LLM call.
 - README: the egress row names the second account; limitations add the missing spend cap (public demo identities, no per-session turn limit).
 
 ### 2026-10-05: Agent hardening (timeouts, confirmation binding, alarms, capacity)

@@ -1,9 +1,11 @@
 """Tag each demo identity with the /demo scenarios its real (synthetic) data supports (UI spec §4.9, §9.3).
 Never fabricates: a scenario no customer supports is printed as MISSING.
-DEMO ONLY: the staff and demo accounts it adds have guessable passwords (the IdP accepts them in any mode);
-they must not ship to a non-demo deployment.
-Usage: uv run python scripts/tag_scenarios.py data/serving config/demo_users.yaml"""
+DEMO ONLY: the demo customer accounts it adds have guessable passwords (the IdP accepts them in any mode);
+they must not ship to a non-demo deployment. Staff accounts take their password from STAFF_PASSWORD (kept out of the
+repo); only its hash is written to the users file.
+Usage: STAFF_PASSWORD=... uv run python scripts/tag_scenarios.py data/serving config/demo_users.yaml"""
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -80,25 +82,26 @@ STAFF = (("agent.ana", "Ana R. (agente de prueba)", "es"), ("agent.luis", "Luis 
          ("agent.bia", "Bia S. (agente de teste)", "pt"))
 
 
-def add_demo_passwords_and_staff(users: list[dict]) -> list[dict]:
-    """Idempotent. demoNN customers get the picker's demo-NN password; staff get staff-<name>-demo (demo-only)."""
+def add_demo_passwords_and_staff(users: list[dict], staff_password: str) -> list[dict]:
+    """Idempotent. demoNN customers get the picker's demo-NN password; staff get the hash of `staff_password`."""
     out = [dict(u) for u in users]
     for u in out:
         m = re.fullmatch(r"demo(\d+)", u["username"])
         if m and "demo_password" not in u:  # ponytail: other usernames (hand-added) keep whatever they have
             u["demo_password"] = f"demo-{m[1]}"
     have = {u["username"] for u in out}
-    for username, name, _ in STAFF:
-        if username not in have:
-            pw = f"staff-{username.split('.')[1]}-demo"
-            out.append({"username": username, "password_sha256": hash_password(pw), "role": "agent",
-                        "display_name": name, "demo_password": pw})
+    missing_staff = [s for s in STAFF if s[0] not in have]
+    if missing_staff and not staff_password:
+        raise ValueError("set STAFF_PASSWORD: staff accounts need a password kept out of the repo")
+    for username, name, _ in missing_staff:
+        out.append({"username": username, "password_sha256": hash_password(staff_password), "role": "agent",
+                    "display_name": name})
     return out
 
 
 def main(serving: str, users_path: str) -> None:
     doc = yaml.safe_load(Path(users_path).read_text(encoding="utf-8"))
-    users, missing = assign(add_demo_passwords_and_staff(doc["users"]), customer_facts(Path(serving)))
+    users, missing = assign(add_demo_passwords_and_staff(doc["users"], os.environ.get("STAFF_PASSWORD", "")), customer_facts(Path(serving)))
     doc["users"] = users
     Path(users_path).write_text(yaml.safe_dump(doc, allow_unicode=True, sort_keys=False), encoding="utf-8")
     for s in SCENARIOS:

@@ -469,7 +469,7 @@ No browser ever holds AWS credentials. Each hop authenticates.
 | BFF → AgentCore | *(updated 2026-10-04, deployment plan #1)* The customer's Bearer JWT only, from the ECS task; the AgentCore authorizer checks it and `app.py` re-verifies. The task role has no `InvokeAgentRuntime` permission. |
 | Browser → AppSync | Subscribe-only realtime token → Lambda authorizer → `onSubscribe` channel check (UI §3 rule 4) |
 | Publisher → AppSync | IAM, `appsync:EventPublish` on this API only |
-| Agent → Bedrock | *(2026-10-06)* Assumes the cross-account role `argos-bedrock-role` with an external id; receipts are redacted before they are sent |
+| Agent → Bedrock | *(2026-10-06)* Assumes a cross-account role in the AI Account with an external id; receipts are redacted before they are sent |
 | Agent → Jev | *(2026-10-06)* API key from Secrets Manager `lb-demo/jev`; transactions as aliases only |
 | Snowflake → S3 | Integration `SI_SERVING` assumes the AWS role `snowflake-serving` with an external-ID trust condition; read/write/list on the serving bucket only (Terraform `platform`) |
 | GitHub → AWS | OIDC. *(updated 2026-10-04)* Deployed today: one role `gha-deploy` trusting `repo:Carlos310197/Factored-Hackathon-2026` on `ref:refs/heads/main` and `pull_request`, plus `pipeline-runner` with the same trust. Splitting a read-only PR role is remaining work. |

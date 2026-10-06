@@ -1,3 +1,8 @@
+variables {
+  bedrock_role_arn    = "arn:aws:iam::111111111111:role/ai-account-bedrock-role"
+  bedrock_external_id = "test-external-id"
+}
+
 mock_provider "aws" {
   mock_data "aws_iam_policy_document" {
     defaults = { json = "{\"Version\":\"2012-10-17\",\"Statement\":[]}" }
@@ -114,8 +119,8 @@ run "runtime_environment_has_no_secret_values" {
       LLM_COMPOSE_MODEL   = "openai.gpt-oss-120b"
       GIT_SHA             = "abc1234"
       JEV_SECRET_ID       = "lb-demo/jev"
-      BEDROCK_ROLE_ARN    = "arn:aws:iam::040684487035:role/argos-bedrock-role"
-      BEDROCK_EXTERNAL_ID = "fh26-7c1e9a52-3b4d-4f0e-9a8b-2d6c5e1f0a73"
+      BEDROCK_ROLE_ARN    = "arn:aws:iam::111111111111:role/ai-account-bedrock-role"
+      BEDROCK_EXTERNAL_ID = "test-external-id"
       RESOLVER_ARTIFACT   = "/app/src/bankagent/resolver/artifacts/v1"
       THRESHOLDS_FILE     = "/app/src/bankagent/decisions/thresholds.v2.yaml"
     })

@@ -224,10 +224,10 @@ def test_mantle_token_is_minted_from_the_cross_account_role_when_configured(monk
     C._mantle_client("us-east-1")
     assert assumed == [] and minted[-1].access_key == "testing"  # unset → this account's own credentials
 
-    monkeypatch.setenv("BEDROCK_ROLE_ARN", "arn:aws:iam::040684487035:role/argos-bedrock-role")
+    monkeypatch.setenv("BEDROCK_ROLE_ARN", "arn:aws:iam::111111111111:role/ai-account-bedrock-role")
     monkeypatch.setenv("BEDROCK_EXTERNAL_ID", "ext")
     C._mantle_client("us-east-1")
-    assert assumed[0]["RoleArn"] == "arn:aws:iam::040684487035:role/argos-bedrock-role"
+    assert assumed[0]["RoleArn"] == "arn:aws:iam::111111111111:role/ai-account-bedrock-role"
     assert assumed[0]["ExternalId"] == "ext"
     assert (minted[-1].access_key, minted[-1].token) == ("ASIAB", "t")
 

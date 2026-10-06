@@ -63,10 +63,18 @@ def test_staff_and_passwords_are_added_once_and_hand_added_users_kept():
     from scripts.tag_scenarios import add_demo_passwords_and_staff
     users = [{"username": "demo01", "customer_id": "CLI-A"}, {"username": "demo21", "customer_id": "CLI-Z",
                                                               "demo_password": "x"}]
-    once = add_demo_passwords_and_staff(users)
+    once = add_demo_passwords_and_staff(users, "not-a-real-password")
     assert once[0]["demo_password"] == "demo-01" and once[1]["demo_password"] == "x"
     staff = [u for u in once if u.get("role") == "agent"]
     assert [u["username"] for u in staff] == ["agent.ana", "agent.luis", "agent.bia"]
     from bankagent.identity.users import hash_password
-    assert all(u["password_sha256"] == hash_password(u["demo_password"]) for u in staff)
-    assert add_demo_passwords_and_staff(once) == once
+    assert all(u["password_sha256"] == hash_password("not-a-real-password") for u in staff)
+    assert all("demo_password" not in u for u in staff)  # staff passwords never land in the users file
+    assert add_demo_passwords_and_staff(once, "not-a-real-password") == once
+
+
+def test_staff_need_a_password_from_outside_the_repo():
+    import pytest
+    from scripts.tag_scenarios import add_demo_passwords_and_staff
+    with pytest.raises(ValueError, match="STAFF_PASSWORD"):
+        add_demo_passwords_and_staff([{"username": "demo01", "customer_id": "CLI-A"}], "")

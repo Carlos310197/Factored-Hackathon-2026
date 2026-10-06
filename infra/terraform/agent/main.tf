@@ -61,9 +61,21 @@ locals {
   # gpt-oss-20b failed on 27 % of real messages).
   models = { extract = "mistral.ministral-3-14b-instruct", compose = "openai.gpt-oss-120b" }
   # The adopted resolver (P): its artifact and the thresholds tuned with it, both baked into the agent image.
-  resolver = { artifact = "/app/src/bankagent/resolver/artifacts/v1", thresholds = "/app/src/bankagent/decisions/thresholds.v2.yaml" }
-  # Every Bedrock call runs as this role in account 040684487035 (full model access; this account's is limited).
-  # Its trust policy must allow role/lb-demo-agent-exec with this external id.
-  bedrock_role_arn    = "arn:aws:iam::040684487035:role/argos-bedrock-role"
-  bedrock_external_id = "fh26-7c1e9a52-3b4d-4f0e-9a8b-2d6c5e1f0a73"
+  resolver            = { artifact = "/app/src/bankagent/resolver/artifacts/v1", thresholds = "/app/src/bankagent/decisions/thresholds.v2.yaml" }
+  bedrock_role_arn    = var.bedrock_role_arn
+  bedrock_external_id = var.bedrock_external_id
+}
+
+# Every Bedrock call runs as a role in the AI Account (full model access; this account's is limited). Its trust policy
+# must allow role/lb-demo-agent-exec with the external id. Values live outside the repo, in a gitignored
+# `ai_account.auto.tfvars`.
+variable "bedrock_role_arn" {
+  description = "Role in the AI Account that the agent assumes for Bedrock calls."
+  type        = string
+}
+
+variable "bedrock_external_id" {
+  description = "External id the AI Account role's trust policy requires."
+  type        = string
+  sensitive   = true
 }
