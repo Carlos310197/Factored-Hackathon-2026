@@ -256,6 +256,7 @@ Update this file whenever the current phase, the active unit or the implementati
 - 2026-10-06: **Repo sanitization** (public repo): staff passwords no longer follow a pattern in code (`tag_scenarios.py` reads `STAFF_PASSWORD` and writes only the hash; staff entries carry no `demo_password`); the AI Account's role ARN and external id moved from `agent/main.tf` locals to variables fed by the gitignored `ai_account.auto.tfvars`; tests and docs use placeholders and "the AI Account". Older commits still hold the old values; the role's trust policy only admits `lb-demo-agent-exec`.
 
 - 2026-10-06: **Staff password rotated live** (owner-approved): all three deployed staff accounts (`agent.ana`, `agent.luis`, `agent.bia`) still matched the public `staff-<name>-demo` pattern; one new random password set in `identity/demo_users.yaml` (hash only, `demo_password` removed), identity Lambda restarted. Verified through the public URL: new password 200, old 401. The password is shared in the submission email only.
+- 2026-10-06: **OIDC after the repo rename**: CI failed with `Not authorized to perform sts:AssumeRoleWithWebIdentity` because GitHub's immutable OIDC subject includes the repo name. `bootstrap` (`gha-deploy`) and `platform` (`pipeline_runner`) now trust `repo:Carlos310197@66190532/factored-hackathon-2026-aignostics@1389485180`; ids unchanged. Both roots' `terraform test` pass (5 + 5). Applies are owner-run: `bootstrap/apply.sh`, then `platform`.
 
 ## In Progress
 

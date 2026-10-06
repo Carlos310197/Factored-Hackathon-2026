@@ -97,7 +97,7 @@ run "pipeline_user_uses_aws_workload_identity" {
   }
 
   assert {
-    condition     = jsondecode(aws_iam_role.pipeline_runner.assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == ["repo:Carlos310197@66190532/Factored-Hackathon-2026@1389485180:ref:refs/heads/main"]
+    condition     = jsondecode(aws_iam_role.pipeline_runner.assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == ["repo:Carlos310197@66190532/factored-hackathon-2026-aignostics@1389485180:ref:refs/heads/main"]
     error_message = "pipeline-runner (PIPELINE_ROLE writes prod schemas) trusts only main pushes"
   }
 }
