@@ -10,7 +10,7 @@ from asis.run import main
 
 def test_reconcile_passes_on_exact_match_and_fails_beyond_tolerance(con):
     mt = metrics.collect(con)
-    exact = {"interactions_n": 6, "complaints_n": 3, "transaccional_fcr": 0.75}
+    exact = {"interactions_n": 6, "complaints_n": 3, "transaccional_fcr": 0.75, "disputes_n": 2, "cargo_no_reconocido_n": 1}
     assert reconcile(mt, exact)["status"] == "reconciled"
     off = exact | {"interactions_n": 6 * 1.002}
     r = reconcile(mt, off)
@@ -36,6 +36,18 @@ def test_report_tags_artifacts_and_states_reconciliation(con):
     assert "synthetic artifact" in wait_line
 
 
+def test_report_shows_reconciliation_table_and_why(con):
+    mt = metrics.collect(con)
+    curated = {"interactions_n": 6, "complaints_n": 3, "transaccional_fcr": 0.75, "disputes_n": 2,
+               "cargo_no_reconocido_n": 1, "quarantine_rows": 0, "raw_interactions_n": 6, "raw_complaints_n": 3}
+    text = render(mt, detect_all(con), reconcile(mt, curated), "2026-10-01", [])
+    assert "Reconciliation with the curated marts: **reconciled**" in text
+    sec = text.split("## 9. Reconciliation with the curated marts", 1)[1]
+    assert "| cargo_no_reconocido_n | 1 | 1 | 0.0% | yes |" in sec
+    assert "quarantine rows: 0" in sec and "raw interactions rows: 6" in sec
+    assert "## 9." not in render(mt, detect_all(con), reconcile(mt, None), "2026-10-01", [])
+
+
 def test_run_is_deterministic(data_dir, tmp_path):
     args = ["--data", str(data_dir), "--out", str(tmp_path / "out"), "--reports", str(tmp_path / "rep"), "--date", "2026-10-01"]
     assert main(args) == 0
@@ -50,7 +62,8 @@ def test_run_is_deterministic(data_dir, tmp_path):
 
 def test_run_fails_on_mismatch_without_writing(data_dir, tmp_path):
     counts = tmp_path / "curated.json"
-    counts.write_text(json.dumps({"interactions_n": 999, "complaints_n": 3, "transaccional_fcr": 0.75}))
+    counts.write_text(json.dumps({"interactions_n": 999, "complaints_n": 3, "transaccional_fcr": 0.75,
+                                  "disputes_n": 2, "cargo_no_reconocido_n": 1}))
     out = tmp_path / "out"
     assert main(["--data", str(data_dir), "--out", str(out), "--reports", str(tmp_path / "rep"),
                  "--curated-counts", str(counts)]) == 1

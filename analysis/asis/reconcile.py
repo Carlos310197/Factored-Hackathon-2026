@@ -1,7 +1,8 @@
 """Reconciliation with the curated marts (evaluation spec §3.4). The curated numbers come from reconcile.sql."""
 TOLERANCE = 0.001
 KEYS = {"interactions_n": "demand.total", "complaints_n": "complaints.total",
-        "transaccional_fcr": "quality.Transaccional.fcr"}
+        "transaccional_fcr": "quality.Transaccional.fcr", "disputes_n": "disputes.count",
+        "cargo_no_reconocido_n": "disputes.by_subcategory.Cargo no reconocido"}
 
 
 def reconcile(metrics: dict, curated: dict | None) -> dict:
@@ -12,4 +13,5 @@ def reconcile(metrics: dict, curated: dict | None) -> dict:
         ours, theirs = metrics[mkey]["value"], float(curated[ckey])
         diff = abs(ours - theirs) / max(abs(theirs), 1e-9)
         checks.append({"key": ckey, "ours": ours, "curated": theirs, "rel_diff": round(diff, 6), "ok": diff <= TOLERANCE})
-    return {"status": "reconciled" if all(c["ok"] for c in checks) else "mismatch", "checks": checks}
+    context = {k: v for k, v in curated.items() if k not in KEYS}  # raw/quarantine counts that explain the result
+    return {"status": "reconciled" if all(c["ok"] for c in checks) else "mismatch", "checks": checks, "context": context}

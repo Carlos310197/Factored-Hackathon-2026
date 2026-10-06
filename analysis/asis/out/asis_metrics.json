@@ -100,6 +100,10 @@
       "n": 1200,
       "value": 453.030303
     },
+    "capacity.observed_monthly_per_agent": {
+      "n": 230196,
+      "value": 15.985833
+    },
     "capacity.pt_agent_share": {
       "n": 1200,
       "value": 0.1075
@@ -914,7 +918,48 @@
     }
   },
   "reconciliation": {
-    "checks": [],
-    "status": "not reconciled"
+    "checks": [
+      {
+        "curated": 230196.0,
+        "key": "interactions_n",
+        "ok": true,
+        "ours": 230196,
+        "rel_diff": 0.0
+      },
+      {
+        "curated": 22552.0,
+        "key": "complaints_n",
+        "ok": true,
+        "ours": 22552,
+        "rel_diff": 0.0
+      },
+      {
+        "curated": 0.916463,
+        "key": "transaccional_fcr",
+        "ok": true,
+        "ours": 0.916463,
+        "rel_diff": 0.0
+      },
+      {
+        "curated": 8199.0,
+        "key": "disputes_n",
+        "ok": true,
+        "ours": 8199,
+        "rel_diff": 0.0
+      },
+      {
+        "curated": 4193.0,
+        "key": "cargo_no_reconocido_n",
+        "ok": true,
+        "ours": 4193,
+        "rel_diff": 0.0
+      }
+    ],
+    "context": {
+      "quarantine_rows": 0,
+      "raw_complaints_n": 22552,
+      "raw_interactions_n": 230196
+    },
+    "status": "reconciled"
   }
 }
