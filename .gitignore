@@ -4,6 +4,7 @@
 data/
 !infra/terraform/data/
 *.pdf
+!docs/recibra-deck.pdf
 # python / dbt build output
 .venv/
 __pycache__/
