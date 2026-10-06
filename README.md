@@ -71,6 +71,10 @@ over the legacy process. Those need a pilot.
 
 ## Architecture
 
+[![System architecture](docs/diagrams/system-architecture.drawio.png)](docs/diagrams/system-architecture.drawio.svg)
+
+The whole system as deployed, with the 10 numbered flows explained beside it. The SVG and PNG embed the draw.io source, so either opens for editing in draw.io.
+
 | Layer | What | Where |
 |---|---|---|
 | Data | Organizer S3 drop → Snowflake `RAW` → dbt `STAGING` (typed, deduplicated, quarantined) → `CURATED` (enforced contracts) → versioned parquet + `latest.json` pointer | [`docs/data-pipeline.md`](docs/data-pipeline.md), `dbt/`, `pipeline/`, [`docs/diagrams/pipeline.svg`](docs/diagrams/pipeline.svg) |
@@ -292,7 +296,10 @@ We report what we measured. We don't report numbers we haven't run.
 - A load test that finds the saturation point (today: 10 concurrent customers measured).
 - A native Portuguese speaker's review of the PT replies and test cases.
 - A per-customer turn cap (today it is per session), and a budget alert in the account that pays for Bedrock and on Jev.
-- A calibrated threshold set (current Jev thresholds are labeled "not calibrated").
+- A calibrated threshold set. The current Jev thresholds were set by hand; [`reports/threshold-check-2026-10-05.md`](reports/threshold-check-2026-10-05.md)
+  measures them on the held-out run: unauthorized use, legal threat and asks-for-human catch every real case, with a clean
+  gap between real cases and the rest; injection scores overlap (one soft phrasing scored 0.39–0.47 and was still refused
+  by the tool layer). Choosing new values needs a separate calibration set, not the held-out run.
 - Least-privilege CI roles (the deploy role is an administrator today) and branch protection on `main`.
 - Retention rules for disputes and handoffs; an audit record of staff reads.
 - A pilot that measures intake time and handoff completeness against the 37-hour baseline.
