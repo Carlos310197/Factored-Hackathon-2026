@@ -131,19 +131,23 @@ From `agent/tests/test_graph_failures.py`, `test_app.py` and `test_write_tools.p
 Not covered end to end yet: a failed write turning into a handoff, and a read-back mismatch turning into a handoff (each is
 unit-tested; the graph wiring is not).
 
-## Capacity (not load-tested)
+## Capacity
 
 | Component | Limit we know of | Source |
 |---|---|---|
-| Web app | 1 Fargate Spot task (0.5 vCPU / 1 GB) behind a public ALB, plain HTTP; a Spot interruption means about 1–2 min of downtime while a new task starts, the URL stays the same | `infra/terraform/app/ecs.tf` |
+| Web app | 1 Fargate Spot task (0.5 vCPU / 1 GB) behind CloudFront (HTTPS) and an ALB that only CloudFront can reach; a Spot interruption means about 1–2 min of downtime while a new task starts, the URL stays the same | `infra/terraform/app/ecs.tf` |
 | Agent runtime (AgentCore) | New sessions 25/s, data-plane calls 1,000/s (account quotas); each session runs in its own microVM | AWS Service Quotas, `bedrock-agentcore` |
 | LLM (Bedrock Mantle) | Not visible: the on-demand quotas listed for gpt-oss and Ministral in our account read 0, and inference runs through the Mantle endpoint (and a role in a second account), whose throughput limits Service Quotas doesn't show | AWS Service Quotas, `bedrock` |
 | Jev (TypeSafe) | No published rate limit; 3 s timeout per call, 2–3 calls per turn | `decisions/jev.py` |
 | Identity (mock IdP) | API Gateway throttle 10 req/s (burst 20); the account's Lambda concurrency is 10 in total, shared with the realtime authorizer and publisher | `infra/terraform/identity/api.tf`, AWS account settings |
 | DynamoDB | On-demand capacity, no provisioned limit | `infra/terraform/data/tables.tf` |
 
-A demo with a handful of concurrent users fits these limits; a judge panel testing at once may hit the Lambda limit first
-(a throttled login asks the user to retry). We have not measured where the system saturates.
+**Measured (2026-10-06, `scripts/load_test.py`):** 10 customers signing in at the same moment, then 3 turns each with 8 s
+of think time (30 turns, 51.7 s wall clock): **30/30 answered (HTTP 200), p50 3.2 s, p95 6.9 s, max 7.8 s** end to end;
+agent time p50 2.6 s, p95 5.7 s (`TurnDurationMs`); 0 failed turns, 0 slow turns, 1 of 30 replies fell back to the
+template; all 10 login warm-ups succeeded. Details in [`docs/operations.md`](docs/operations.md). That is the size of a
+judge panel testing at once; we have not measured where the system saturates (the account's Lambda concurrency of 10,
+shared by login and realtime, is the first limit we expect to hit).
 
 ## Data handling
 
@@ -283,9 +287,10 @@ We report what we measured. We don't report numbers we haven't run.
   [`docs/data-pipeline.md`](docs/data-pipeline.md)).
 
 **Before production**
-- A real identity provider, HTTPS, and `Secure` cookies.
+- A real identity provider (HTTPS and `Secure` cookies are in place), with a second factor and lockout for staff sign-in.
 - Notifications wired to an on-call channel (today: one email address), and alarms on DynamoDB throttling and AgentCore errors.
-- A load test against the capacity limits above.
+- A load test that finds the saturation point (today: 10 concurrent customers measured).
+- A native Portuguese speaker's review of the PT replies and test cases.
 - A per-customer turn cap (today it is per session), and a budget alert in the account that pays for Bedrock and on Jev.
 - A calibrated threshold set (current Jev thresholds are labeled "not calibrated").
 - Least-privilege CI roles (the deploy role is an administrator today) and branch protection on `main`.
