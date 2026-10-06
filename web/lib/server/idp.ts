@@ -25,7 +25,7 @@ async function call<S extends z.ZodTypeAny>(path: string, schema: S, init: Reque
   return parsed.data;
 }
 
-// ponytail: demo users are fixed per deploy, so one fetch per process; a failure is not cached (the IdP may be cold)
+// demo users are fixed per deploy, so one fetch per process; a failure is not cached (the IdP may be cold)
 let demoUsersOnce: Promise<DemoUser[]> | null = null;
 
 export const idp = {

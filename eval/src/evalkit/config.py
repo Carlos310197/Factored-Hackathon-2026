@@ -1,4 +1,4 @@
-"""eval/config.yaml loader and live-run validation (spec §4.4, §5.4)."""
+"""eval/config.yaml loader and live-run validation."""
 import os
 from pathlib import Path
 
@@ -20,7 +20,7 @@ def require_live(cfg: dict) -> None:
     if not p.get("model"):
         raise ConfigError("persona.model is empty: set an OpenCode-served model before a live run")
     if p["model"].lower().startswith(("anthropic.", "claude")):
-        raise ConfigError("the persona must not be a Claude model (spec §1)")
+        raise ConfigError("the persona must not be a Claude model")
     if not os.environ.get(p["api_key_env"]):
         raise ConfigError(f"{p['api_key_env']} is not set")
     if not cfg["agent"].get("serving_uri"):

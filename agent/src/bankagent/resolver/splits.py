@@ -1,4 +1,4 @@
-"""Leakage-safe splits and the hard-slice rule (resolver spec §5.2). Customers and anchor dates are disjoint across
+"""Leakage-safe splits and the hard-slice rule. Customers and anchor dates are disjoint across
 train / dev / test. The hard slice is a deterministic rule on the history and target, computed before any model runs."""
 import hashlib
 from datetime import date

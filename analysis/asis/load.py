@@ -1,9 +1,9 @@
-"""DuckDB views over the raw organizer drop, normalized like the pipeline's staging layer (pipeline spec §5.2)."""
+"""DuckDB views over the raw organizer drop, normalized like the pipeline's staging layer."""
 from pathlib import Path
 
 import duckdb
 
-WINDOW = ("2025-06-17", "2026-06-17")  # evaluation spec §3.1, inclusive
+WINDOW = ("2025-06-17", "2026-06-17")  # inclusive
 MONTHS_IN_WINDOW = 12
 SENTIMENT = {"Muy Positivo": "Very Positive", "Positivo": "Positive", "Neutral": "Neutral",
              "Negativo": "Negative", "Muy Negativo": "Very Negative"}
@@ -20,7 +20,7 @@ def _csv(path: Path) -> str:
 def connect(data_dir: Path, window: tuple[str, str] = WINDOW) -> duckdb.DuckDBPyConnection:
     data_dir = Path(data_dir)
     if "data_backup" in str(data_dir):
-        raise ValueError("the backup prefix is a different synthetic generation and is never read (pipeline spec §2)")
+        raise ValueError("the backup prefix is a different synthetic generation and is never read")
     lo, hi = window
     c = duckdb.connect()
     for view, table in FACTS.items():

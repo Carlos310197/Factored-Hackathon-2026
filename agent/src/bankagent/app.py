@@ -1,4 +1,4 @@
-"""AgentCore Runtime entrypoint (spec §3.2 step 1): POST /invocations, GET /ping on :8080.
+"""AgentCore Runtime entrypoint: POST /invocations, GET /ping on :8080.
 AgentCore's CUSTOM_JWT authorizer checks the token first and forwards Authorization (requestHeaderAllowlist);
 this code re-verifies it anyway. customer_id comes only from the token, never from the payload."""
 import logging

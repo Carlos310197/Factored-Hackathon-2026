@@ -38,7 +38,7 @@ async function handle(req: NextRequest, log: ChatLog) {
 
   const session = await getSession(who.sid);
   if (session?.ended_at) return fail("session_ended", "This conversation has ended", 409);
-  if (session && session.control !== "agent") {  // a human holds the conversation: never call the runtime (spec §3 rule 5)
+  if (session && session.control !== "agent") {  // a human holds the conversation: never call the runtime
     if (await claimMessageId(who.sid, body.client_message_id)) {
       await appendMessage(who.sid, { role: "customer", text: body.message, id: body.client_message_id });
     }
@@ -46,7 +46,7 @@ async function handle(req: NextRequest, log: ChatLog) {
   }
 
   const call = () => invokeAgent({ token: who.token, sid: who.sid, message: body.message, clientMessageId: body.client_message_id, lang: who.lang });
-  if (env().CHAT_ASYNC === "1") {  // Task 1 Step 4 fallback: reply arrives on /session/<sid>
+  if (env().CHAT_ASYNC === "1") {  // async fallback: reply arrives on /session/<sid>
     after(async () => {
       try { await call(); } catch (e) {
         console.error("async turn failed", e);

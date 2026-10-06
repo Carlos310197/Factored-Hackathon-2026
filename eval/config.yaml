@@ -1,13 +1,13 @@
-# Evaluation config (spec §4.4, §5.4). Live runs refuse to start until persona.model is set.
+# Evaluation config. Live runs refuse to start until persona.model is set.
 persona:
-  base_url: https://opencode.ai/zen/v1   # OpenAI-compatible chat completions; confirmed by the Task 12 smoke call
+  base_url: https://opencode.ai/zen/v1   # OpenAI-compatible chat completions
   api_key_env: OPENCODE_API_KEY
   model: "gpt-6-luna"  # a non-Claude model served through OpenCode, chosen by the owner
   api: responses                         # gpt-6-luna is served on /responses only (chat completions returns ModelProtocolUnsupported)
   temperature: null                      # gpt-6-luna rejects the parameter; the model's default sampling applies
   timeout_s: 90
 judge:
-  model: gpt-6-sol                       # spec §5.3 names Claude Sonnet 5.5, which this account cannot invoke (AccessDenied)
+  model: gpt-6-sol                       # Claude Sonnet 5.5 is not available on this account (AccessDenied)
   base_url: https://opencode.ai/zen/v1   # served on /responses, like the persona
   api_key_env: OPENCODE_API_KEY
   prompt_version: judge.v1

@@ -116,7 +116,7 @@ def test_invalid_json_and_truncation_raise():
 
 
 def test_restarted_json_object_is_rejected_not_salvaged():
-    """Regression (unit 25): a decoder restart mid-string leaves the first object unparseable; the extractor used to
+    """Regression: a decoder restart mid-string leaves the first object unparseable; the extractor used to
     silently salvage the restarted fragment, so compose returned a reply missing its first clause (seen live on
     Bedrock: reply_text " 15.99 USD en StreamCo fue aprobada el 10 de junio de 2026.")."""
     raw = ('{"reply_text":"La transacción de{"reply_text":'
@@ -126,7 +126,7 @@ def test_restarted_json_object_is_rejected_not_salvaged():
 
 
 def test_duplicate_keys_in_json_object_are_rejected():
-    """Regression (unit 25): a split value emitted as two members of the same key silently dropped the first half
+    """Regression: a split value emitted as two members of the same key silently dropped the first half
     (json.loads keeps the last). Malformed model output is an error, never a reply."""
     raw = ('{"reply_text":"La transacción de","reply_text":'
            '" 15.99 USD en StreamCo fue aprobada el 10 de junio de 2026.","claims":[]}')
@@ -195,7 +195,7 @@ def test_auth_error_without_refresh_still_raises_llm_error():
 
 def test_doubled_opening_brace_is_accepted_but_a_restart_after_content_is_not():
     """gpt-oss on Bedrock often emits '{ {"a": 1}': a stray opener with nothing inside it. No content is dropped, so
-    the complete object that follows is the answer. A restart after content (unit 25's regression) stays rejected."""
+    the complete object that follows is the answer. A restart after content (the regression above) stays rejected."""
     out = call_json(_client("stop", '{\n  {"language_detected": "es"}'), M["extract"], "s", "u", {"type": "object"})
     assert out.data == {"language_detected": "es"}
     with pytest.raises(LLMError, match="ambiguous"):

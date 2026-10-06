@@ -1,4 +1,4 @@
-"""Evaluation metrics with counts, denominators and bootstrap intervals (resolver spec §6.2)."""
+"""Evaluation metrics with counts, denominators and bootstrap intervals."""
 import random
 from collections import Counter
 from collections.abc import Callable

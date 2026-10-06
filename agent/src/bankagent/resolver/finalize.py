@@ -1,5 +1,5 @@
-"""Final model choice on the real-text dev set, temperature calibration, promotion into the package, and the model card
-(resolver spec §4.3, §4.5). Ties within 2 points of hard-slice top-1 go to logistic regression."""
+"""Final model choice on the real-text dev set, temperature calibration, promotion into the package, and the model
+card. Ties within 2 points of hard-slice top-1 go to logistic regression."""
 import json
 import shutil
 from pathlib import Path

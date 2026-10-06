@@ -1,4 +1,4 @@
-"""Reconciliation with the curated marts (evaluation spec §3.4). The curated numbers come from reconcile.sql."""
+"""Reconciliation with the curated marts. The curated numbers come from reconcile.sql."""
 TOLERANCE = 0.001
 KEYS = {"interactions_n": "demand.total", "complaints_n": "complaints.total",
         "transaccional_fcr": "quality.Transaccional.fcr", "disputes_n": "disputes.count",

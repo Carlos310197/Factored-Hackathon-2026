@@ -48,7 +48,7 @@ data "terraform_remote_state" "identity" {
   }
 }
 
-# ponytail: needs the agent root (unit 83) applied first; it exports invoke_url.
+# needs the agent root applied first; it exports invoke_url.
 data "terraform_remote_state" "agent" {
   backend = "s3"
   config = {

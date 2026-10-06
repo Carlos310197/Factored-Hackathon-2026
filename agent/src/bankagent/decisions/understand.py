@@ -45,7 +45,7 @@ def describe_txn(t: dict, score: float | None = None) -> str:
 
 def matches_mentions(t: dict, m: dict) -> bool:
     """The heuristic filter: merchant substring, amount within 1%, date inside the range. Unmentioned fields pass.
-    Also the resolver's baseline B0 (resolver spec 6.1)."""
+    Also the resolver's baseline B0."""
     if m.get("merchant") and m["merchant"].lower() not in (t.get("merchant_name") or "").lower():
         return False
     if m.get("amount") is not None:

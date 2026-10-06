@@ -1,4 +1,4 @@
-"""Transaction-resolver pipeline (the resolver design spec (docs/design/)).
+"""Transaction-resolver pipeline.
 Offline tooling; subcommands marked LIVE call Bedrock or Jev and need --live, used only with the owner's approval.
 
   train          simulated cases → hyperparameter search → MLflow → resolver_runs/<stamp>/finalists.json

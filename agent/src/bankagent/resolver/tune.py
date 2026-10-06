@@ -1,4 +1,4 @@
-"""Threshold selection on dev (resolver spec §6.3): highest coverage with a dev wrong-action rate <= 2%."""
+"""Threshold selection on dev: highest coverage with a dev wrong-action rate <= 2%."""
 from collections.abc import Callable
 from pathlib import Path
 
@@ -43,8 +43,8 @@ def write_thresholds_v2(t: float, m: float, src: Path = THRESHOLDS_DIR / "thresh
         elif line.startswith("target_transaction:"):
             line, in_target = f"target_transaction: {{min_p: {t}, min_margin: {m}}}", True
         elif line.startswith("# Labeled synthetic"):
-            line = ("# Labeled synthetic: target_transaction tuned on the resolver dev set for Jev + ranker "
-                    "(resolver spec 6.3); rest as v1.")
+            line = ("# Labeled synthetic: target_transaction tuned on the resolver dev set for Jev + ranker; "
+                    "rest as v1.")
         lines.append(line)
     dst.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return dst

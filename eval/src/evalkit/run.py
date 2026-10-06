@@ -1,4 +1,4 @@
-"""python -m evalkit.run: drive every (goal, rep) through the agent; resumable; one table prefix per rep (spec §4.5)."""
+"""python -m evalkit.run: drive every (goal, rep) through the agent; resumable; one table prefix per rep."""
 import argparse
 import json
 import os

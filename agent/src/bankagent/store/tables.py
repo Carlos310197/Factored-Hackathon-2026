@@ -1,4 +1,4 @@
-"""DynamoDB table definitions (spec §7.2). The checkpoints layout (PK/SK/ttl) is what DynamoDBSaver requires."""
+"""DynamoDB table definitions. The checkpoints layout (PK/SK/ttl) is what DynamoDBSaver requires."""
 TABLE_SPECS = {
     "checkpoints": {"keys": [("PK", "S", "HASH"), ("SK", "S", "RANGE")], "gsis": [], "ttl": "ttl"},
     "disputes": {"keys": [("transaction_id", "S", "HASH")],
@@ -6,13 +6,12 @@ TABLE_SPECS = {
     "handoffs": {"keys": [("handoff_id", "S", "HASH")],
                  "gsis": [("by_status", [("status", "S", "HASH"), ("created_at", "S", "RANGE")])], "ttl": None},
     "decision_records": {"keys": [("session_id", "S", "HASH"), ("sk", "S", "RANGE")], "gsis": [], "ttl": "ttl"},
-    # UI spec §4.1–4.2
     # by_customer: the customer's own conversation list (newest first); the BFF writes ended_at / hidden on the item
     "sessions": {"keys": [("session_id", "S", "HASH")],
                  "gsis": [("by_customer", [("customer_id", "S", "HASH"), ("created_at", "S", "RANGE")])], "ttl": "ttl"},  # 90 days
     "conversation_messages": {"keys": [("session_id", "S", "HASH"), ("sk", "S", "RANGE")], "gsis": [], "ttl": "ttl"},
 }
-# Tables whose changes are pushed to the UI by the realtime publisher (UI spec §3)
+# Tables whose changes are pushed to the UI by the realtime publisher
 STREAM_TABLES = ("handoffs", "decision_records", "conversation_messages")
 STREAM_SPEC = {"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"}
 

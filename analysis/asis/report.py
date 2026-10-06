@@ -1,4 +1,4 @@
-"""Markdown for reports/asis-<date>.md (evaluation spec §3.2). Numbers come only from the metrics dict."""
+"""Markdown for reports/asis-<date>.md. Numbers come only from the metrics dict."""
 
 
 def _v(metrics: dict, key: str, fmt: str = "{:.1%}") -> str:

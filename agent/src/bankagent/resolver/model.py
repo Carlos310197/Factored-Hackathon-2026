@@ -1,4 +1,4 @@
-"""Transaction-resolver inference (resolver spec §3.1, §4.2, §4.4). Loads a JSON artifact and scores one customer's
+"""Transaction-resolver inference. Loads a JSON artifact and scores one customer's
 candidates. Both model families are pointwise: logit z_i = log-odds that candidate i is the one described. The
 probabilities are a softmax over [z_1/T, ..., z_n/T, 0]: the extra 0 is a 'none of these' option, so a poor lone
 candidate gets a low probability instead of 1.0. Logistic regression needs only numpy; LightGBM is imported lazily."""

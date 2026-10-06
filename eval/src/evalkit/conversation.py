@@ -1,4 +1,4 @@
-"""One simulated conversation against the agent's real entrypoint (spec §4.5). Persona time is never counted."""
+"""One simulated conversation against the agent's real entrypoint. Persona time is never counted."""
 import secrets
 import time
 from dataclasses import dataclass

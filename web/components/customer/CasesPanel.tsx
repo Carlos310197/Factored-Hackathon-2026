@@ -40,7 +40,7 @@ export function CasesPanel({ lang }: { lang: Lang }) {
         className={`${btn} bg-b-surface/15 text-b-surface focus-visible:outline-b-surface`}>{d.myCases}</button>
       {open && (
         <div className="fixed inset-0 z-10 flex items-end justify-center bg-b-ink/40 text-b-ink" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
-          {/* ponytail: the close button is the only focusable element, so Tab just stays on it (no general focus trap) */}
+          {/* the close button is the only focusable element, so Tab just stays on it (no general focus trap) */}
           <div role="dialog" aria-modal="true" aria-labelledby={titleId}
             onKeyDown={(e) => { if (e.key === "Escape") close(); if (e.key === "Tab") { e.preventDefault(); closer.current?.focus(); } }}
             className="flex max-h-[80dvh] w-full max-w-md flex-col gap-3 rounded-t-card bg-b-surface p-6 pb-8 motion-safe:animate-[fade-in_220ms_ease-out]">

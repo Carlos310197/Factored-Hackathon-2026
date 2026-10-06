@@ -1,5 +1,5 @@
-"""Four-system evaluation: dev threshold tuning, test outcomes, slices, intervals, error sheet and the markdown report
-(resolver spec §6). Offline only."""
+"""Four-system evaluation: dev threshold tuning, test outcomes, slices, intervals, error sheet and the markdown
+report. Offline only."""
 import csv
 import time
 from pathlib import Path
@@ -37,7 +37,7 @@ def outcomes_jev(rows, run: dict[str, dict], t, m):
 
 
 def tune_systems(dev_rows: list[dict], scores: dict[str, Scores], dev_runs: dict[str, dict]) -> tuple[dict, dict]:
-    """Thresholds per system on dev (§6.3) and the curves for the report."""
+    """Thresholds per system on dev and the curves for the report."""
     th, curves = {}, {}
     pts = [(a, b) for a in grid(0.3, 0.99) for b in grid(0.3, 0.99)]
     th["B1"], best, curves["B1"] = choose(lambda p: outcomes_b1(dev_rows, scores, *p), pts)
@@ -183,7 +183,7 @@ def reliability_bins(rows: list[dict], scores: dict[str, Scores], bins: int = 10
 
 
 def adoption(results: dict[str, list[list[str]]], rows: list[dict]) -> dict:
-    """Resolver spec §6.4: P replaces B2 iff wrong-action(P) <= wrong-action(B2) and hard resolved(P) > hard(B2)."""
+    """Adoption rule: P replaces B2 iff wrong-action(P) <= wrong-action(B2) and hard resolved(P) > hard(B2)."""
     if "P" not in results or "B2" not in results:
         return {"decision": "not_run", "reason": "Jev runs missing for B2 or P"}
     hard = [r["slice"] == "hard" for r in rows]

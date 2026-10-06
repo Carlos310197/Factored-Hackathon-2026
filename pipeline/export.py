@@ -19,7 +19,7 @@ def table_columns(cur, schema: str, table: str) -> list[str]:
 
 def export_select(table: str, columns: list[str]) -> str:
     cols = ", ".join(f'{c} as "{c.lower()}"' for c in columns)
-    # Sorted by customer so the agent's DuckDB reads can skip row groups per customer (agent spec §7.1).
+    # Sorted by customer so the agent's DuckDB reads can skip row groups per customer.
     order = " order by CUSTOMER_ID" if "CUSTOMER_ID" in (c.upper() for c in columns) else ""
     return f"select {cols} from CURATED.{table.upper()}{order}"
 

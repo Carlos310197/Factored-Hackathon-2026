@@ -1,5 +1,5 @@
-"""Jev runs for systems B2 (understand.v1) and P (understand.v2 + resolver scores) on the dev and test sets
-(resolver spec §6.1). The request is built exactly as the agent's understand node builds it. Results are cached one
+"""Jev runs for systems B2 (understand.v1) and P (understand.v2 + resolver scores) on the dev and test sets.
+The request is built exactly as the agent's understand node builds it. Results are cached one
 JSON line per case, so an interrupted run resumes without re-calling Jev."""
 import json
 from pathlib import Path

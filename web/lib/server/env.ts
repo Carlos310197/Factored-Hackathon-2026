@@ -13,7 +13,7 @@ const Env = z.object({
   DEMO_MODE: z.enum(["0", "1"]).default("0"),
   CHAT_ASYNC: z.enum(["0", "1"]).default("0"),
 });
-// ponytail: fail fast in production rather than silently defaulting to localhost
+// fail fast in production rather than silently defaulting to localhost
 const ProdEnv = Env.extend({ IDP_URL: z.string().url(), IDP_ISSUER: z.string().min(1) });
 export type Env = z.infer<typeof Env>;
 

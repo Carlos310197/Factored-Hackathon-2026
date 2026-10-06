@@ -1,4 +1,4 @@
-"""Goal cards and the generator (spec §4.1–§4.3). Labels come from the agent's own policy: labels by construction."""
+"""Goal cards and the generator. Labels come from the agent's own policy: labels by construction."""
 import argparse
 import csv
 import hashlib
@@ -421,7 +421,7 @@ def review_sheet(cards: list[GoalCard], n: int = 24) -> list[dict]:
 
 
 def main(argv=None) -> int:
-    p = argparse.ArgumentParser(description="Generate or freeze goal cards (spec §4.2–§4.3)")
+    p = argparse.ArgumentParser(description="Generate or freeze goal cards")
     sub = p.add_subparsers(dest="cmd", required=True)
     mk = sub.add_parser("make")
     mk.add_argument("--serving", type=Path, required=True)

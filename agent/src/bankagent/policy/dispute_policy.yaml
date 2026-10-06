@@ -1,4 +1,4 @@
-# Team-authored, LABELED SYNTHETIC dispute policy (spec §5). Not a real bank policy.
+# Team-authored, LABELED SYNTHETIC dispute policy. Not a real bank policy.
 version: dispute-policy.v1
 synthetic: true
 disputable_status: [Approved]

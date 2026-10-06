@@ -1,4 +1,4 @@
-"""Simulated customer (spec §4.4): a non-Claude chat model served through OpenCode's OpenAI-compatible API."""
+"""Simulated customer: a non-Claude chat model served through OpenCode's OpenAI-compatible API."""
 import argparse
 import json
 import os

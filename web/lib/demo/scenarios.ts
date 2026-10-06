@@ -2,7 +2,7 @@ import type { Lang } from "@/lib/contract";
 
 export interface Scenario { key: string; label: string; lang: Lang; steps: string[]; note?: string }
 
-/** UI spec §9.3; keys match agent/scripts/tag_scenarios.py SCENARIOS. The presenter presses send. */
+/** Keys match agent/scripts/tag_scenarios.py SCENARIOS. The presenter presses send. */
 export const SCENARIOS: Scenario[] = [
   { key: "account_inquiry", label: "ES · account inquiry", lang: "es", steps: ["¿Cuánto tengo disponible en mi tarjeta?"] },
   { key: "decline_explanation", label: "PT · decline explanation", lang: "pt", steps: ["Por que meu último pagamento foi recusado?"] },

@@ -6,7 +6,7 @@ from bankagent.resolver.systems import Decision, b0, b1, jev_decision, outcome
 from bankagent.resolver.tune import choose, grid, write_thresholds_v2
 from tests.resolver_data import mentions, txn
 
-# Stand-in with the fields of bankagent.resolver.model.Scores (unit 31), so this suite does not depend on it.
+# Stand-in with the fields of bankagent.resolver.model.Scores, so this suite does not depend on it.
 Scores = namedtuple("Scores", "probs p_none ranked best_raw_fit contributions version")
 
 A, B, C = txn(1)["transaction_id"], txn(2)["transaction_id"], txn(3)["transaction_id"]

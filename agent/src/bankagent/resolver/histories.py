@@ -1,5 +1,5 @@
 """Sample (customer, anchor date) cases from a serving run: the customer's transactions in the 60 days up to the
-anchor, newest first, shaped exactly like ReadTools.list_transactions returns them (resolver spec §5.1-5.2)."""
+anchor, newest first, shaped exactly like ReadTools.list_transactions returns them."""
 import random
 from dataclasses import dataclass
 from datetime import date, timedelta

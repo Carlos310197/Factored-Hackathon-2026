@@ -146,7 +146,7 @@ def test_recursion_limit_returns_safe_reply(ddb_store, serving_root):
 
 
 def test_default_clock_wiring_survives_a_turn(ddb_store, serving_root):
-    """Regression (unit 25): `Deps.clock`'s default_factory stored a float instead of the callable, so a turn
+    """Regression: `Deps.clock`'s default_factory stored a float instead of the callable, so a turn
     built with the runtime's default wiring (no explicit clock) died at `deps.clock()` before any node ran."""
     h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}])
     deps = Deps(**{f.name: getattr(h.service.deps, f.name) for f in fields(Deps) if f.name != "clock"})

@@ -117,7 +117,7 @@ class Nodes:
         return bool((state.get("goal") or {}).get("offer_human"))
     
     def _resolve(self, state, config, candidates: list[dict], ex) -> dict[str, float] | None:
-        """Resolver scores as evidence for Jev (resolver spec 3.2). Any failure: no scores, Jev alone."""
+        """Resolver scores as evidence for Jev. Any failure: no scores, Jev alone."""
         if self.d.resolver is None or self.d.understand_qs_scored is None or ex is None or not candidates:
             return None
         start = self.d.clock()

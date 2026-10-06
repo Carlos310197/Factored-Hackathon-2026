@@ -1,4 +1,4 @@
-"""python -m asis.run: as-is metrics, artifacts, reconciliation, charts and report (evaluation spec §3)."""
+"""python -m asis.run: as-is metrics, artifacts, reconciliation, charts and report."""
 import argparse
 import json
 from datetime import date

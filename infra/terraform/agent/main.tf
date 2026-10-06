@@ -57,8 +57,7 @@ locals {
   audience     = "bankagent"
   issuer       = data.terraform_remote_state.identity.outputs.issuer
   image        = data.aws_ssm_parameter.image.value
-  # Bedrock Mantle models (Architecture Decisions 2026-10-05: extract moved to Ministral after the resolver real run;
-  # gpt-oss-20b failed on 27 % of real messages).
+  # Bedrock Mantle models. extract is Ministral: gpt-oss-20b failed on 27 % of real messages.
   models = { extract = "mistral.ministral-3-14b-instruct", compose = "openai.gpt-oss-120b" }
   # The adopted resolver (P): its artifact and the thresholds tuned with it, both baked into the agent image.
   resolver            = { artifact = "/app/src/bankagent/resolver/artifacts/v1", thresholds = "/app/src/bankagent/decisions/thresholds.v2.yaml" }

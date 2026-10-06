@@ -41,7 +41,7 @@ services:
       IDP_ISSUER: http://identity:8081
       IDP_AUDIENCE: bankagent
       IDP_JWKS_URL: http://identity:8081/jwks.json
-      # Resolver adopted in unit 39 (P: Jev + ranker, understand.v2); remove both to run Jev alone (understand.v1).
+      # The adopted resolver (P: Jev + ranker, understand.v2); remove both to run Jev alone (understand.v1).
       RESOLVER_ARTIFACT: /app/src/bankagent/resolver/artifacts/v1
       THRESHOLDS_FILE: /app/src/bankagent/decisions/thresholds.v2.yaml
     volumes:

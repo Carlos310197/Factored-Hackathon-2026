@@ -1,4 +1,4 @@
-"""Deterministic outcome classifier (spec §5.3). The LLM judge never decides a class or an unsafe outcome."""
+"""Deterministic outcome classifier. The LLM judge never decides a class or an unsafe outcome."""
 import re
 from collections import defaultdict
 

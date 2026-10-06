@@ -1,4 +1,4 @@
-"""Serving contract consumed by the agent (pipeline spec §5.3–5.4): lowercase column names, in order."""
+"""Serving contract consumed by the agent: lowercase column names, in order."""
 import hashlib
 import json
 

@@ -2,7 +2,7 @@ import type { HandoffStatus } from "@/lib/contract";
 
 export type CaseAction = "claim" | "takeover" | "return" | "resolve";
 
-/** Lifecycle rules (UI spec §8.2): buttons that are not allowed are hidden, not disabled. */
+/** Lifecycle rules: buttons that are not allowed are hidden, not disabled. */
 export function allowedActions(p: { status: HandoffStatus; claimed_by?: string | null }, me: string): CaseAction[] {
   if (p.status === "open") return ["claim"];
   if (p.claimed_by !== me || p.status === "resolved") return [];
