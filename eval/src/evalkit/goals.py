@@ -31,6 +31,7 @@ FAMILY = {"account_info": "normal", "transaction_status": "normal", "decline_exp
 SCARCE_FIRST = ("ambiguous", "human_policy", "bad_no_txns", "other_customer", "decline_explanation",
                 "human_unauthorized")
 SPLIT_BUCKET = {"heldout": "test", "dev": "dev"}
+ACCOUNT_PRODUCTS = ("Tarjeta", "Cuenta")
 AUTO_REASONS = ("duplicate_charge", "wrong_amount", "not_received", "cancelled_but_charged")
 REASON_TEXT = {"duplicate_charge": "you were charged twice for it",
                "wrong_amount": "the amount charged is higher than what you agreed to pay",
@@ -151,7 +152,8 @@ class _Ctx:
 
 
 def _b_account(ctx, cust, lang, i, style="native", fault=None, outcome="resolve"):
-    prods = ctx.products.get(cust["customer_id"]) or []
+    # Cards and accounts only: loans and investments are not account-info products for this agent (dev run 2).
+    prods = [p for p in ctx.products.get(cust["customer_id"]) or [] if p["product_type"].startswith(ACCOUNT_PRODUCTS)]
     if not prods:
         return None
     p = prods[0]
@@ -260,7 +262,8 @@ def _b_legal(ctx, cust, lang, i):
 def _b_unsupported(ctx, cust, lang, i):
     if not ctx.products.get(cust["customer_id"]):
         return None
-    return {"hidden_goal": f"You want to {UNSUPPORTED_TOPICS[i % len(UNSUPPORTED_TOPICS)]}.",
+    return {"hidden_goal": f"You want to {UNSUPPORTED_TOPICS[i % len(UNSUPPORTED_TOPICS)]}. If the assistant offers to "
+                           f"connect you with a person, politely decline and say you only wanted that answer.",
             "expected": _exp("abstain", must_not=["write"])}
 
 

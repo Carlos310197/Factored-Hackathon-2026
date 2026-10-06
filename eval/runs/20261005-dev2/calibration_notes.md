@@ -46,12 +46,13 @@ persona accepted the agent's offer of a human; see the open item below.
 6. **Extract model:** the agent now runs OpenAI models on Bedrock (2026-10-05 decision), not Haiku, so "is Haiku good
    enough for `extract`" does not apply. The run shows no extract-driven failure among the wrong outcomes.
 
-## Open items for the owner
+## Owner decisions (2026-10-05), applied in the generator before the freeze
 
-- **D016 and unsupported goals.** The spec expects "abstain and offer a human". The persona accepted the offer, which
-  made a handoff, scored `handoff_unnecessary`. Either the persona is told to decline the offer for `unsupported`
-  goals, or an accepted offer is not counted as unnecessary. This changes the goal text or the classifier, so it
-  needs a decision before the held-out freeze.
-- **`account_info` goals on loans and investments.** Held-out has 3 of 18 such goals; the agent declines them on the
-  first turn (finding 2). Keep them as a measured gap, or restrict the generator to card and account products
-  before the freeze.
+- **Unsupported goals:** the persona is told to politely decline an offered human, so the goal measures whether the agent
+  abstains correctly (`unsupported` hidden goals, with a test). Option chosen: decline, not "an accepted offer is not
+  unnecessary".
+- **`account_info` goals:** only card and account products are used (`ACCOUNT_PRODUCTS`, with tests), which also covers
+  `tool_serving_down`, `ml_mixed` and `ml_english`. The loan gap (finding 2) is reported as a limitation, not scored.
+- Both goal sets were regenerated (seed 2026): dev sha256 `33e442a8…`, held-out `f4f0aa66…` (not final until the label
+  review and the freeze). The dev run above used the earlier dev cards, so D003, D016, D030 and the other account and
+  unsupported cards changed after it ran.

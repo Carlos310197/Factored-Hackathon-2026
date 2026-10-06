@@ -100,3 +100,31 @@ def test_review_sheet_is_stratified(heldout):
     rows = review_sheet(heldout, n=24)
     assert len(rows) == 24 and len({r["group"] for r in rows}) >= 10
     assert {"goal_id", "group", "language", "hidden_goal", "expected", "reviewer_ok", "correction"} <= set(rows[0])
+
+
+def _ctx_with_products(products):
+    from types import SimpleNamespace
+    return SimpleNamespace(products={"CLI-X": products})
+
+
+def test_account_info_goals_only_use_card_and_account_products():
+    from evalkit.goals import _b_account
+    loan = {"product_id": "PRD-L", "product_type": "Préstamo Hipotecario", "product_last4": "4436"}
+    card = {"product_id": "PRD-C", "product_type": "Tarjeta Crédito", "product_last4": "1111"}
+    built = _b_account(_ctx_with_products([loan, card]), {"customer_id": "CLI-X"}, "es", 0)
+    assert built["facts"]["last4"] == "1111"
+    assert _b_account(_ctx_with_products([loan]), {"customer_id": "CLI-X"}, "es", 0) is None
+    assert _b_account(_ctx_with_products([{**loan, "product_type": "Inversión"}]), {"customer_id": "CLI-X"}, "es", 0) is None
+
+
+def test_unsupported_goals_tell_the_persona_to_decline_an_offered_human(heldout):
+    unsupported = [c for c in heldout if c.group == "unsupported"]
+    assert unsupported and all("decline" in c.hidden_goal.lower() and c.expected["outcome"] == "abstain"
+                               for c in unsupported)
+
+
+def test_heldout_account_goals_have_no_loans_or_investments(heldout, universe):
+    types = {p["product_id"]: p["product_type"] for ps in universe.products_by_customer().values() for p in ps}
+    for c in heldout:
+        if c.group in ("account_info", "tool_serving_down", "ml_mixed", "ml_english"):
+            assert c.revealable_facts["product_type"].startswith(("Tarjeta", "Cuenta"))
