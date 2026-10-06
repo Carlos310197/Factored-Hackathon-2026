@@ -34,6 +34,17 @@ describe("LoginForm", () => {
     expect(screen.getByRole("combobox")).toHaveDisplayValue(/rui\.pt/);
     expect(document.documentElement.lang).toBe("pt");
   });
+  it("the code step reads as Portuguese, not words Spanish shares", async () => {
+    vi.stubGlobal("fetch", mockFetch());
+    render(<LoginForm next="/chat" embed={false} />);
+    await screen.findByRole("heading", { name: "Hola, entra para hablar con el asistente" });
+    await userEvent.click(screen.getByRole("radio", { name: "Português" }));
+    await userEvent.click(screen.getByRole("button", { name: "Avançar" }));
+    expect(await screen.findByText(/Acessando como rui\.pt/)).toBeInTheDocument();
+    expect(screen.getByText(/Enviamos um código de acesso/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Acessar" })).toBeInTheDocument();
+    expect(screen.queryByText(/Entrando como/)).toBeNull();
+  });
   it("signs in with password then the shown OTP and goes to next", async () => {
     const f = mockFetch();
     vi.stubGlobal("fetch", f);
