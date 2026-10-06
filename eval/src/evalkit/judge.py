@@ -4,10 +4,14 @@ import argparse
 import csv
 import json
 import random
+import os
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from types import SimpleNamespace
 
-from bankagent.llm.client import call_json
+import httpx
+from bankagent.llm.client import LLMError, call_json
 from bankagent.llm.config import RoleConfig
 
 RUBRIC = Path(__file__).resolve().parents[2] / "judge_rubric.md"
@@ -21,8 +25,56 @@ PACKET_SCHEMA = {"type": "object", "additionalProperties": False, "required": [*
                                 "note": {"type": "string"}}}
 
 
+class OpenCodeResponsesClient:
+    """The judge model is served by OpenCode on the Responses API (Claude Sonnet 5.5 is not available to this account,
+    and the Mantle endpoint behind bankagent's client does not serve it). This adapter exposes the chat.completions
+    shape that call_json expects, so the judge reuses call_json's JSON parsing and error handling. No temperature is
+    sent: the model rejects it."""
+
+    def __init__(self, base_url: str, api_key: str, timeout_s: float = 90.0, http: httpx.Client | None = None):
+        self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
+        self._base, self._key = base_url.rstrip("/"), api_key
+        self._http = http or httpx.Client(timeout=timeout_s)
+
+    def _create(self, *, model, messages, max_tokens, response_format=None, **_):
+        turns = [dict(m) for m in messages]
+        if response_format:
+            schema = json.dumps(response_format["json_schema"]["schema"])
+            turns[0]["content"] += f"\n\nReply with only a JSON object that matches this JSON schema, with no other text:\n{schema}"
+        body = {"model": model, "input": turns, "max_output_tokens": max_tokens}
+        for attempt in (0, 1):
+            try:
+                r = self._http.post(f"{self._base}/responses", json=body, headers={"Authorization": f"Bearer {self._key}"})
+            except httpx.TimeoutException as e:
+                if attempt == 0:
+                    continue
+                raise LLMError("timeout") from e
+            if r.status_code >= 500 and attempt == 0:
+                continue
+            if r.status_code != 200:
+                raise LLMError(f"http {r.status_code}")
+            break
+        data = r.json()
+        text = "".join(c.get("text", "") for o in data.get("output") or [] if o.get("type") == "message"
+                       for c in o.get("content") or [] if c.get("type") == "output_text")
+        usage = data.get("usage") or {}
+        finish = "length" if data.get("status") == "incomplete" else "stop"
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=text), finish_reason=finish)],
+            usage=SimpleNamespace(prompt_tokens=usage.get("input_tokens", 0),
+                                  completion_tokens=usage.get("output_tokens", 0)))
+
+
+def make_judge_client(cfg: dict) -> OpenCodeResponsesClient:
+    j = cfg["judge"]
+    key = os.environ.get(j["api_key_env"], "")
+    if not key:
+        raise SystemExit(f"{j['api_key_env']} is not set")
+    return OpenCodeResponsesClient(j["base_url"], key)
+
+
 def judge_role(cfg: dict) -> RoleConfig:
-    return RoleConfig(model=cfg["judge"]["model"], max_tokens=512, prompt_version=cfg["judge"]["prompt_version"],
+    return RoleConfig(model=cfg["judge"]["model"], max_tokens=2000, prompt_version=cfg["judge"]["prompt_version"],
                       timeout_s=30, effort="low")
 
 
@@ -53,14 +105,11 @@ def judge_item(client, role: RoleConfig, item: dict) -> dict:
         "verdict": call.data, "model": call.model, "prompt_version": call.prompt_version, "usage": call.usage}
 
 
-def run_judge(records: list[dict], languages: dict[str, str], client, role: RoleConfig) -> list[dict]:
-    out = []
-    for rec in records:
-        if rec.get("end_reason") in ("harness_error", "persona_discarded"):
-            continue
-        for item in items_for(rec, languages[rec["goal_id"]]):
-            out.append(judge_item(client, role, item))
-    return out
+def run_judge(records: list[dict], languages: dict[str, str], client, role: RoleConfig, workers: int = 1) -> list[dict]:
+    items = [item for rec in records if rec.get("end_reason") not in ("harness_error", "persona_discarded")
+             for item in items_for(rec, languages[rec["goal_id"]])]
+    with ThreadPoolExecutor(max_workers=workers) as pool:  # map keeps the record order
+        return list(pool.map(lambda item: judge_item(client, role, item), items))
 
 
 def human_sheet(judgments: list[dict], n: int = 40, seed: int = 0) -> list[dict]:
@@ -105,16 +154,15 @@ def main(argv=None) -> int:
     p.add_argument("--live", action="store_true")
     a = p.parse_args(argv)
     if not a.live:
-        print("refusing: the judge calls Bedrock; rerun with --live after the owner approves")
+        print("refusing: the judge calls an external model; rerun with --live after the owner approves")
         return 2
-    from bankagent.llm.client import make_bedrock_client
-
     from evalkit.config import load_config
     from evalkit.goals import read_goals
     cfg = load_config()
     languages = {c.goal_id: c.language for c in read_goals(a.goals)}
     records = [json.loads(line) for line in (a.run / "conversations.jsonl").read_text(encoding="utf-8").splitlines() if line]
-    judgments = run_judge(records, languages, make_bedrock_client(cfg["agent"]["region"]), judge_role(cfg))
+    judgments = run_judge(records, languages, make_judge_client(cfg), judge_role(cfg),
+                           workers=cfg["run"]["workers"])
     (a.run / "judgments.jsonl").write_text("".join(json.dumps(j, ensure_ascii=False) + "\n" for j in judgments),
                                            encoding="utf-8")
     sheet = human_sheet(judgments)
