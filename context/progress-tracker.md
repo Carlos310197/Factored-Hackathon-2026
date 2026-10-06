@@ -501,7 +501,7 @@ Root causes of the open issue below, from the two turns' decision records:
 
 - **Id-guard feedback** (found in the live smoke): draft 1 wrote its receipt id in the text; the regeneration feedback said the id was "not in the receipts", so draft 2 blanked every claim's `receipt_ids`, Jev failed them all and the turn fell back to the template. The feedback now says to remove the ids from `reply_text` only and keep citing `receipt_ids`.
 
-Agent suite 319 passed; root offline 46; eval 65. Live (owner-approved): Mantle accepts `reasoning_effort`; compose calls 170–350 output tokens.
+Agent suite 319 passed; root offline 46; eval 65. Live (owner-approved): Mantle accepts `reasoning_effort`. Deployed `lb-demo-agent:fa84fc4` as runtime v9. Smoke through CloudFront: three demo01 balance turns (incl. "¿Cuánto tengo en total?", no sum) and one demo04 PT turn, all model-written on the first draft, Jev ok, 250–340 output tokens. Localized chips are covered by tests only (no live turn produced a clarification).
 
 ### 2026-10-06: Live verification of HTTPS + warm-up (runtime v6) and an open issue
 
