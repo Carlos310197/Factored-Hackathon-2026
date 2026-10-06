@@ -88,7 +88,7 @@ can publish.
 | Browser → web server | httpOnly, Secure, SameSite=Lax cookie with the 15-minute JWT; HTTPS through CloudFront; the load balancer accepts only CloudFront |
 | Web server → identity | HTTPS; public login routes, throttled at the API stage |
 | Web server → AgentCore | The customer's JWT only; the ECS task role has no `InvokeAgentRuntime` permission |
-| Agent → Bedrock | Assumes the cross-account role `argos-bedrock-role` with an external id; receipts are redacted (no customer or product ids, no fraud fields) |
+| Agent → Bedrock | Assumes a cross-account role in the AI Account with an external id; receipts are redacted (no customer or product ids, no fraud fields) |
 | Agent → Jev | API key from Secrets Manager (`lb-demo/jev`); Jev sees transactions as aliases, never customer or product ids |
 | Agent → S3 serving set, DynamoDB | Execution role: read-only on the serving bucket (`GetObject`, `ListBucket`), item access on the six `lb-demo-*` tables (`DeleteItem` only on checkpoints) (`infra/terraform/agent/iam.tf`) |
 | Browser → AppSync | Subscribe-only realtime token → Lambda authorizer → channel check |
