@@ -33,6 +33,7 @@ def test_turn_logs_both_messages_turn_end_and_returns_turn_id():
     assert (customer["role"], customer["text"], customer["message_id"], customer["turn_id"]) == \
         ("customer", "saldo", "msg-00000001", out["turn_id"])
     assert assistant["role"] == "assistant" and assistant["meta"]["awaiting"] == "none"
+    assert assistant["meta"]["language"] == out["language"]  # the UI chrome follows it on reload/push
     end = store.log.records[-1]
     assert end["kind"] == "turn_end" and end["node"] == "turn" and end["turn_id"] == out["turn_id"]
     assert end["payload"]["awaiting"] == "none" and end["payload"]["duration_ms"] >= 0

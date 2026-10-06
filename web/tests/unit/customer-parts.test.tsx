@@ -152,4 +152,24 @@ describe("ChatScreen", () => {
     render(<ChatScreen sid="s1" lang="es" embed={false} />);
     expect(await screen.findByText("Una persona del equipo continuará esta conversación")).toBeInTheDocument();
   });
+
+  it("the chrome follows the reply language and the badge toggles it; <html lang> stays in sync", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (String(url).includes("/messages")) return Response.json({ data: [] });
+      return Response.json({ data: { reply_text: "Cartão de débito 5827", language: "pt", awaiting: "none", data_as_of: "2026-06-17", turn_id: "TRN-1" } });
+    }));
+    render(<ChatScreen sid="s1" lang="es" embed={false} />);
+    expect(screen.getByPlaceholderText("Escribe un mensaje…")).toBeInTheDocument();
+    await userEvent.type(screen.getByRole("textbox"), "Olá, qual é o saldo?{Enter}");
+    expect(await screen.findByText("Cartão de débito 5827")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Escreva uma mensagem…")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sair" })).toBeInTheDocument();
+    expect(screen.getByText(/^Informações de 17/)).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe("pt");
+    await userEvent.click(screen.getByRole("button", { name: /^PT/ }));
+    expect(screen.getByPlaceholderText("Escribe un mensaje…")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^ES/ })).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe("es");
+  });
 });
+

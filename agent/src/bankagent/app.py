@@ -17,7 +17,7 @@ from bankagent.settings import load_settings
 MAX_MESSAGE_CHARS = 2000
 MESSAGE_ID_HEADER = "x-amzn-bedrock-agentcore-runtime-custom-message-id"  # the prefix AgentCore passes through
 MESSAGE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
-META_KEYS = ("awaiting", "options", "refs", "summary", "data_as_of")
+META_KEYS = ("language", "awaiting", "options", "refs", "summary", "data_as_of")
 log = logging.getLogger(__name__)
 # One plain line per turn on stderr, parsed by a CloudWatch metric filter into TurnDurationMs (dashboard p50/p95).
 metrics = logging.getLogger("bankagent.metrics")

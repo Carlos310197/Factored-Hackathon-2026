@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ChatMessage, ChatReply } from "@/lib/contract";
-import { createChatStore } from "@/lib/chat/store";
+import { createChatStore, uiLang } from "@/lib/chat/store";
 
 const msg = (o: Partial<ChatMessage> & Pick<ChatMessage, "id" | "role" | "cursor">): ChatMessage => ({ text: "", ts: "t", ...o });
 const reply = (o: Partial<ChatReply> = {}): ChatReply =>
@@ -102,5 +102,17 @@ describe("chat store", () => {
     expect(s.getState().progress).toBe("act");
     s.getState().applyReply("cm-1", reply());
     expect(s.getState().progress).toBeNull();
+  });
+  it("the UI language follows the latest assistant reply and keeps it when the stored copy lands", () => {
+    const s = createChatStore();
+    expect(uiLang(s.getState().messages, "es")).toBe("es");
+    s.getState().sendOptimistic("cm-1", "Olá, qual é o saldo?");
+    s.getState().applyReply("cm-1", reply({ language: "pt", reply_text: "Seu saldo" }));
+    expect(uiLang(s.getState().messages, "es")).toBe("pt");
+    s.getState().merge([msg({ id: "MSG-9", role: "assistant", cursor: "2026-09-30T10:00:01#MSG-9", text: "Seu saldo", turn_id: "TRN-1", meta: { awaiting: "none" } })]);
+    expect(s.getState().messages.some((m) => m.id === "reply:TRN-1")).toBe(false);
+    expect(uiLang(s.getState().messages, "es")).toBe("pt");
+    s.getState().merge([msg({ id: "MSG-10", role: "assistant", cursor: "2026-09-30T10:00:05#MSG-10", text: "Hola", meta: { language: "es" } })]);
+    expect(uiLang(s.getState().messages, "pt")).toBe("es");
   });
 });
