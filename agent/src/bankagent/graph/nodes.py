@@ -653,7 +653,9 @@ class Nodes:
             leaked = unknown_ids(composed.reply_text, allowed)
             if leaked:
                 self._log(state, config, "reply", "guard", {"unknown_ids": sorted(leaked)})
-                feedback = [f"Remove these identifiers; they are not in the receipts: {sorted(leaked)}"]
+                # Say where: "not in the receipts" made the model also blank its claims' receipt_ids (Jev then fails all)
+                feedback = [f"reply_text must not contain these identifiers: {sorted(leaked)}. Remove them from "
+                            "reply_text only; keep citing receipt_ids in claims."]
                 continue
             
             try:

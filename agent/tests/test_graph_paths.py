@@ -28,6 +28,18 @@ def test_compose_gets_the_customers_request(ddb_store, serving_root):
     assert "<request>EN: Dime el saldo de mis tarjetas</request>" in compose_calls[0]["messages"][1]["content"]
 
 
+def test_id_guard_feedback_keeps_claim_citations(ddb_store, serving_root):
+    """Live v7: draft 1 wrote its receipt id in the text; the feedback said the id was 'not in the receipts', so
+    draft 2 blanked every claim's receipt_ids, Jev failed them all and the turn fell back to the template."""
+    llm = FakeLLM(reply_text="Tu saldo (RCP-1791247560533CC9C92FC) es 1.250,40 USD")
+    h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}], llm=llm)
+    h.turn("saldo")
+    compose_calls = [c for c in llm.calls if c["model"] == "openai.gpt-oss-120b"]
+    feedback = compose_calls[1]["messages"][1]["content"].split("<feedback>")[1]
+    assert "RCP-1791247560533CC9C92FC" in feedback and "reply_text" in feedback and "receipt_ids" in feedback
+    assert "not in the receipts" not in feedback
+
+
 def test_transaction_clarification_chips_are_localized(ddb_store, serving_root):
     h = make_harness(ddb_store, serving_root, [{"intent": "transaction_status", "target": "ambiguous"}])
     r = h.turn("¿Qué pasó con mi pago?")
