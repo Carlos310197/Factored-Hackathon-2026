@@ -10,6 +10,11 @@ import { Receipt } from "./Receipt";
 export interface MessageCustom { role: "customer" | "assistant" | "agent" | "system"; text: string; meta?: MessageMeta | null;
   author?: string | null; ts?: string; status?: "sending" | "sent" | "provisional" }
 
+/** The confirm button's wire message is a token; the transcript shows the button's label instead. */
+export function customerText(text: string, lang: Lang): string {
+  return text.startsWith("confirm:") ? t(lang).confirm : text;
+}
+
 /** Control lines come from the system message's meta (takeover/return), never from its stored text. */
 export function systemLine(c: Pick<MessageCustom, "text" | "meta" | "author">, lang: Lang): string {
   const d = t(lang);
@@ -34,7 +39,7 @@ export function MessageView({ lang, busy, latestAssistantId, onSend }:
     <MessagePrimitive.Root className={`flex flex-col gap-2 ${custom.status ? "motion-safe:animate-[fade-in_220ms_ease-out]" : ""}`}>
       {role === "customer" && (
         <>
-          <p className="max-w-[84%] self-end whitespace-pre-wrap rounded-bubble rounded-br-[4px] bg-b-cobalt px-3.5 py-2.5 text-b-surface">{text}</p>
+          <p className="max-w-[84%] self-end whitespace-pre-wrap rounded-bubble rounded-br-[4px] bg-b-cobalt px-3.5 py-2.5 text-b-surface">{customerText(text, lang)}</p>
           {stamp("self-end")}
         </>
       )}
@@ -46,7 +51,7 @@ export function MessageView({ lang, busy, latestAssistantId, onSend }:
             <Chips options={meta.options} disabled={busy} onPick={onSend} />
           ) : null}
           {latest && meta?.awaiting === "confirmation" && meta.summary ? (
-            <ConfirmCard summary={meta.summary} lang={lang} disabled={busy} onConfirm={() => onSend(d.confirm)} onChange={() => onSend(d.change)} />
+            <ConfirmCard summary={meta.summary} lang={lang} disabled={busy} onConfirm={() => onSend(meta.summary?.card_hash ? `confirm:${meta.summary.card_hash}` : d.confirm)} onChange={() => onSend(d.change)} />
           ) : null}
           {meta?.refs?.map((r) => <Receipt key={r} refId={r} lang={lang} />)}
         </>

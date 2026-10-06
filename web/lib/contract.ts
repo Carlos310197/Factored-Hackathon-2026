@@ -8,6 +8,7 @@ export type Awaiting = z.infer<typeof Awaiting>;
 export const Summary = z.object({
   merchant: z.string(), date: z.string(), amount: z.number().nullish(),
   currency: z.string().nullish(), reason_code: z.string().nullish(), // the agent store drops None keys
+  card_hash: z.string().nullish(),  // the confirm button sends confirm:<card_hash>; the agent checks equality
 });
 export type Summary = z.infer<typeof Summary>;
 

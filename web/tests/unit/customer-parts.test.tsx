@@ -92,6 +92,16 @@ describe("ChatScreen", () => {
     expect(screen.getByText("Reclamar un cargo", { selector: "p" })).toBeInTheDocument();  // in the transcript
   });
 
+  it("the confirm button posts confirm:<card_hash> and the bubble shows the friendly label", async () => {
+    const summary = { merchant: "Netflix", date: "2026-06-03", amount: 15.99, currency: "USD", reason_code: "duplicate_charge", card_hash: "abc123" };
+    const f = mockFetch([msg({ id: "a", cursor: "0001", text: "¿Confirmas?", meta: { awaiting: "confirmation", summary } })]);
+    render(<ChatScreen sid="s1" lang="es" embed={false} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Confirmar y enviar" }));
+    await waitFor(() => expect(f.mock.calls.some(([u, i]: unknown[]) => u === "/api/chat" && JSON.parse(String((i as RequestInit).body)).message === "confirm:abc123")).toBe(true));
+    expect(screen.getByText("Confirmar y enviar", { selector: "p" })).toBeInTheDocument();
+    expect(screen.queryByText("confirm:abc123")).not.toBeInTheDocument();
+  });
+
   it("a history 401 shows the sign-in sheet and keeps the conversation", async () => {
     mockFetch([], 401);
     render(<ChatScreen sid="s1" lang="es" embed={false} />);
