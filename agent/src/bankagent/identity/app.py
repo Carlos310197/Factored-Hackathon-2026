@@ -127,6 +127,25 @@ def create_app(users: dict[str, DemoUser], private_pem: str, public_pem: str, ki
                             src.get("lang", "es"), ttl, now=now, extra={"role": src.get("role", "customer")})
         return {"token": token, "expires_in": ttl}
 
+    @app.post("/auth/session/new", response_model=TokenResponse)
+    def new_session(authorization: str | None = Header(default=None)) -> TokenResponse:
+        """A fresh conversation for a signed-in customer: same customer, scopes and expiry, new session id. Only a
+        valid customer access token is accepted, and the login's lifetime is never extended."""
+        if not authorization or not authorization.lower().startswith("bearer "):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="bearer token required")
+        try:  # expiry is checked against the injected clock, not wall time
+            src = jwt.decode(authorization[7:].strip(), public_pem, algorithms=["RS256"], issuer=issuer, audience=audience,
+                             options={"verify_exp": False, "require": ["exp", "sub", "sid"]})
+        except jwt.PyJWTError as e:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token") from e
+        now = int(clock())
+        if src.get("role") != "customer" or int(src["exp"]) <= now:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token")
+        ttl = int(src["exp"]) - now
+        token = issue_token(private_pem, kid, issuer, audience, src["sub"], "S-" + secrets.token_hex(8),
+                            str(src.get("scope", "")).split(), src.get("lang", "es"), ttl, now=now, extra={"role": "customer"})
+        return TokenResponse(access_token=token, token_type="Bearer", expires_in=ttl, lang=src.get("lang", "es"))
+
     @app.get("/auth/demo-users")
     def demo_users() -> list[dict]:
         if not demo_mode:

@@ -37,6 +37,9 @@ export const idp = {
   staffLogin: (username: string, password: string) =>
     call("/auth/staff/login", z.object({ access_token: z.string(), expires_in: z.number(), name: z.string() }),
       { method: "POST", body: JSON.stringify({ username, password }) }),
+  newSession: (bearer: string) =>
+    call("/auth/session/new", z.object({ access_token: z.string(), expires_in: z.number(), lang: z.enum(["es", "pt"]) }),
+      { method: "POST", headers: { authorization: `Bearer ${bearer}` } }),
   realtimeToken: (bearer: string) =>
     call("/auth/realtime-token", z.object({ token: z.string(), expires_in: z.number() }),
       { method: "POST", headers: { authorization: `Bearer ${bearer}` } }),

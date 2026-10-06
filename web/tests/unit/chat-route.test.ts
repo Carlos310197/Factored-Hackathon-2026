@@ -30,6 +30,16 @@ describe("POST /api/chat", () => {
     expect((await POST(post({ message: "  ", client_message_id: "cm-12345678" }))).status).toBe(400);
     expect((await POST(post({ message: "hola", client_message_id: "no spaces allowed" }))).status).toBe(400);
   });
+  it("refuses a turn in an ended conversation with 409 session_ended, without calling the runtime or storing it", async () => {
+    m.customerFrom.mockResolvedValue(CUST);
+    m.getSession.mockResolvedValue({ session_id: "S-1", customer_id: "CLI-A", language: "es", control: "human:agent.ana", ended_at: "2026-10-06T10:00:00Z" });
+    const { POST } = await import("@/app/api/chat/route");
+    const res = await POST(post({ message: "hola", client_message_id: "cm-12345678" }));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error.code).toBe("session_ended");
+    expect(m.invokeAgent).not.toHaveBeenCalled();
+    expect(m.appendMessage).not.toHaveBeenCalled();
+  });
   it("skips the runtime while a human holds the session, and stores the message once", async () => {
     m.customerFrom.mockResolvedValue(CUST);
     m.getSession.mockResolvedValue({ session_id: "S-1", customer_id: "CLI-A", language: "es", control: "human:agent.ana" });

@@ -159,3 +159,33 @@ def test_spent_tickets_stay_bounded(users):
     now[0] += 121
     api.post("/auth/otp", json={"login_ticket": "junk", "otp": "1"})
     assert api.app.state.spent_tickets == {}  # expired tickets are dropped
+
+
+def test_new_session_keeps_the_customer_and_lifetime_but_changes_the_session(users):
+    now = [1_000_000.0]
+    api = TestClient(create_app(users, PRIV, PUB, KID, ISS, AUD, clock=lambda: now[0]))
+    first = login(api).json()["access_token"]
+    now[0] += 300
+    r = api.post("/auth/session/new", headers={"authorization": f"Bearer {first}"})
+    assert r.status_code == 200, r.text
+    assert r.json()["expires_in"] == 600 and r.json()["lang"] == "es"  # the login's remaining lifetime, never extended
+    import jwt as pyjwt
+    new_claims = pyjwt.decode(r.json()["access_token"], options={"verify_signature": False})
+    old_claims = pyjwt.decode(first, options={"verify_signature": False})
+    assert new_claims["exp"] == old_claims["exp"]
+    assert (new_claims["sub"], new_claims["scope"], new_claims["role"]) == (old_claims["sub"], old_claims["scope"], "customer")
+    assert new_claims["sid"].startswith("S-") and new_claims["sid"] != old_claims["sid"]
+    assert pyjwt.get_unverified_header(r.json()["access_token"])["kid"] == KID
+
+
+def test_new_session_refuses_missing_staff_realtime_and_expired_tokens(users):
+    now = [1_000_000.0]
+    api = TestClient(create_app(users, PRIV, PUB, KID, ISS, AUD, clock=lambda: now[0]))
+    assert api.post("/auth/session/new").status_code == 401
+    staff = issue_token(PRIV, KID, ISS, "bankagent-staff", "agent.ana", "STAFF-1", ["handoff:work"], "es", now=now[0])
+    assert api.post("/auth/session/new", headers={"authorization": f"Bearer {staff}"}).status_code == 401
+    rt = issue_token(PRIV, KID, ISS, "realtime", "CLI-FIXC00000001", "S-1", ["realtime:subscribe"], "es", now=now[0])
+    assert api.post("/auth/session/new", headers={"authorization": f"Bearer {rt}"}).status_code == 401
+    first = login(api).json()["access_token"]
+    now[0] += 901  # past the token's exp: an expired login can't mint a fresh conversation
+    assert api.post("/auth/session/new", headers={"authorization": f"Bearer {first}"}).status_code == 401
