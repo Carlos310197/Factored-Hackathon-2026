@@ -12,6 +12,12 @@ function e2eCustomer(tok: string): CustomerSession | null {
   const [, , sub, sid, lang] = tok.split(".");
   return { token: tok, sub, sid, lang: lang === "pt" ? "pt" : "es", scopes: ["dispute:create", "inquiry:read"], exp: Math.floor(Date.now() / 1000) + 900 };
 }
+/** E2E only: a new conversation is a new forged token with a fresh sid (the real path asks the IdP). */
+export function e2eNewSession(who: CustomerSession): { access_token: string; expires_in: number; lang: "es" | "pt"; sid: string } | null {
+  if (!e2e() || !who.token.startsWith("e2e.customer.")) return null;
+  const sid = `S-e2e${Date.now().toString(36)}`;
+  return { access_token: `e2e.customer.${who.sub}.${sid}.${who.lang}`, expires_in: 900, lang: who.lang, sid };
+}
 function e2eStaff(tok: string): StaffSession | null {
   if (!e2e() || !tok.startsWith("e2e.staff.")) return null;
   const rest = tok.slice("e2e.staff.".length);

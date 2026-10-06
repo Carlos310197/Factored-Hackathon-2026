@@ -37,6 +37,7 @@ async function handle(req: NextRequest, log: ChatLog) {
   log.client_message_id = body.client_message_id;
 
   const session = await getSession(who.sid);
+  if (session?.ended_at) return fail("session_ended", "This conversation has ended", 409);
   if (session && session.control !== "agent") {  // a human holds the conversation: never call the runtime (spec §3 rule 5)
     if (await claimMessageId(who.sid, body.client_message_id)) {
       await appendMessage(who.sid, { role: "customer", text: body.message, id: body.client_message_id });

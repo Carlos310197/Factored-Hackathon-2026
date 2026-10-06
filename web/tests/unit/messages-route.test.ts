@@ -34,12 +34,12 @@ describe("GET history", () => {
     const { GET } = await import("@/app/api/sessions/[sid]/messages/route");
     expect((await GET(get("S-1"), params("S-1"))).status).toBe(401);
   });
-  it("a customer asking for another sid than their token's is not_found", async () => {
+  it("the owner may read a past conversation (read-only), not only the token's current one", async () => {
     m.customerFrom.mockResolvedValue({ sub: "CLI-A", sid: "S-1" });
     m.staffFrom.mockResolvedValue(null);
     m.getSession.mockResolvedValue({ ...SESSION, session_id: "S-2" });
     const { GET } = await import("@/app/api/sessions/[sid]/messages/route");
-    expect((await GET(get("S-2"), params("S-2"))).status).toBe(404);
+    expect((await GET(get("S-2"), params("S-2"))).status).toBe(200);
   });
   it("rejects an oversized after cursor with 400", async () => {
     m.customerFrom.mockResolvedValue({ sub: "CLI-A", sid: "S-1" });

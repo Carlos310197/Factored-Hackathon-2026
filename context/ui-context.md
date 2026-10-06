@@ -24,7 +24,11 @@ Every handler parses its input with Zod, checks the cookie's JWT (signature, exp
 | `GET /api/auth/realtime-token` | customer, agent | Returns a subscribe-only token (the only token JS ever sees) |
 | `GET /api/auth/debug-claims` | agent (demo only) | Decoded claims of the customer token in this browser's `cust_session` cookie (the embedded phone), for Act 1 (§9.1). Disabled outside demo builds. |
 | `POST /api/chat` | customer | If `control ≠ agent`: store the message and return `awaiting: human`. Otherwise invoke AgentCore with the Bearer JWT, the runtime session id and the message-id header, and return the §4.7 response. *(2026-10-06)* Logs one JSON line per call (`status`, `ms`, `sid`, `client_message_id`, `turn_id`). |
-| `GET /api/sessions/:sid/messages?after=` | owner customer, agent | History |
+| `GET /api/sessions/:sid/messages?after=` | owner customer, agent | History; the owner may read any of their past conversations (read-only) |
+| `GET /api/customer/sessions` | customer | The customer's conversations (`sessions.by_customer`), newest first, hidden ones left out, current one marked |
+| `POST /api/customer/sessions/end` | customer | Ends the current conversation; `/api/chat` then answers 409 `session_ended` |
+| `POST /api/customer/sessions/new` | customer | Ends the current one and swaps the cookie for a new session id (IdP `/auth/session/new`, same expiry) |
+| `POST /api/customer/sessions/:sid/hide` | owner customer | Takes a past conversation off the list (409 `current_session` for the current one); the record is kept |
 | `POST /api/sessions/:sid/messages` | agent holding the takeover | Agent message |
 | `GET /api/handoffs?status=` | agent | Queue |
 | `GET /api/handoffs/:id` | agent | Packet |

@@ -60,6 +60,10 @@ run "keys_and_indexes_match_tables_json" {
     error_message = "disputes keyed by transaction_id with by_customer"
   }
   assert {
+    condition     = one([for g in aws_dynamodb_table.this["sessions"].global_secondary_index : g.name]) == "by_customer"
+    error_message = "sessions has by_customer (the customer's conversation list)"
+  }
+  assert {
     condition     = one([for g in aws_dynamodb_table.this["handoffs"].global_secondary_index : g.range_key]) == "created_at"
     error_message = "handoffs by_status sorts on created_at"
   }
