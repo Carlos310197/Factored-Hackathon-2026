@@ -1,5 +1,11 @@
 # Separate file = separate state: the SSM parameter ignores value changes, so a run in app.tftest.hcl would keep the placeholder.
 mock_provider "aws" {
+  mock_data "aws_ec2_managed_prefix_list" {
+    defaults = { id = "pl-3b927c52" }
+  }
+  mock_resource "aws_cloudfront_distribution" {
+    defaults = { domain_name = "d1234abcd.cloudfront.net", arn = "arn:aws:cloudfront::762197749808:distribution/E123" }
+  }
   mock_resource "aws_lb" {
     defaults = { arn = "arn:aws:elasticloadbalancing:us-east-1:762197749808:loadbalancer/app/latam-bank-web/abc", dns_name = "latam-bank-web-123.us-east-1.elb.amazonaws.com" }
   }

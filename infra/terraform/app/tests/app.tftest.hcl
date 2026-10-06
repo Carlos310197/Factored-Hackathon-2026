@@ -1,4 +1,10 @@
 mock_provider "aws" {
+  mock_data "aws_ec2_managed_prefix_list" {
+    defaults = { id = "pl-3b927c52" }
+  }
+  mock_resource "aws_cloudfront_distribution" {
+    defaults = { domain_name = "d1234abcd.cloudfront.net", arn = "arn:aws:cloudfront::762197749808:distribution/E123" }
+  }
   mock_resource "aws_lb" {
     defaults = { arn = "arn:aws:elasticloadbalancing:us-east-1:762197749808:loadbalancer/app/latam-bank-web/abc", dns_name = "latam-bank-web-123.us-east-1.elb.amazonaws.com" }
   }
@@ -65,8 +71,23 @@ run "public_alb_and_the_task_only_reachable_through_it" {
   }
 
   assert {
-    condition     = aws_vpc_security_group_ingress_rule.alb_http.cidr_ipv4 == "0.0.0.0/0" && aws_vpc_security_group_ingress_rule.alb_http.from_port == 80
-    error_message = "the ALB is public on port 80 (no domain, so no certificate)"
+    condition     = aws_vpc_security_group_ingress_rule.alb_http.prefix_list_id == data.aws_ec2_managed_prefix_list.cloudfront.id && aws_vpc_security_group_ingress_rule.alb_http.cidr_ipv4 == null && aws_vpc_security_group_ingress_rule.alb_http.from_port == 80
+    error_message = "the ALB admits only CloudFront's origin-facing addresses on port 80 (no side door)"
+  }
+
+  assert {
+    condition     = aws_cloudfront_distribution.web.default_cache_behavior[0].viewer_protocol_policy == "redirect-to-https" && aws_cloudfront_distribution.web.viewer_certificate[0].cloudfront_default_certificate
+    error_message = "viewers get HTTPS on the CloudFront default certificate; HTTP redirects"
+  }
+
+  assert {
+    condition     = aws_cloudfront_distribution.web.default_cache_behavior[0].cache_policy_id == "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" && aws_cloudfront_distribution.web.default_cache_behavior[0].origin_request_policy_id == "216adef6-5c7f-47e4-b989-5492eafa07d3"
+    error_message = "no caching (managed CachingDisabled) and every viewer header, cookie and query forwarded (managed AllViewer)"
+  }
+
+  assert {
+    condition     = one([for e in jsondecode(aws_ecs_task_definition.web.container_definitions)[0].environment : e.value if e.name == "COOKIE_SECURE"]) == "1"
+    error_message = "session cookies are Secure now that viewers use HTTPS"
   }
 
   assert {

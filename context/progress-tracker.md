@@ -490,6 +490,10 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-06: HTTPS via CloudFront, ALB closed to everything else
+
+- `infra/terraform/app`: CloudFront distribution (default certificate, `redirect-to-https`, managed CachingDisabled + AllViewer, origin read timeout 60 s) in front of the ALB; the ALB security group admits only CloudFront's origin-facing prefix list (`pl-3b927c52`); `COOKIE_SECURE=1`. Output `url` is the CloudFront HTTPS address; `bin/app-url` prints it. Applied by `infra.yml` on merge.
+
 ### 2026-10-06: Agent deploy with the adopted resolver (runtime v5)
 
 - Image `lb-demo-agent:de5fd31` (main after #38 and #53); full `terraform apply` of the agent root: runtime env now `LLM_EXTRACT_MODEL=mistral.ministral-3-14b-instruct`, `RESOLVER_ARTIFACT`, `THRESHOLDS_FILE=thresholds.v2.yaml`; IAM model scope with Ministral; alarms TurnSlow, StalePointer, TurnCapReached created (6 total). Endpoint `live` READY on version 5. The cross-account Bedrock role allows Ministral (owner-confirmed).
