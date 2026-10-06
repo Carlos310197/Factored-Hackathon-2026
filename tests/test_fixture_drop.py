@@ -27,7 +27,8 @@ def dbt(*args):
 def upload(cur, files, base):
     for p in files:
         rel = p.relative_to(base)  # transactions/year=.../file.csv or customers.csv
-        cur.execute(f"put file://{p} @{STAGE}/{rel.parent.as_posix()}/ auto_compress=false overwrite=true")
+        folder = "" if rel.parent == Path(".") else f"{rel.parent.as_posix()}/"  # "@stage/./" got a 403 from S3
+        cur.execute(f"put file://{p} @{STAGE}/{folder} auto_compress=false overwrite=true")
 
 
 @pytest.fixture(scope="module")
