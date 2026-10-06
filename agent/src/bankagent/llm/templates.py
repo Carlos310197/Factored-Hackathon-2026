@@ -59,14 +59,14 @@ NOTES = {
            "wait_pending": "La transacción sigue pendiente; podrás disputarla cuando se registre.",
            "already_reversed": "Esa transacción ya fue reversada.",
            "not_disputable_type": "Ese tipo de movimiento no se puede disputar por este canal.",
-           "out_of_window": "La transacción supera el plazo de 60 días para disputas.",
+           "out_of_window": "La transacción supera el plazo de {window_days} días para disputas.",
            "already_disputed": "Ya existe una disputa para esa transacción.",
            "dispute_filed": "Registré tu disputa.", "not_disputable": "Esa transacción no se puede disputar."},
     "pt": {"not_declined": "Essa transação não foi recusada.",
            "wait_pending": "A transação ainda está pendente; você poderá contestá-la quando for registrada.",
            "already_reversed": "Essa transação já foi estornada.",
            "not_disputable_type": "Esse tipo de movimentação não pode ser contestado por este canal.",
-           "out_of_window": "A transação ultrapassa o prazo de 60 dias para contestações.",
+           "out_of_window": "A transação ultrapassa o prazo de {window_days} dias para contestações.",
            "already_disputed": "Já existe uma contestação para essa transação.",
            "dispute_filed": "Registrei sua contestação.", "not_disputable": "Essa transação não pode ser contestada."},
 }
@@ -167,7 +167,7 @@ def fallback_reply(goal: dict, receipts: list[dict], lang: str) -> str:
     kind = goal.get("kind", "error")
     parts = [FALLBACK[lang].get(kind, FALLBACK[lang]["error"])]
     if goal.get("note"):
-        parts.append(NOTES[lang].get(goal["note"], ""))
+        parts.append(NOTES[lang].get(goal["note"], "").format_map(goal))  # e.g. {window_days} from the policy
     if kind == "answer":
         parts += [f"• {line}" for r in receipts for line in _facts(r, lang)]
     if kind == "ask_clarification":

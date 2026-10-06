@@ -43,8 +43,8 @@ class Harness:
 
 
 def make_harness(store, serving_uri, specs, llm=None, verify=True, clock=None, recursion_limit=25,
-                 turn_budget_s=15.0, resolver=None) -> Harness:
-    serving, policy = ServingData(str(serving_uri)), DisputePolicy.load()
+                 turn_budget_s=15.0, resolver=None, policy=None) -> Harness:
+    serving, policy = ServingData(str(serving_uri)), policy or DisputePolicy.load()
     llm, jev = llm or FakeLLM(), FakeJev(specs, verify)
     deps = Deps(read=ReadTools(serving), write=WriteTools(store, policy), store=store, policy=policy, jev=jev,
                 llm_client=llm, models=load_models(env={}), thresholds=load_thresholds(),
