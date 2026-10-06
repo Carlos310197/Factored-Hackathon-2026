@@ -490,6 +490,11 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-06: Live verification of HTTPS + warm-up (runtime v6) and an open issue
+
+- CloudFront applied by `infra.yml` (run 37393228612). Verified: `https://d21y0qq5d8ixnr.cloudfront.net` serves the app; HTTP → 301 HTTPS; the ALB's own name is unreachable; the session cookie is `Secure; HttpOnly; SameSite=lax`. Agent `lb-demo-agent:b999f49` (warm-up) live as runtime v6: the first turn on the fresh container was model-written (no cold-start template).
+- **Open (next session): balance answers are flaky on the model path.** Two live "saldo" turns (demo01): one model reply "No tengo información para responder a tu consulta." with `claims: []` although compose received the `dim_product` receipt (redaction keeps balances; checked), one template fallback. Decision records: turns `TRN-1791246077346C835D8C3`, `TRN-179124610916343988074`. Suspects: compose prompt v2 + gpt-oss-120b output, or verify. Also seen: Ministral sometimes swaps `customer_statement.en` and `.original`; the clarification chip label is a raw technical string.
+
 ### 2026-10-06: Model warm-up at container start
 
 - `llm.client.warm_up`: one `max_tokens=1` call per live role (extract, compose) in a background thread started by `build_runtime`; errors logged (`model warm-up failed`), never raised. Fixes the cold first compose (~13 s through the cross-account role) that sent the first turn on a fresh container to the template.
