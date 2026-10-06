@@ -191,6 +191,8 @@ locals {
   # TransactWriteItems has no IAM action of its own: it is authorized by the Put/UpdateItem on each item's table.
   rw_tables = [for t in ["sessions", "conversation_messages", "handoffs"] : local.table_arns[t]]
   ro_tables = [local.table_arns["decision_records"]]
+  # "Mis casos": the customer's disputes through the by_customer GSI (Query on a GSI is authorized on the index ARN).
+  disputes_ro = [local.table_arns["disputes"], "${local.table_arns["disputes"]}/index/*"]
   # The BFF's environment. No secret belongs here (use the task definition's `secrets` from Secrets Manager).
   web_env = {
     PORT                           = "3000"
@@ -222,6 +224,11 @@ data "aws_iam_policy_document" "task" {
     sid       = "ReadDecisionRecords"
     actions   = ["dynamodb:GetItem", "dynamodb:Query"]
     resources = local.ro_tables
+  }
+  statement {
+    sid       = "ReadDisputes"
+    actions   = ["dynamodb:GetItem", "dynamodb:Query"]
+    resources = local.disputes_ro
   }
 }
 
