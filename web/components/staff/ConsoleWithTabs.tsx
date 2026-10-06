@@ -34,6 +34,6 @@ function Tabs({ tab, c, me }: { tab: Tab; c: CaseData; me: Me }) {
   );
 }
 
-export function ConsoleWithTabs(props: { me: Me; initialId?: string }) {
+export function ConsoleWithTabs(props: { me: Me; initialId?: string; caseOnly?: boolean }) {
   return <Console {...props} renderTab={(tab, c) => <Tabs tab={tab} c={c} me={props.me} />} />;
 }

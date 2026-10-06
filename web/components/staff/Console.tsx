@@ -13,8 +13,9 @@ export type Tab = "packet" | "conversation" | "trace";
 const FRESH_MS = 4000;
 type CaseState = "missing" | "error" | null;
 
-export function Console({ me, initialId, renderTab }: { me: { sub: string; name: string }; initialId?: string;
-  renderTab?: (tab: Tab, c: CaseData) => React.ReactNode }) {
+/** `caseOnly`: just the case (no queue, no top bar), for embedding next to the phone on the demo stage. */
+export function Console({ me, initialId, renderTab, caseOnly }: { me: { sub: string; name: string }; initialId?: string;
+  renderTab?: (tab: Tab, c: CaseData) => React.ReactNode; caseOnly?: boolean }) {
   const [filter, setFilter] = useState<QueueFilter>("open");
   const [rows, setRows] = useState<HandoffRow[]>([]);
   const [fresh, setFresh] = useState<Set<string>>(new Set());
@@ -98,13 +99,13 @@ export function Console({ me, initialId, renderTab }: { me: { sub: string; name:
   }
 
   return (
-    <div className="font-staff h-dvh flex flex-col bg-c-canvas text-c-ink">
-      <div className="flex justify-between items-center px-5 py-2.5 bg-c-ink text-c-canvas text-sm">
+    <div className={`font-staff flex flex-col bg-c-canvas text-c-ink ${caseOnly ? "" : "h-dvh"}`}>
+      {!caseOnly && <div className="flex justify-between items-center px-5 py-2.5 bg-c-ink text-c-canvas text-sm">
         <b>LATAM Bank · Agent console</b><span className="flex items-center gap-3"><span className="text-xs opacity-80">{me.name} · test identity</span><StaffSignOut /></span>
-      </div>
-      <div className="grid grid-cols-[290px_1fr] flex-1 min-h-0">
-        <Queue rows={rows} filter={filter} onFilter={setFilter} selected={selected} onSelect={(id) => { if (id === selected) return; caseSeq.current++; setData(null); setCaseState(null); setSelected(id); setTab("packet"); setNotice(null); }} fresh={fresh} me={me.sub} />
-        <section className="p-5 overflow-y-auto min-w-0">
+      </div>}
+      <div className={`grid flex-1 min-h-0 ${caseOnly ? "grid-cols-1" : "grid-cols-[290px_1fr]"}`}>
+        {!caseOnly && <Queue rows={rows} filter={filter} onFilter={setFilter} selected={selected} onSelect={(id) => { if (id === selected) return; caseSeq.current++; setData(null); setCaseState(null); setSelected(id); setTab("packet"); setNotice(null); }} fresh={fresh} me={me.sub} />}
+        <section className={`overflow-y-auto min-w-0 ${caseOnly ? "" : "p-5"}`}>
           {notice && <p role="status" className="mb-2 text-sm text-c-alert">{notice}</p>}
           {!data ? (
             caseState === "missing" ? <p role="alert" className="text-sm text-c-alert">This case no longer exists.</p>
