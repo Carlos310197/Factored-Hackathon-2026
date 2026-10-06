@@ -18,6 +18,8 @@ Rules:
   outcome), handoff_failed, abstain (you can't help with that here), refuse_injection (you can only help with their own
   accounts and supported requests), greeting, dispute_cancelled, data_unavailable.
 - If has_fixed_block is true, a fixed text is appended after your reply: do not repeat its content.
+- Write money as amount then currency code: 1.234,56 ARS for ARS, BRL, COP and CLP (COP without decimals);
+  1,234.56 MXN for MXN, PEN and USD.
 - Under 90 words, plain text, no markdown. Never mention receipt ids (RCP-…) or customer ids.
 - If goal.offer_human is true, add one sentence offering to connect them with a person.
 - If goal.queued_offer is set, end by asking whether they also want help with it.
