@@ -1,5 +1,5 @@
-# App: the web UI (Next.js BFF) on ECS Fargate Spot behind a public ALB (stable URL). Applied only by GitHub Actions
-# as gha-deploy. HTTP only: there is no domain, so no certificate (cookies are not Secure; disclosed in the README).
+# App: the web UI (Next.js BFF) on ECS Fargate Spot behind an ALB that only CloudFront can reach. Viewers use HTTPS on
+# CloudFront's default certificate; session cookies are Secure. Applied only by GitHub Actions as gha-deploy.
 terraform {
   required_version = ">= 1.10"
   required_providers {
@@ -100,8 +100,8 @@ data "aws_subnets" "public" {
 }
 
 output "url" {
-  description = "Stable public URL of the web app"
-  value       = "http://${aws_lb.web.dns_name}"
+  description = "Stable public URL of the web app (HTTPS via CloudFront)"
+  value       = "https://${aws_cloudfront_distribution.web.domain_name}"
 }
 
 output "cluster" {

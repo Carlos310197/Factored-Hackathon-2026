@@ -58,12 +58,57 @@ resource "aws_security_group" "alb" {
   vpc_id      = data.aws_vpc.default.id
 }
 
+# Only CloudFront reaches the ALB: viewers get HTTPS there, and the plain-HTTP ALB name is no side door.
+data "aws_ec2_managed_prefix_list" "cloudfront" {
+  name = "com.amazonaws.global.cloudfront.origin-facing"
+}
+
 resource "aws_vpc_security_group_ingress_rule" "alb_http" {
   security_group_id = aws_security_group.alb.id
-  cidr_ipv4         = "0.0.0.0/0"
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront.id
   ip_protocol       = "tcp"
   from_port         = 80
   to_port           = 80
+}
+
+# HTTPS for viewers on CloudFront's default certificate (no domain needed). Nothing is cached: every request,
+# header, cookie and query string goes to the ALB (managed CachingDisabled + AllViewer policies).
+resource "aws_cloudfront_distribution" "web" {
+  enabled     = true
+  comment     = "latam-bank web (HTTPS in front of the ALB)"
+  price_class = "PriceClass_100"
+
+  origin {
+    origin_id   = "alb"
+    domain_name = aws_lb.web.dns_name
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+      origin_read_timeout    = 60 # above the BFF's 25 s wait for the agent
+    }
+  }
+
+  default_cache_behavior {
+    target_origin_id         = "alb"
+    viewer_protocol_policy   = "redirect-to-https"
+    allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods           = ["GET", "HEAD"]
+    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # Managed-CachingDisabled
+    origin_request_policy_id = "216adef6-5c7f-47e4-b989-5492eafa07d3" # Managed-AllViewer
+    compress                 = true
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
 }
 
 resource "aws_vpc_security_group_egress_rule" "alb_to_tasks" {
@@ -159,7 +204,7 @@ locals {
     TABLE_PREFIX                   = "lb-demo"
     DEMO_MODE                      = "1"
     CHAT_ASYNC                     = "0"
-    COOKIE_SECURE                  = "0"                                                      # plain HTTP on the task public IP until the demo ALB
+    COOKIE_SECURE                  = "1"                                                      # viewers reach the app over HTTPS (CloudFront)
     NEXT_PUBLIC_EVENTS_HTTP_DOMAIN = data.terraform_remote_state.realtime.outputs.http_domain # also baked at build time (Dockerfile build arg)
     NEXT_PUBLIC_EVENTS_REGION      = "us-east-1"
   }

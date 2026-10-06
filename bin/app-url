@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Print the web app's stable URL (the public ALB in front of the ECS service).
+# Print the web app's stable HTTPS URL (CloudFront in front of the ALB).
 set -euo pipefail
 export AWS_PROFILE="${AWS_PROFILE:-hackathon-sso}" AWS_REGION=us-east-1
-dns=$(aws elbv2 describe-load-balancers --names latam-bank-web --query 'LoadBalancers[0].DNSName' --output text)
-echo "http://$dns"
+dns=$(aws cloudfront list-distributions --query "DistributionList.Items[?Comment=='latam-bank web (HTTPS in front of the ALB)'].DomainName | [0]" --output text)
+echo "https://$dns"
