@@ -36,9 +36,28 @@ def _path(out: Path, day: int) -> Path:
     return out / "transactions" / "year=2026" / "month=06" / f"day={day:02d}" / f"transactions_202606{day:02d}.csv"
 
 
+# the one customer and product every fixture transaction points at, so the relationships tests can run
+CUSTOMER = {"customer_id": "CUS-FIXTURE0001", "document_number": "00000000", "document_type": "DNI", "first_name": "Fixture",
+            "last_name": "Cliente", "date_of_birth": "1990-01-01", "gender": "F", "email": "fixture@example.com",
+            "mobile_phone": "+520000000000", "landline_phone": "", "address": "Calle Falsa 123", "city": "CDMX", "state": "CDMX",
+            "country": "Mexico", "postal_code": "00000", "detected_accent": "mexicano", "segment": "Mass", "credit_score": "700",
+            "estimated_monthly_income": "20000", "occupation": "Engineer", "marital_status": "Single",
+            "education_level": "University", "registration_date": "2024-01-01 09:00:00", "registration_branch_id": "",
+            "customer_status": "Active", "last_updated": "2026-06-01 09:00:00", "accepts_marketing": "False"}
+PRODUCT = {"product_id": "PRD-FIXTURE0001", "customer_id": "CUS-FIXTURE0001", "product_type": "Tarjeta Débito",
+           "product_number": "0000000000001234", "currency": "MXN", "current_balance": "1000.00", "credit_limit": "",
+           "interest_rate": "", "opening_date": "2024-01-01", "expiration_date": "2029-01-01", "opening_branch_id": "",
+           "product_status": "Active", "opening_channel": "Branch", "has_linked_app": "True", "days_past_due": "0",
+           "last_transaction_date": "2026-06-17 10:00:00", "last_updated": "2026-06-01 09:00:00"}
+
+
 def write_phase(out: Path, phase: int) -> list[Path]:
     if phase == 1:
         return [_write(_path(out, 17), [row(i, 17) for i in range(20)], COLUMNS)]
+    if phase == 3:  # dimensions only
+        return [_write(out / "customers.csv", [CUSTOMER], list(CUSTOMER)), _write(out / "products.csv", [PRODUCT], list(PRODUCT))]
+    if phase == 4:  # day 22: one valid row, one orphan FK (a product that does not exist)
+        return [_write(_path(out, 22), [row(0, 22), row(1, 22, extra={"product_id": "PRD-ORPHAN0001"})], COLUMNS)]
     # restated day 17: 3 rows changed, key 19 removed (the restated file is the truth for its partition)
     d17 = [row(i, 17, status="Reversed" if i < 3 else "Approved") for i in range(19)]
     d17 += d17[:5]  # 5 exact duplicates of already-present keys (same file), incl. the restated ones
