@@ -91,4 +91,19 @@ describe("POST /api/chat", () => {
     await vi.waitFor(() => expect(m.appendMessage).toHaveBeenCalledWith("S-1", expect.objectContaining({ role: "system", meta: { error_code: "agent_error" } })));
     expect(m.appendMessage.mock.calls[0][1].meta.control).toBeUndefined();
   });
+  it("logs one JSON line per call with session, message id, turn id, status and time", async () => {
+    const lines: string[] = [];
+    const spy = vi.spyOn(console, "log").mockImplementation((l: unknown) => { lines.push(String(l)); });
+    m.customerFrom.mockResolvedValueOnce(null).mockResolvedValue(CUST);
+    m.invokeAgent.mockResolvedValue({ reply_text: "ok", language: "es", awaiting: "none", options: [], refs: [], data_as_of: null, turn_id: "TRN-1" });
+    const { POST } = await import("@/app/api/chat/route");
+    await POST(post({ message: "hola", client_message_id: "cm-12345678" }));
+    await POST(post({ message: "hola", client_message_id: "cm-87654321" }));
+    spy.mockRestore();
+    const logs = lines.map((l) => JSON.parse(l)).filter((l) => l.event === "chat");
+    expect(logs).toHaveLength(2);
+    expect(logs[0]).toMatchObject({ status: 401, sid: null });
+    expect(logs[1]).toMatchObject({ status: 200, sid: "S-1", client_message_id: "cm-87654321", turn_id: "TRN-1" });
+    expect(typeof logs[1].ms).toBe("number");
+  });
 });

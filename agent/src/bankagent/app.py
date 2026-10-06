@@ -60,43 +60,63 @@ def warm(token: str, rt) -> dict:
     No turn, no session row, no message: it only reads, and a failure is just a cold first turn."""
     try:
         ctx = verify_token(token, rt.jwks.get(), rt.settings.issuer, rt.settings.audience)
+        sid = ctx.session_id
         read = rt.service.deps.read
         pointer = read.serving.pointer()
         read.get_accounts(ctx, pointer.run_id, date.fromisoformat(str(pointer.max_process_date)[:10]))
-        return {"warm": True}
+        return {"warm": True, "sid": sid}
     except Exception:
         log.warning("warm-up failed", exc_info=True)
         return {"warm": False}
 
 
 def handle(payload: dict, headers: dict, rt) -> dict:
+    """Every request, turn or not, leaves one `request <outcome> <session> <message_id>` line (metric `Requests`)."""
+    note = {"outcome": "turn", "sid": "-", "mid": "-"}
+    try:
+        return _handle(payload, headers, rt, note)
+    finally:
+        metrics.info("request %s %s %s", note["outcome"], note["sid"], note["mid"])
+
+
+def _handle(payload: dict, headers: dict, rt, note: dict) -> dict:
     payload = payload if isinstance(payload, dict) else {}
     lang = payload.get("lang") if payload.get("lang") in ("es", "pt") else "es"
     token = _bearer(headers)  # header only: no token in the payload
     if not isinstance(token, str) or not token:
+        note["outcome"] = "auth_required"
         return _error(auth_message("auth_required", lang), lang, "auth_required")
     if payload.get("warmup") is True:
-        return warm(token, rt)
+        result = warm(token, rt)
+        note["outcome"], note["sid"] = ("warmup_ok" if result["warm"] else "warmup_failed"), result.get("sid", "-")
+        return {"warm": result["warm"]}
     try:
         jwks = rt.jwks.get()
     except Exception:
         log.exception("identity service unavailable")
+        note["outcome"] = "identity_unavailable"
         return _error(fallback_reply({"kind": "error"}, [], lang), lang, "identity_unavailable")
     try:
         ctx = verify_token(token, jwks, rt.settings.issuer, rt.settings.audience)
     except AuthError as e:
         kind = "session_expired" if str(e) == "expired" else "auth_required"
+        note["outcome"] = kind
         return _error(auth_message(kind, lang), lang, kind)
+    note["sid"] = ctx.session_id
     message = payload.get("message")
     if not isinstance(message, str) or not message.strip() or len(message) > MAX_MESSAGE_CHARS:
+        note["outcome"] = "invalid_message"
         return _error(auth_message("invalid_message", ctx.lang), ctx.lang, "invalid_message")
     text, sid, store = message.strip(), ctx.session_id, rt.service.deps.store
     store.sessions.ensure(sid, ctx.customer_id, ctx.lang)
     message_id = _message_id(payload, headers)
+    note["mid"] = message_id
     prior = store.messages.claim(sid, message_id)
-    if prior is not None:  # a retry or double send of the same message: never run the turn twice
+    if prior is not None:
+        note["outcome"] = "duplicate"  # a retry or double send of the same message: never run the turn twice
         return prior.get("reply") or {**_error("", ctx.lang, "duplicate_in_progress"), "turn_id": None}
     if store.sessions.control(sid) != "agent":  # a human holds the conversation
+        note["outcome"] = "human_control"
         store.messages.append(sid, "customer", text, message_id=message_id)
         reply = {"reply_text": "", "language": ctx.lang, "awaiting": "human", "options": [], "refs": [],
                  "data_as_of": None, "turn_id": None}
@@ -110,6 +130,7 @@ def handle(payload: dict, headers: dict, rt) -> dict:
                               meta={k: reply.get(k) for k in META_KEYS if reply.get(k) is not None})
     except Exception:  # never leave the marker `running`: a retry would get duplicate_in_progress until the TTL
         log.exception("turn failed session=%s turn=%s", sid, turn_id)
+        note["outcome"] = "turn_failed"
         reply = {**_error(fallback_reply({"kind": "error"}, [], ctx.lang), ctx.lang, "turn_failed"), "turn_id": turn_id}
     duration_ms = int((time.monotonic() - start) * 1000)
     metrics.info("turn_end %d", duration_ms)

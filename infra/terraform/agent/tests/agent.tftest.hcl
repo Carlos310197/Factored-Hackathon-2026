@@ -258,7 +258,11 @@ run "dashboard_reads_turn_latency_and_every_alarm" {
     error_message = "TurnDurationMs comes from the agent's `turn_end <ms>` line"
   }
   assert {
-    condition     = length(jsondecode(aws_cloudwatch_dashboard.ops.dashboard_body).widgets) == 6 && strcontains(aws_cloudwatch_dashboard.ops.dashboard_body, "TurnDurationMs") && strcontains(aws_cloudwatch_dashboard.ops.dashboard_body, "app/latam-bank-web/")
-    error_message = "dashboard shows latency, failures, abuse, alarms and the web load balancer"
+    condition     = length(jsondecode(aws_cloudwatch_dashboard.ops.dashboard_body).widgets) == 7 && strcontains(aws_cloudwatch_dashboard.ops.dashboard_body, "TurnDurationMs") && strcontains(aws_cloudwatch_dashboard.ops.dashboard_body, "app/latam-bank-web/")
+    error_message = "dashboard shows latency, failures, abuse, alarms, the web load balancer and requests by outcome"
+  }
+  assert {
+    condition     = aws_cloudwatch_log_metric_filter.requests.pattern == "[event=\"request\", outcome, session, message]" && aws_cloudwatch_log_metric_filter.requests.metric_transformation[0].dimensions["Outcome"] == "$outcome"
+    error_message = "every agent request is counted by outcome"
   }
 }

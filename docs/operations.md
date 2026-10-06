@@ -23,6 +23,21 @@
 | StalePointer | ≥ 1 in 1 h | the serving export is older than 2 days (daily pipeline stopped) |
 | TurnCapReached | ≥ 20 in 1 h | sessions hitting the 30-turn cap (possible abuse of the public demo identities) |
 
+## Tracing one request
+
+Every customer message carries a `client_message_id` from the browser. The same id appears at each hop:
+
+| Hop | What is written | Where |
+|---|---|---|
+| Web BFF `/api/chat` | `{"event":"chat","status":…,"ms":…,"sid":…,"client_message_id":…,"turn_id":…}`, one per call, including 401s | web log group (ECS) |
+| Agent, every request | `request <outcome> <session> <message_id>`: `turn`, `duplicate`, `human_control`, `invalid_message`, `auth_required`, `session_expired`, `identity_unavailable`, `turn_failed`, `warmup_ok`, `warmup_failed`; counted by the `Requests` metric (dimension `Outcome`) | runtime log group |
+| Agent, each turn | `turn_end <ms>` (latency metric) and the decision records for the turn (tools, models, Jev answers, policy rules, guards) | runtime log group, `lb-demo-decision_records` |
+| Conversation | customer and assistant messages with `turn_id` | `lb-demo-conversation_messages` |
+
+So `sid` + `client_message_id` lead to the `turn_id`, and the `turn_id` leads to the full trace at `/trace/<session>`.
+Not wired: distributed tracing (OpenTelemetry spans have no exporter, so there is no X-Ray trace), and load-balancer or
+CloudFront access logs. Both are listed for before production.
+
 ## Drill, 2026-10-06
 
 The question a judge asks: *does an alarm actually reach a person?* We forced one end to end.
