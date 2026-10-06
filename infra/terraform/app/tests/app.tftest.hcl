@@ -138,13 +138,20 @@ run "task_role_policy_is_dynamodb_only_on_the_bff_tables" {
       "arn:aws:dynamodb:us-east-1:762197749808:table/lb-demo-handoffs",
       "arn:aws:dynamodb:us-east-1:762197749808:table/lb-demo-handoffs/index/*",
       "arn:aws:dynamodb:us-east-1:762197749808:table/lb-demo-decision_records",
+      "arn:aws:dynamodb:us-east-1:762197749808:table/lb-demo-disputes",
+      "arn:aws:dynamodb:us-east-1:762197749808:table/lb-demo-disputes/index/*",
     ])
-    error_message = "only sessions, conversation_messages, handoffs (+indexes) and decision_records"
+    error_message = "only sessions, conversation_messages, handoffs (+indexes), decision_records and disputes (+indexes)"
   }
 
   assert {
     condition     = [for st in data.aws_iam_policy_document.task.statement : st.actions if contains(st.resources, "arn:aws:dynamodb:us-east-1:762197749808:table/lb-demo-decision_records")][0] == toset(["dynamodb:GetItem", "dynamodb:Query"])
     error_message = "decision_records is read-only"
+  }
+
+  assert {
+    condition     = [for st in data.aws_iam_policy_document.task.statement : st.actions if contains(st.resources, "arn:aws:dynamodb:us-east-1:762197749808:table/lb-demo-disputes")][0] == toset(["dynamodb:GetItem", "dynamodb:Query"])
+    error_message = "disputes is read-only (My cases)"
   }
 }
 
