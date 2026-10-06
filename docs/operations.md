@@ -62,6 +62,23 @@ The question a judge asks: *does an alarm actually reach a person?* We forced on
   this drill. It also doesn't show that someone reads the email at night: the topic has one subscriber (a team member),
   not an on-call rotation.
 
+## Rollback rehearsal, 2026-10-06
+
+The `live` endpoint pins one runtime version; rolling back means pointing it at the previous one. Rehearsed once on
+the production runtime, right after deploying v13 (the egress fix):
+
+| Time (UTC) | Step | Result |
+|---|---|---|
+| 02:50:30 | `aws bedrock-agentcore-control update-agent-runtime-endpoint --agent-runtime-id lb_demo_agent-r9JuK9Hdui --endpoint-name live --agent-runtime-version 12` | live v12, `READY` after **7 s** |
+| ~02:50:45 | a fresh customer conversation through the public app (demo17, balance question) | HTTP 200 in 12.0 s (cold microVM right after the switch), model-written reply |
+| 02:51:26 | same command with `--agent-runtime-version 13` | live v13, `READY` after **8 s** |
+| 02:51:40 | `terraform plan` in `infra/terraform/agent` | "No changes": the roll-forward left no drift |
+
+So a bad agent release is undone in under 10 seconds without a rebuild, as long as the previous version still exists
+(AgentCore keeps them). The web app rolls back the same way: point `/fh26/web/image` at the previous tag and apply the
+`app` root (a new ECS task revision, ~2 minutes); that path was exercised by every deploy tonight, not rehearsed as a rollback.
+Not proven: the first conversation after a switch is cold (12 s here).
+
 ## Reproduce
 
 ```bash
