@@ -1,6 +1,4 @@
-"""Jev runs for systems B2 (understand.v1) and P (understand.v2 + resolver scores) on the dev and test sets.
-The request is built exactly as the agent's understand node builds it. Results are cached one
-JSON line per case, so an interrupted run resumes without re-calling Jev."""
+"""Results are cached one JSON line per case, so an interrupted run resumes without re-calling Jev."""
 import json
 from pathlib import Path
 
@@ -41,7 +39,6 @@ def load_runs(path: Path) -> dict[str, dict]:
 
 def run_system(rows: list[dict], system: str, jev, qsets: dict[str, dict], resolver: Resolver | None,
                path: Path) -> int:
-    """Calls Jev for every row not yet in path. Returns the number of new calls."""
     if system not in SYSTEMS:
         raise ValueError(system)
     done, new = load_runs(path), 0

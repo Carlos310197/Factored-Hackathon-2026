@@ -1,4 +1,3 @@
-"""Wires the real graph with fake Claude/Jev, the labeled synthetic serving fixture and a moto DynamoDB store."""
 import time
 from dataclasses import dataclass
 

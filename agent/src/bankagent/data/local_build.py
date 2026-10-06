@@ -1,6 +1,4 @@
-"""DEV ONLY: approximate the pipeline's serving export from the organizer CSVs on disk, so the agent can run before
-the Snowflake pipeline is live. Follows the serving contract (data/contract.py), sorted by customer_id like the real
-export, and drops every PII column. The authoritative export is the pipeline's."""
+"""Dev only: approximates the pipeline's serving export from the organizer CSVs and drops every PII column."""
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -9,7 +7,7 @@ import duckdb
 
 from bankagent.data.contract import contract_hash
 
-# Team-authored, labeled synthetic seed (same meaning as the pipeline's seed_decline_reason).
+# Labeled synthetic seed.
 SEED_ROWS = [
     ("00", "approved", "La transacción fue aprobada.", "A transação foi aprovada.", "none"),
     ("05", "do_not_honor", "El banco emisor no autorizó la transacción.", "O banco emissor não autorizou a transação.",

@@ -101,7 +101,6 @@ def test_records_helpers(tmp_path):
 
 
 def test_ingestion_reads_a_sheet_saved_by_spanish_excel(sheet, tmp_path):
-    """Excel in a Spanish locale saves CSV with ';' and a byte-order mark."""
     stem = tmp_path / "s"
     write_sheet(sheet, stem)
     rows = list(csv.DictReader(stem.with_suffix(".csv").open(encoding="utf-8")))

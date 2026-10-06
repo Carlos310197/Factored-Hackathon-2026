@@ -1,5 +1,4 @@
-"""Pick demo customers (each with an approved purchase and a declined payment in the 60-day window) and write the
-mock IdP's LABELED TEST identities. Generated locally; the output file is gitignored."""
+"""Writes the mock IdP's labeled test identities; the output file is gitignored."""
 import json
 from pathlib import Path
 

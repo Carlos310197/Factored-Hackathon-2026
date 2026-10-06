@@ -38,7 +38,6 @@ def test_no_mentions_gives_flat_ranking_and_low_fit(tmp_path):
 
 
 def test_a_lone_candidate_that_does_not_fit_gets_a_low_match(tmp_path):
-    """The 'none of these' slot: one candidate is not automatically a certain match."""
     write_logreg_artifact(tmp_path)
     r = Resolver.load(tmp_path)
     lone = [txn(3, day="2026-05-20", merchant="Super Ahorro", amount=12.0)]

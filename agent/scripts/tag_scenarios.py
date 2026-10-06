@@ -1,9 +1,5 @@
-"""Tag each demo identity with the /demo scenarios its real (synthetic) data supports.
-Never fabricates: a scenario no customer supports is printed as MISSING.
-DEMO ONLY: the demo customer accounts it adds have guessable passwords (the IdP accepts them in any mode);
-they must not ship to a non-demo deployment. Staff accounts take their password from STAFF_PASSWORD (kept out of the
-repo); only its hash is written to the users file.
-Usage: STAFF_PASSWORD=... uv run python scripts/tag_scenarios.py data/serving config/demo_users.yaml"""
+"""Demo only: the demo customer accounts have guessable passwords and must not ship to a non-demo deployment.
+Staff passwords come from STAFF_PASSWORD; only their hash is written."""
 import json
 import os
 import re
@@ -57,7 +53,7 @@ def _qualifies(scenario: str, f: dict) -> bool:
 def _rank(scenario: str, u: dict, f: dict) -> tuple:
     prefer_pt = scenario == "decline_explanation" and u.get("lang") == "pt"
     prefer_dup = scenario == "dispute_filed" and bool(f.get("duplicate_pair"))
-    return (not prefer_pt, not prefer_dup, len(u["scenarios"]))  # then the least-loaded identity
+    return (not prefer_pt, not prefer_dup, len(u["scenarios"]))
 
 
 def assign(users: list[dict], facts: dict[str, dict]) -> tuple[list[dict], list[str]]:
@@ -83,11 +79,10 @@ STAFF = (("agent.ana", "Ana R. (agente de prueba)", "es"), ("agent.luis", "Luis 
 
 
 def add_demo_passwords_and_staff(users: list[dict], staff_password: str) -> list[dict]:
-    """Idempotent. demoNN customers get the picker's demo-NN password; staff get the hash of `staff_password`."""
     out = [dict(u) for u in users]
     for u in out:
         m = re.fullmatch(r"demo(\d+)", u["username"])
-        if m and "demo_password" not in u:  # other usernames (hand-added) keep whatever they have
+        if m and "demo_password" not in u:
             u["demo_password"] = f"demo-{m[1]}"
     have = {u["username"] for u in out}
     missing_staff = [s for s in STAFF if s[0] not in have]

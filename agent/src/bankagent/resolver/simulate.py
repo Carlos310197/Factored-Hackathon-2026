@@ -1,5 +1,3 @@
-"""Simulated training cases: a real history, a target transaction, and the structured mentions a
-customer (plus extract) might produce for it. No text and no LLM. Deterministic for a given seed."""
 import hashlib
 import math
 import random
@@ -38,13 +36,11 @@ def _pick(rng: random.Random, dist: dict) -> str:
 
 
 def round_significant(a: float) -> float:
-    """Two significant figures: 343.03 -> 340, 1372120 -> 1400000, 15.99 -> 16."""
     q = 10 ** (math.floor(math.log10(a)) - 1)
     return float(round(a / q) * q)
 
 
 def relative_ranges(anchor: date) -> dict[str, tuple[date, date]]:
-    """The phrases customers use, tightest first, as date ranges relative to the anchor."""
     monday = anchor - timedelta(days=anchor.weekday())
     first = anchor.replace(day=1)
     prev_first = (first - timedelta(days=1)).replace(day=1)
@@ -53,7 +49,6 @@ def relative_ranges(anchor: date) -> dict[str, tuple[date, date]]:
 
 
 def relative_range(d: date, anchor: date) -> tuple[str, date, date] | None:
-    """The tightest relative range containing d, with its label."""
     for label, (lo, hi) in relative_ranges(anchor).items():
         if lo <= d <= hi:
             return label, lo, hi
@@ -79,7 +74,6 @@ def _hint(rng: random.Random, cfg: dict, key: str, true_value: str | None, choic
 
 
 def describe(rng: random.Random, cfg: dict, t: dict, anchor: date, others: list[dict]) -> tuple[dict, dict]:
-    """Mentions and the style that produced them for target t."""
     m = {k: None for k in MENTION_KEYS}
     style: dict = {"no_detail": False, "extract_error": False}
     if rng.random() < cfg["no_detail"]:
@@ -139,7 +133,6 @@ def describe(rng: random.Random, cfg: dict, t: dict, anchor: date, others: list[
 
 
 def simulate(histories: list[History], cfg: dict, seed: int) -> list[dict]:
-    """One case per history. Cases with no candidates left are skipped."""
     rng = random.Random(seed)
     cases = []
     for k, h in enumerate(histories):

@@ -1,5 +1,4 @@
-"""Live smoke test: one extract call and one compose call on Bedrock with SYNTHETIC input.
-Run only with the owner's approval:  AWS_PROFILE=<profile> uv run python scripts/smoke_bedrock.py"""
+"""Live smoke test: one extract and one compose call on Bedrock, synthetic input."""
 import json
 import os
 

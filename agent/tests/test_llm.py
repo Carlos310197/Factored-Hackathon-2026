@@ -51,7 +51,6 @@ def test_compose_uses_json_schema_format_and_hides_fixed_block():
 
 
 def test_compose_sends_its_reasoning_effort_and_extract_sends_none():
-    """models.yaml set compose effort=low but it was never sent: gpt-oss reasoned at its default and ran out of tokens."""
     llm = FakeLLM()
     compose(llm, M["compose"], {"kind": "answer"}, [], "es")
     extract(llm, M["extract"], "hola", "2026-06-17", [])
@@ -59,7 +58,6 @@ def test_compose_sends_its_reasoning_effort_and_extract_sends_none():
 
 
 def test_compose_sees_the_request_as_untrusted_text():
-    """Without the request, compose had 4 products and goal=answer and replied 'No tengo información…'."""
     from bankagent.llm.compose import COMPOSE_SYSTEM
     llm = FakeLLM()
     compose(llm, M["compose"], {"kind": "answer"}, [], "es", request_en="What is the balance of my cards?")
@@ -79,7 +77,6 @@ def _extracted(statement):
 
 
 def test_extract_reorients_a_swapped_customer_statement():
-    """Ministral sometimes writes the English sentence into `original` and the Spanish one into `en`."""
     es = "El cliente pregunta por el saldo de sus cuentas sin indicar período."
     en = "Customer asks for the balance of their accounts as of an unspecified date."
     ex, _ = extract(_extracted({"en": es, "original": en}), M["extract"], "¿saldo?", "2026-06-17", [])
@@ -116,9 +113,6 @@ def test_invalid_json_and_truncation_raise():
 
 
 def test_restarted_json_object_is_rejected_not_salvaged():
-    """Regression: a decoder restart mid-string leaves the first object unparseable; the extractor used to
-    silently salvage the restarted fragment, so compose returned a reply missing its first clause (seen live on
-    Bedrock: reply_text " 15.99 USD en StreamCo fue aprobada el 10 de junio de 2026.")."""
     raw = ('{"reply_text":"La transacción de{"reply_text":'
            '" 15.99 USD en StreamCo fue aprobada el 10 de junio de 2026.","claims":[]}')
     with pytest.raises(LLMError, match="ambiguous"):
@@ -126,8 +120,6 @@ def test_restarted_json_object_is_rejected_not_salvaged():
 
 
 def test_duplicate_keys_in_json_object_are_rejected():
-    """Regression: a split value emitted as two members of the same key silently dropped the first half
-    (json.loads keeps the last). Malformed model output is an error, never a reply."""
     raw = ('{"reply_text":"La transacción de","reply_text":'
            '" 15.99 USD en StreamCo fue aprobada el 10 de junio de 2026.","claims":[]}')
     with pytest.raises(LLMError, match="invalid JSON"):
@@ -194,8 +186,6 @@ def test_auth_error_without_refresh_still_raises_llm_error():
 
 
 def test_doubled_opening_brace_is_accepted_but_a_restart_after_content_is_not():
-    """gpt-oss on Bedrock often emits '{ {"a": 1}': a stray opener with nothing inside it. No content is dropped, so
-    the complete object that follows is the answer. A restart after content (the regression above) stays rejected."""
     out = call_json(_client("stop", '{\n  {"language_detected": "es"}'), M["extract"], "s", "u", {"type": "object"})
     assert out.data == {"language_detected": "es"}
     with pytest.raises(LLMError, match="ambiguous"):
@@ -239,15 +229,13 @@ def test_each_call_uses_its_roles_timeout():
 
 
 def test_compose_prompt_version_matches_the_prompt_text():
-    """Decision records name the prompt version; it must be the one whose text runs (v2 adds the tú/você rule)."""
     from bankagent.llm.compose import COMPOSE_SYSTEM
-    assert "tú" in COMPOSE_SYSTEM and M["compose"].prompt_version == "compose.v4"  # v3 <request>, v4 no totals
-    assert "never add up" in COMPOSE_SYSTEM.lower()  # live v8 summed card debt into "En total tienes …"
+    assert "tú" in COMPOSE_SYSTEM and M["compose"].prompt_version == "compose.v4"
+    assert "never add up" in COMPOSE_SYSTEM.lower()
     assert "<request>" in COMPOSE_SYSTEM and "1.234,56 ARS" in COMPOSE_SYSTEM  # same money format as templates
 
 
 def test_warm_up_calls_each_model_once_and_never_raises():
-    """A fresh container's first compose through the cross-account role took ~13 s and timed out; warm both models."""
     from bankagent.llm.client import warm_up
     seen = []
 
@@ -262,7 +250,6 @@ def test_warm_up_calls_each_model_once_and_never_raises():
 
 
 def test_extract_strips_markdown_emphasis_but_keeps_card_masks():
-    """Live: english_gloss came back as '**Unrecognized card charge**: *I don't recognize…*' and went into the packet."""
     import json as _json
     body = {"language_detected": "es", "english_gloss": "**Unrecognized charge**: *I didn't buy* on card ****4242",
             "multi_intent": False, "secondary_request_en": None,

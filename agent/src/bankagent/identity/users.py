@@ -16,7 +16,7 @@ class DemoUser:
     role: str = "customer"            # customer | agent
     display_name: str = ""
     demo_password: str = ""           # served only by /auth/demo-users in demo mode
-    scenarios: tuple[str, ...] = ()   # demo scenarios this identity's data supports
+    scenarios: tuple[str, ...] = ()
     short_ttl_allowed: bool = False   # may request a 30 s token (the "expired token" scenario)
 
 

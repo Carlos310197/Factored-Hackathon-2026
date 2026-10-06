@@ -1,7 +1,4 @@
-"""Transaction-resolver features. One row per candidate, built from extract's structured
-mentions. The same function serves training and the live agent, so features cannot drift between them.
-Evidence features are 0 when the customer did not mention the field; the *_mentioned indicators let the model
-tell 'not mentioned' apart from 'perfect match' when it scores absolute fit (best_raw_fit)."""
+"""The same function serves training and the live agent, so features cannot drift between them."""
 import math
 import unicodedata
 from datetime import date
@@ -20,7 +17,6 @@ CITY_MATCH_RATIO = 85
 
 
 def fold(s: str) -> str:
-    """Lowercase, strip accents and collapse whitespace: 'Tienda Don José' -> 'tienda don jose'."""
     s = unicodedata.normalize("NFKD", s)
     return " ".join("".join(c for c in s if not unicodedata.combining(c)).lower().split())
 

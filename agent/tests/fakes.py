@@ -1,11 +1,9 @@
-"""Test doubles for OpenAI (Bedrock) and Jev."""
 import json
 import re
 from types import SimpleNamespace
 
 
-# Egress invariant (architecture-context): no third party (Jev, Bedrock in a second account) gets a customer id, a
-# product id or a fraud field. Enforced inside the fakes, so every graph test checks every outgoing payload.
+# No third party gets a customer id, a product id or a fraud field; checked here so every graph test checks it.
 _FORBIDDEN = re.compile(r"\b(?:CLI|PRD)-[A-Z0-9]{6,}|fraud_score|is_fraud")
 
 
@@ -70,8 +68,6 @@ class FakeLLM:
                 "claims": [{"claim_en": f"{goal.get('kind')} reply", "receipt_ids": [r["receipt_id"] for r in receipts]}]}
 
 
-# ---- Jev test double ----
-
 from bankagent.decisions.jev import JevError, JevResult, state_hash, validate_answers
 from bankagent.decisions.understand import NOUL_QUESTIONS
 
@@ -98,7 +94,7 @@ def understand_answers(questions, intent="account_info", ip=0.95, second=None, s
         label = "none_mentioned"
     elif target in crit:
         label = target
-    else:  # match by a substring of the candidate description, e.g. "Netflix"
+    else:
         label = next(a for a, d in crit.items() if target in d)
     ans["target_transaction"] = choice(label, list(crit), tp)
     ans["dispute_reason"] = choice(reason, list(questions["dispute_reason"]["criteria"]))

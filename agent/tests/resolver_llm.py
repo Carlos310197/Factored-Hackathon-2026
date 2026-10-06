@@ -1,4 +1,3 @@
-"""Scripted LLM for resolver dataset tests: the dev writer echoes its details; extract returns fixed mentions."""
 import json
 import re
 from types import SimpleNamespace
@@ -17,7 +16,7 @@ class _Completions:
         if o.fail_every and o.n % o.fail_every == 0:
             raise openai.APIConnectionError(request=SimpleNamespace(method="POST", url="https://bedrock.test"))
         user = kw["messages"][1]["content"]
-        if "response_format" not in kw:  # the dev writer: plain text, no JSON schema
+        if "response_format" not in kw:
             return SimpleNamespace(
                 choices=[SimpleNamespace(message=SimpleNamespace(
                     content="Hola, " + " / ".join(re.findall(r"^- (.*)$", user, re.M))), finish_reason="stop")],

@@ -1,5 +1,4 @@
-"""Fixed ES/PT texts inserted verbatim (confirmation summary, handoff notice, auth messages) and the deterministic
-fallback reply used when the LLM or the reply verification fails. No model writes these."""
+"""Fixed ES/PT texts and the deterministic fallback reply. No model writes these."""
 
 INTENT_LABELS = {
     "es": {"account_info": "información de tus cuentas", "transaction_status": "el estado de una transacción",
@@ -97,7 +96,6 @@ def fmt_money(amount, currency: str) -> str:
 
 
 def txn_option(txn: dict, lang: str) -> str:
-    """A clarification chip: what the customer would recognize, in their language (Jev gets describe_txn instead)."""
     lang = _lang(lang)
     what = txn.get("merchant_name") or TYPE_LABELS[lang].get(txn["transaction_type"], txn["transaction_type"])
     return " · ".join([what, str(txn["process_date"])[:10], fmt_money(txn["amount"], txn["currency"]),
@@ -167,7 +165,7 @@ def fallback_reply(goal: dict, receipts: list[dict], lang: str) -> str:
     kind = goal.get("kind", "error")
     parts = [FALLBACK[lang].get(kind, FALLBACK[lang]["error"])]
     if goal.get("note"):
-        parts.append(NOTES[lang].get(goal["note"], "").format_map(goal))  # e.g. {window_days} from the policy
+        parts.append(NOTES[lang].get(goal["note"], "").format_map(goal))
     if kind == "answer":
         parts += [f"• {line}" for r in receipts for line in _facts(r, lang)]
     if kind == "ask_clarification":

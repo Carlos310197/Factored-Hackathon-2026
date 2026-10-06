@@ -1,5 +1,3 @@
-"""Blind test set: the sheet Andrés writes from, the ingestion of his completed sheet (hash, then
-the real extract), and the human-ceiling sheet Carlos fills after the test run."""
 import csv
 import hashlib
 import json
@@ -39,8 +37,6 @@ def style_hint(style: dict) -> str:
 
 
 def make_test_sheet(histories: list[History], sim_cfg: dict, seed: int, quotas: dict = QUOTAS) -> list[dict]:
-    """Cases per slice quota, alternating ES/PT within each slice. Simulated extract errors are off (Andrés writes
-    text; the real extract reads it)."""
     cases = simulate(histories, sim_cfg | {"extract_error": 0.0}, seed)
     taken = {k: 0 for k in quotas}
     out = []
@@ -90,8 +86,7 @@ def read_messages(csv_path: Path) -> dict[str, str]:
 
 
 def ingest_test_set(stem: Path, completed_csv: Path, client, models: dict[str, RoleConfig]) -> tuple[list[dict], str]:
-    """Join Andrés's messages to the sheet cases and run the real extract once per message. Returns (rows, sha256 of the
-    completed CSV). An extract failure keeps the row with empty mentions, as the live agent would."""
+    """An extract failure keeps the row with empty mentions, as the live agent would."""
     cases = json.loads(stem.with_suffix(".json").read_text(encoding="utf-8"))
     messages = read_messages(completed_csv)
     missing = [c["case_id"] for c in cases if not messages.get(c["case_id"])]
@@ -114,7 +109,6 @@ def ingest_test_set(stem: Path, completed_csv: Path, client, models: dict[str, R
 
 
 def make_ceiling_sheet(rows: list[dict], n: int, seed: int, path: Path) -> list[str]:
-    """Blind human-ceiling sheet: message + numbered candidates, no target. Returns the sampled case ids."""
     picked = random.Random(seed).sample(rows, min(n, len(rows)))
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as f:
@@ -127,7 +121,6 @@ def make_ceiling_sheet(rows: list[dict], n: int, seed: int, path: Path) -> list[
 
 
 def read_ceiling(path: Path, rows: list[dict]) -> dict[str, str | None]:
-    """case_id -> the picked transaction_id, or None for 'none'. Blank picks are an error."""
     by_id = {r["case_id"]: r for r in rows}
     out = {}
     for r in read_sheet(path):

@@ -1,4 +1,3 @@
-"""The fakes refuse a leaking payload, so every graph test doubles as an egress test (Jev and Bedrock)."""
 import pytest
 
 from tests.fakes import FakeJev, FakeLLM, assert_no_egress
@@ -23,7 +22,6 @@ def test_fake_jev_and_fake_bedrock_refuse_a_leak():
 
 
 def test_redact_drops_fraud_triggers_from_policy_rule_details():
-    """Live packets carry the policy rules; `automated_eligible` lists triggers like fraud_score_high (a fraud signal)."""
     from bankagent.decisions.verify import redact
     rules = [{"name": "automated_eligible", "passed": False,
               "detail": "unauthorized_reason,fraud_flag,fraud_score_high,escalation_signal"}]

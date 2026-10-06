@@ -1,5 +1,4 @@
-# Labeled synthetic: target_transaction tuned on the resolver dev set for Jev + ranker; rest as v1.
-# decisions/thresholds.v1
+# Labeled synthetic: target_transaction tuned on the resolver dev set.
 version: thresholds.v2
 
 intent:

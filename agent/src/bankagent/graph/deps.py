@@ -1,6 +1,3 @@
-"""Dependencies for the graph nodes.
-All external services and configuration are injected here, making nodes testable.
-"""
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
@@ -14,36 +11,27 @@ from bankagent.tools.write import WriteTools
 
 @dataclass
 class Deps:
-    """All dependencies for graph nodes."""
-    # Tools
     read: ReadTools
     write: WriteTools
     
-    # Storage
     store: Store
     
-    # Policy
     policy: DisputePolicy
     
-    # Decision services
-    jev: Any  # JevClient or FakeJev
-    llm_client: Any  # OpenAI client or FakeLLM
+    jev: Any
+    llm_client: Any
     
-    # Configuration
-    models: dict  # role -> RoleConfig
+    models: dict
     thresholds: Thresholds
-    understand_qs: dict  # understand.v1 question set
-    verify_qs: dict  # verify_reply.v1 question set
+    understand_qs: dict
+    verify_qs: dict
     
-    # Language settings
     gloss_mode: dict[str, str] = field(default_factory=lambda: {
         "es": "original_plus_gloss",
         "pt": "original_plus_gloss"
     })
     
-    # Timing
     clock: Callable[[], float] = field(default_factory=lambda: time.monotonic)
 
-    # Resolver: scores as evidence for Jev; None runs Jev alone with understand.v1
-    resolver: Any = None  # bankagent.resolver.model.Resolver
-    understand_qs_scored: dict | None = None  # understand.v2, used only on turns that have resolver scores
+    resolver: Any = None
+    understand_qs_scored: dict | None = None

@@ -1,4 +1,3 @@
-"""Extra fields the UI's decision trace needs and the confirmation card payload."""
 from bankagent.decisions.thresholds import Thresholds
 
 

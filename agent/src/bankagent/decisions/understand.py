@@ -1,13 +1,10 @@
-"""Build understand requests for Jev and parse responses."""
 from dataclasses import dataclass
 from typing import Any
 
 from bankagent.decisions.jev import ChoiceAnswer, JevResult
 
-# Special target values that are not transaction aliases
 SPECIAL_TARGETS = ("none_mentioned", "not_in_list", "ambiguous")
 
-# Noul questions (yes/no/maybe)
 NOUL_QUESTIONS = (
     "asks_for_human",
     "reports_unauthorized_use",
@@ -19,7 +16,6 @@ NOUL_QUESTIONS = (
 
 @dataclass
 class Understanding:
-    """Parsed understanding result from Jev."""
     intent: ChoiceAnswer
     target: ChoiceAnswer
     reason: ChoiceAnswer
@@ -29,7 +25,6 @@ class Understanding:
 
 
 def describe_txn(t: dict, score: float | None = None) -> str:
-    """Build a human-readable description of a transaction for Jev. A resolver score is appended as 'match'."""
     parts = [
         str(t["process_date"])[:10],
         t["merchant_name"],
@@ -44,8 +39,6 @@ def describe_txn(t: dict, score: float | None = None) -> str:
 
 
 def matches_mentions(t: dict, m: dict) -> bool:
-    """The heuristic filter: merchant substring, amount within 1%, date inside the range. Unmentioned fields pass.
-    Also the resolver's baseline B0."""
     if m.get("merchant") and m["merchant"].lower() not in (t.get("merchant_name") or "").lower():
         return False
     if m.get("amount") is not None:
@@ -62,7 +55,6 @@ def matches_mentions(t: dict, m: dict) -> bool:
 def select_candidates(
     txns: list[dict], mentions: dict | None, limit: int = 40
 ) -> list[dict]:
-    """Select up to `limit` candidate transactions, preferring matches to mentions."""
     if len(txns) <= limit:
         return txns
     if mentions is None:
@@ -83,29 +75,18 @@ def build_understand_request(
     confirmation_summary: str | None = None,
     scores: dict[str, float] | None = None,
 ) -> tuple[dict, dict, dict[str, str]]:
-    """Build the state and questions for an understand request.
-
-    scores (transaction_id -> resolver probability) are shown as 'match' only with a question set that explains
-    them (understand.v2); without scores the request is exactly understand.v1's.
-    
-    Returns:
-        (state, questions, aliases) where aliases maps c1..cN to transaction_ids
-    """
-    # Build aliases
+    """Scores are shown as 'match' only with a question set that explains them."""
     aliases = {f"c{i+1}": t["transaction_id"] for i, t in enumerate(candidates)}
     score_of = (lambda t: scores.get(t["transaction_id"])) if scores else (lambda t: None)
 
-    # Build customer content
     customer_content = {"customer_message": message}
     if gloss_mode == "original_plus_gloss" and gloss:
         customer_content["english_gloss"] = gloss
     
-    # Build session facts
     facts = dict(session_facts)
     if awaiting_confirmation and confirmation_summary:
         facts["confirmation_summary"] = confirmation_summary
     
-    # Build candidate transactions with aliases
     candidate_txns = []
     for i, t in enumerate(candidates):
         alias = f"c{i+1}"
@@ -122,7 +103,6 @@ def build_understand_request(
             **({"match": round(score_of(t), 2)} if score_of(t) is not None else {}),
         })
     
-    # Build state
     state = {
         "trusted_policy": qset["policy"],
         "session_facts": facts,
@@ -130,12 +110,10 @@ def build_understand_request(
         "candidate_transactions": candidate_txns,
     }
     
-    # Build questions
     questions = {}
     for qid, spec in qset["questions"].items():
         questions[qid] = _build_question(spec)
     
-    # Add target_transaction with dynamic criteria
     tq = qset["target_transaction"]
     target_criteria = {a: describe_txn(t, score_of(t)) for a, t in zip(aliases, candidates)}
     target_criteria.update(tq["fixed_criteria"])
@@ -145,7 +123,6 @@ def build_understand_request(
         "criteria": target_criteria,
     }
     
-    # Add confirmation if awaiting
     if awaiting_confirmation:
         questions["confirmation"] = _build_question(qset["confirmation"])
     
@@ -153,7 +130,6 @@ def build_understand_request(
 
 
 def _build_question(spec: dict) -> dict:
-    """Build a question dict from a spec."""
     q = {
         "type": spec["type"],
         "instructions": spec["instructions"],
@@ -164,7 +140,6 @@ def _build_question(spec: dict) -> dict:
 
 
 def parse_understanding(result: JevResult, aliases: dict[str, str]) -> Understanding:
-    """Parse a Jev result into an Understanding."""
     answers = result.answers
     
     intent = answers.get("intent")
@@ -172,7 +147,6 @@ def parse_understanding(result: JevResult, aliases: dict[str, str]) -> Understan
     reason = answers.get("dispute_reason")
     confirmation = answers.get("confirmation")
     
-    # Extract noul probabilities
     nouls = {}
     for qid in NOUL_QUESTIONS:
         if qid in answers:

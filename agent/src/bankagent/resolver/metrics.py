@@ -1,4 +1,3 @@
-"""Evaluation metrics with counts, denominators and bootstrap intervals."""
 import random
 from collections import Counter
 from collections.abc import Callable
@@ -40,7 +39,7 @@ def bootstrap_ci(outcomes: list[str], fn: Callable, n_boot: int = 1000, seed: in
 
 def paired_bootstrap(a: list[str], b: list[str], fn: Callable, n_boot: int = 1000,
                      seed: int = 0) -> tuple[float, float, float] | None:
-    """Difference fn(a) - fn(b) on the same cases (same order), resampling cases jointly."""
+    """Resamples cases jointly; a and b must be the same cases in the same order."""
     if len(a) != len(b):
         raise ValueError("paired bootstrap needs the same cases in the same order")
     base_a, base_b = fn(a), fn(b)

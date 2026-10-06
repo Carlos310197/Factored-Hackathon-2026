@@ -1,6 +1,4 @@
-"""AgentCore Runtime entrypoint: POST /invocations, GET /ping on :8080.
-AgentCore's CUSTOM_JWT authorizer checks the token first and forwards Authorization (requestHeaderAllowlist);
-this code re-verifies it anyway. customer_id comes only from the token, never from the payload."""
+"""customer_id comes only from the verified token, never from the payload."""
 import logging
 import re
 import threading
@@ -15,11 +13,11 @@ from bankagent.llm.templates import auth_message, fallback_reply
 from bankagent.settings import load_settings
 
 MAX_MESSAGE_CHARS = 2000
-MESSAGE_ID_HEADER = "x-amzn-bedrock-agentcore-runtime-custom-message-id"  # the prefix AgentCore passes through
+MESSAGE_ID_HEADER = "x-amzn-bedrock-agentcore-runtime-custom-message-id"
 MESSAGE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
 META_KEYS = ("language", "awaiting", "options", "refs", "summary", "data_as_of")
 log = logging.getLogger(__name__)
-# One plain line per turn on stderr, parsed by a CloudWatch metric filter into TurnDurationMs (dashboard p50/p95).
+# Parsed by a CloudWatch metric filter (TurnDurationMs): keep the format.
 metrics = logging.getLogger("bankagent.metrics")
 if not metrics.handlers:
     metrics.addHandler(logging.StreamHandler())
@@ -55,9 +53,7 @@ def _message_id(payload: dict, headers: dict) -> str:
 
 
 def warm(token: str, rt) -> dict:
-    """Login-time warm-up of this runtime session's microVM (the BFF calls it after the OTP): runtime built, models
-    warming, JWKS cached, and one read of the caller's own accounts so DuckDB and the serving set are hot.
-    No turn, no session row, no message: it only reads, and a failure is just a cold first turn."""
+    """Reads only: no turn, no session row, no message. A failure just means a cold first turn."""
     try:
         ctx = verify_token(token, rt.jwks.get(), rt.settings.issuer, rt.settings.audience)
         sid = ctx.session_id
@@ -71,7 +67,7 @@ def warm(token: str, rt) -> dict:
 
 
 def handle(payload: dict, headers: dict, rt) -> dict:
-    """Every request, turn or not, leaves one `request <outcome> <session> <message_id>` line (metric `Requests`)."""
+    """Every request leaves one `request <outcome> <session> <message_id>` line (metric `Requests`)."""
     note = {"outcome": "turn", "sid": "-", "mid": "-"}
     try:
         return _handle(payload, headers, rt, note)
@@ -115,7 +111,7 @@ def _handle(payload: dict, headers: dict, rt, note: dict) -> dict:
     if prior is not None:
         note["outcome"] = "duplicate"  # a retry or double send of the same message: never run the turn twice
         return prior.get("reply") or {**_error("", ctx.lang, "duplicate_in_progress"), "turn_id": None}
-    if store.sessions.control(sid) != "agent":  # a human holds the conversation
+    if store.sessions.control(sid) != "agent":
         note["outcome"] = "human_control"
         store.messages.append(sid, "customer", text, message_id=message_id)
         reply = {"reply_text": "", "language": ctx.lang, "awaiting": "human", "options": [], "refs": [],

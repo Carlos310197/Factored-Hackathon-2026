@@ -107,7 +107,6 @@ def test_unsupported_lang_claim_defaults_to_es():
 
 
 def test_module_entrypoint_serves_demo_users_and_settings_from_env(tmp_path, monkeypatch):
-    """`python -m bankagent.identity.app` (the container's IdP) builds itself from DEMO_USERS and the IDP_* vars."""
     from bankagent.identity.app import create_app_from_env
 
     p = tmp_path / "demo_users.yaml"
@@ -129,7 +128,6 @@ def test_module_entrypoint_serves_demo_users_and_settings_from_env(tmp_path, mon
 
 
 def test_login_ticket_works_on_another_container(users):
-    """Login and OTP may land on different Lambda containers: the ticket is signed, not kept in memory."""
     a, b = TestClient(create_app(users, PRIV, PUB, KID, ISS, AUD)), TestClient(create_app(users, PRIV, PUB, KID, ISS, AUD))
     t = a.post("/auth/login", json={"username": "ana.mx", "password": "demo-ana"}).json()["login_ticket"]
     r = b.post("/auth/otp", json={"login_ticket": t, "otp": "123456"})

@@ -109,7 +109,6 @@ def _warm_rt(jwks_get=lambda: JWKS):
 
 
 def test_warmup_reads_the_callers_own_data_and_runs_no_turn():
-    """AgentCore starts a microVM per runtime session: the BFF warms it at login so turn 1 isn't ~16 s."""
     rt = _warm_rt()
     r = entry.handle({"warmup": True}, {"Authorization": f"Bearer {tok()}"}, rt)
     assert r == {"warm": True}
@@ -131,7 +130,6 @@ def test_warmup_needs_a_valid_token_and_never_raises():
 
 
 def test_runtime_is_built_once_under_concurrent_first_calls(monkeypatch):
-    """The warm-up and the first message can land together: build the runtime once, not twice."""
     import threading
     built = []
 
@@ -149,7 +147,6 @@ def test_runtime_is_built_once_under_concurrent_first_calls(monkeypatch):
 
 
 def test_each_turn_logs_one_plain_duration_line_for_the_latency_metric():
-    """CloudWatch metric filter `[event="turn_end", duration_ms]` turns this line into TurnDurationMs (p50/p95)."""
     import logging
     import re
     seen = []
@@ -181,7 +178,6 @@ def _request_lines(*calls):
 
 
 def test_every_request_logs_one_outcome_line_even_without_a_turn():
-    """Rejected tokens, bad messages and warm-ups never become a turn; they still leave one countable line."""
     auth = {"Authorization": f"Bearer {tok()}"}
     lines = _request_lines(
         ({"message": "hola"}, {}, make_rt()),

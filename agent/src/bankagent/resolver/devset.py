@@ -1,6 +1,4 @@
-"""Dev set: the simulator picks history, target and description style; the dev_writer model
-writes the customer's ES/PT message from those details only; the real extract reads the message. The label is known
-by construction. Committed rows keep transaction fields only (no customer or product ids)."""
+"""Committed rows keep transaction fields only (no customer or product ids)."""
 import random
 
 import time
@@ -54,8 +52,7 @@ def details_en(case: dict) -> list[str]:
 
 
 def write_message(client, cfg: RoleConfig, case: dict, lang: str, flavor: str) -> LLMCall:
-    """Plain text, not JSON: the writer's whole output is the message, and the model's JSON mode sometimes returns a
-    doubled opening brace that the strict parser (rightly) rejects."""
+    """Plain text, not JSON: JSON mode sometimes returns a doubled opening brace that the strict parser rejects."""
     import openai
 
     goal = ("they want to dispute or complain about this charge" if flavor == "dispute"
@@ -77,7 +74,6 @@ def write_message(client, cfg: RoleConfig, case: dict, lang: str, flavor: str) -
 
 def build_dev_set(histories: list[History], sim_cfg: dict, seed: int, n: int, client, models: dict[str, RoleConfig],
                   set_name: str = "dev") -> tuple[list[dict], int]:
-    """Returns (rows, skipped). Simulated extract errors are switched off: the real extract makes its own."""
     cases = simulate(histories, sim_cfg | {"extract_error": 0.0}, seed)
     rng, rows, skipped = random.Random(seed), [], 0
     for case in cases:

@@ -1,5 +1,3 @@
-"""The four resolution systems compared in the evaluation and the per-case outcome.
-B0 heuristic filter · B1 ranker alone · B2 Jev alone (understand.v1) · P Jev + ranker scores (understand.v2)."""
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -30,7 +28,6 @@ def outcome(target_id: str | None, d: Decision) -> str:
 
 
 def b0(candidates: list[dict], mentions: dict | None) -> Decision:
-    """Act only when mentions are present and exactly one candidate passes the heuristic filter."""
     m = mentions or {}
     present = any(m.get(k) not in (None, "") for k in FILTER_KEYS)
     passing = [t for t in candidates if matches_mentions(t, m)] if present else []
@@ -49,8 +46,7 @@ def b1(scores: "Scores", tau: float, phi: float) -> Decision:
 
 
 def jev_decision(answer: dict | None, t: float, m: float) -> Decision:
-    """answer: {"label", "probs"} with aliases already mapped to transaction ids; None when Jev failed (the agent
-    clarifies, so this counts as an ask with no options)."""
+    """None when Jev failed: counts as an ask with no options."""
     if answer is None:
         return Decision("ask")
     probs = answer["probs"]

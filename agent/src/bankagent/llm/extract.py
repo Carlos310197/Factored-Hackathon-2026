@@ -1,4 +1,3 @@
-"""OpenAI role 1 (extract.v2): structured facts from one customer message. Does not classify intent."""
 import json
 import re
 from dataclasses import dataclass
@@ -72,8 +71,7 @@ def _englishness(text: str) -> int:
 
 
 def _oriented(statement: dict, language: str) -> dict:
-    """Ministral sometimes swaps the two sentences. The dispute record keeps both, so put each in its place.
-    stopword vote, not a language detector; only swaps when both sides clearly disagree."""
+    """The model sometimes swaps the two sentences. A stopword vote swaps them back only on clear disagreement."""
     original, en = statement.get("original", ""), statement.get("en", "")
     if language in ("es", "pt") and _englishness(original) > 0 > _englishness(en):
         return {"original": en, "en": original}

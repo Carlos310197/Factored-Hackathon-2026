@@ -61,7 +61,6 @@ def test_pointer_with_a_different_contract_is_refused(serving_root):
 
 
 def test_stale_pointer_is_logged_for_the_alarm(serving_root, caplog):
-    """The daily pipeline moves latest.json; an export older than 2 days means it stopped (alarm: StalePointer)."""
     import json
     from datetime import datetime, timedelta, timezone
 

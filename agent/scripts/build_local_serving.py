@@ -1,5 +1,4 @@
-"""DEV ONLY: build agent/.serving from the organizer CSVs (default ../data/data) until the pipeline export exists.
-uv run python scripts/build_local_serving.py [--data-dir ../data/data] [--out .serving] [--since 2026-02-01]"""
+"""Dev only: build agent/.serving from the organizer CSVs."""
 import argparse
 import json
 from pathlib import Path

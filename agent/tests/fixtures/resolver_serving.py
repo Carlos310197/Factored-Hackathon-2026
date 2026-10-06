@@ -1,5 +1,4 @@
-"""SYNTHETIC long-history serving run for resolver tests: labeled test data, NOT organizer records.
-200 customers, one transaction roughly every 9 days from 2023-07-01 to 2026-06-17."""
+"""SYNTHETIC long-history serving run for resolver tests: labeled test data, NOT organizer records."""
 import csv
 import json
 import random

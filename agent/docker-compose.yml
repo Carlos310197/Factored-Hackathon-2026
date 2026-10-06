@@ -1,9 +1,5 @@
-# Local stack: DynamoDB Local + table init + mock IdP + agent. Real Jev and Bedrock are called by the agent:
-# start it only with the owner's approval. JEV_API_KEY comes from the shell (never from a committed file):
+# JEV_API_KEY comes from the shell, never from a committed file:
 #   export JEV_API_KEY="$(grep '^JEV_API_KEY=' ../.env | cut -d= -f2-)"
-# The agent builds its Bedrock client from your AWS profile (mounted ~/.aws; botocore also writes its
-# refreshed SSO token into ~/.aws/sso/cache):
-#   AWS_PROFILE=hackathon-sso docker compose up
 services:
   dynamodb:
     image: amazon/dynamodb-local:latest
@@ -41,7 +37,6 @@ services:
       IDP_ISSUER: http://identity:8081
       IDP_AUDIENCE: bankagent
       IDP_JWKS_URL: http://identity:8081/jwks.json
-      # The adopted resolver (P: Jev + ranker, understand.v2); remove both to run Jev alone (understand.v1).
       RESOLVER_ARTIFACT: /app/src/bankagent/resolver/artifacts/v1
       THRESHOLDS_FILE: /app/src/bankagent/decisions/thresholds.v2.yaml
     volumes:

@@ -1,4 +1,3 @@
-"""Production wiring: real Jev, Claude on Bedrock, DuckDB over the serving set, DynamoDB and DynamoDBSaver."""
 import logging
 import threading
 from dataclasses import dataclass
@@ -28,7 +27,7 @@ log = logging.getLogger(__name__)
 
 
 def load_resolver(path: str | None) -> Resolver | None:
-    """The resolver is optional evidence: a missing or broken artifact means Jev alone, never a failed start."""
+    """A missing or broken resolver artifact means no scores, never a failed start."""
     if not path:
         return None
     try:
@@ -60,6 +59,5 @@ def build_runtime(settings: Settings) -> Runtime:
     checkpointer = DynamoDBSaver(table_name=table_name(settings.table_prefix, "checkpoints"),
                                  region_name=settings.aws_region, endpoint_url=settings.dynamodb_endpoint,
                                  ttl_seconds=CHECKPOINT_TTL_S)
-    # Warm both models in the background so the first customer turn doesn't pay the cold start.
     threading.Thread(target=warm_up, args=(deps.llm_client, deps.models), daemon=True).start()
     return Runtime(settings, AgentService(deps, checkpointer), JwksCache(settings.jwks_url))
