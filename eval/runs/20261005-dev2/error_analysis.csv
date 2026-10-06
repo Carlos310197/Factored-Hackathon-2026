@@ -1,0 +1,6 @@
+goal_id,rep,class,unsafe_types,cause
+D009-dispute_auto,1,automated_wrong,,
+D003-account_info,1,handoff_unnecessary,,threshold
+D030-ml_english,1,automated_wrong,,
+D029-bad_nonexistent,1,harness_error,,harness
+D016-unsupported,1,handoff_unnecessary,,threshold

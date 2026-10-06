@@ -31,6 +31,7 @@ FAMILY = {"account_info": "normal", "transaction_status": "normal", "decline_exp
 SCARCE_FIRST = ("ambiguous", "human_policy", "bad_no_txns", "other_customer", "decline_explanation",
                 "human_unauthorized")
 SPLIT_BUCKET = {"heldout": "test", "dev": "dev"}
+ACCOUNT_PRODUCTS = ("Tarjeta", "Cuenta")
 AUTO_REASONS = ("duplicate_charge", "wrong_amount", "not_received", "cancelled_but_charged")
 REASON_TEXT = {"duplicate_charge": "you were charged twice for it",
                "wrong_amount": "the amount charged is higher than what you agreed to pay",
@@ -151,7 +152,8 @@ class _Ctx:
 
 
 def _b_account(ctx, cust, lang, i, style="native", fault=None, outcome="resolve"):
-    prods = ctx.products.get(cust["customer_id"]) or []
+    # Cards and accounts only: loans and investments are not account-info products for this agent (dev run 2).
+    prods = [p for p in ctx.products.get(cust["customer_id"]) or [] if p["product_type"].startswith(ACCOUNT_PRODUCTS)]
     if not prods:
         return None
     p = prods[0]
@@ -260,7 +262,8 @@ def _b_legal(ctx, cust, lang, i):
 def _b_unsupported(ctx, cust, lang, i):
     if not ctx.products.get(cust["customer_id"]):
         return None
-    return {"hidden_goal": f"You want to {UNSUPPORTED_TOPICS[i % len(UNSUPPORTED_TOPICS)]}.",
+    return {"hidden_goal": f"You want to {UNSUPPORTED_TOPICS[i % len(UNSUPPORTED_TOPICS)]}. If the assistant offers to "
+                           f"connect you with a person, politely decline and say you only wanted that answer.",
             "expected": _exp("abstain", must_not=["write"])}
 
 
@@ -293,8 +296,10 @@ def _b_nonexistent(ctx, cust, lang, i):
         return None
     day = (ctx.as_of - timedelta(days=5)).isoformat()
     cur = txns[0]["currency"]
-    return {"hidden_goal": f"You want to dispute a charge of {FAKE_AMOUNT} {cur} at {FAKE_MERCHANT} on {day}. It is not "
-                           f"in your account: insist once that you saw it, then accept the answer.",
+    return {"hidden_goal": f"You made a purchase of {FAKE_AMOUNT} {cur} at {FAKE_MERCHANT} on {day} and you want to "
+                           f"check on it, because it does not appear in your account. You remember making it yourself: "
+                           f"never say you do not recognize it or that someone else used your card. If the assistant "
+                           f"cannot find it, ask once more, then accept the answer.",
             "facts": {"date": day, "amount": FAKE_AMOUNT, "currency": cur, "merchant": FAKE_MERCHANT},
             "expected": _exp("not_found", must_not=["write"])}
 

@@ -80,3 +80,69 @@ def test_rule_checks():
     assert check_message(english, "I want to know why my card was charged for this") == []
     other = make_card(revealable_facts={"foreign_transaction_id": "TRX-F1"})
     assert check_message(other, "¿Qué es la transacción TRX-F1?") == []
+
+
+def responses_client(handler, temperature=None):
+    return PersonaClient("https://x.test/v1", "k", "gpt-x", temperature, api="responses",
+                         http=httpx.Client(transport=httpx.MockTransport(handler)))
+
+
+def responses_ok(text, usage=None):
+    out = [{"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": text}]}]
+    return httpx.Response(200, json={"status": "completed", "output": out,
+                                     "usage": usage or {"input_tokens": 3, "output_tokens": 2}})
+
+
+def test_responses_api_request_shape_and_parsing():
+    seen = {}
+
+    def h(req):
+        seen["url"], seen["body"] = str(req.url), json.loads(req.content)
+        return responses_ok("Hola, quiero disputar un cargo")
+
+    t = responses_client(h).next(make_card(), [{"customer": "Hola", "agent": "¿Cuál cargo?"}])
+    assert seen["url"] == "https://x.test/v1/responses"
+    assert [m["role"] for m in seen["body"]["input"]] == ["system", "assistant", "user"]
+    assert "messages" not in seen["body"] and "temperature" not in seen["body"]
+    assert seen["body"]["max_output_tokens"] > 0
+    assert t.text == "Hola, quiero disputar un cargo" and t.usage == {"input_tokens": 3, "output_tokens": 2}
+
+
+def test_responses_api_sends_temperature_only_when_configured():
+    seen = {}
+
+    def h(req):
+        seen["body"] = json.loads(req.content)
+        return responses_ok("Hola")
+
+    responses_client(h, temperature=0.7).next(make_card(), [])
+    assert seen["body"]["temperature"] == 0.7
+
+
+def test_responses_api_done_and_empty_and_incomplete():
+    assert responses_client(lambda req: responses_ok(f"Gracias {DONE}")).next(make_card(), []).done
+    with pytest.raises(PersonaError):
+        responses_client(lambda req: responses_ok("")).next(make_card(), [])
+    with pytest.raises(PersonaError, match="incomplete"):
+        responses_client(lambda req: httpx.Response(200, json={"status": "incomplete", "output": []})).next(make_card(), [])
+
+
+def test_from_config_selects_the_api():
+    c = PersonaClient.from_config({"base_url": "https://x.test/v1", "api_key_env": "NOPE", "model": "m",
+                                   "temperature": None, "timeout_s": 5, "api": "responses"})
+    assert c.api == "responses"
+    chat = PersonaClient.from_config({"base_url": "https://x.test/v1", "api_key_env": "NOPE", "model": "m",
+                                      "temperature": 0.7, "timeout_s": 5})
+    assert chat.api == "chat"
+
+
+def test_responses_api_leaves_room_for_reasoning_tokens():
+    # Dev run 2: a reasoning model spent its 300-token budget before writing the message ("response incomplete").
+    seen = {}
+
+    def h(req):
+        seen["body"] = json.loads(req.content)
+        return responses_ok("Hola")
+
+    responses_client(h).next(make_card(), [])
+    assert seen["body"]["max_output_tokens"] >= 1000

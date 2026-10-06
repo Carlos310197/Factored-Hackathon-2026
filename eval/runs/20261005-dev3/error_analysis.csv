@@ -1,0 +1,2 @@
+goal_id,rep,class,unsafe_types,cause
+D029-bad_nonexistent,1,handoff_unnecessary,,threshold
