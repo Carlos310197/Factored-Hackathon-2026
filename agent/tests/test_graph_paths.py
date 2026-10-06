@@ -21,6 +21,34 @@ def test_account_inquiry_es(ddb_store, serving_root):
     _assert_jev_never_sees_customer_or_product_ids(h)
 
 
+def test_compose_gets_the_customers_request(ddb_store, serving_root):
+    h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}])
+    h.turn("Dime el saldo de mis tarjetas")
+    compose_calls = [c for c in h.llm.calls if c["model"] == "openai.gpt-oss-120b"]
+    assert "<request>EN: Dime el saldo de mis tarjetas</request>" in compose_calls[0]["messages"][1]["content"]
+
+
+def test_id_guard_feedback_keeps_claim_citations(ddb_store, serving_root):
+    """Live v7: draft 1 wrote its receipt id in the text; the feedback said the id was 'not in the receipts', so
+    draft 2 blanked every claim's receipt_ids, Jev failed them all and the turn fell back to the template."""
+    llm = FakeLLM(reply_text="Tu saldo (RCP-1791247560533CC9C92FC) es 1.250,40 USD")
+    h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}], llm=llm)
+    h.turn("saldo")
+    compose_calls = [c for c in llm.calls if c["model"] == "openai.gpt-oss-120b"]
+    feedback = compose_calls[1]["messages"][1]["content"].split("<feedback>")[1]
+    assert "RCP-1791247560533CC9C92FC" in feedback and "reply_text" in feedback and "receipt_ids" in feedback
+    assert "not in the receipts" not in feedback
+
+
+def test_transaction_clarification_chips_are_localized(ddb_store, serving_root):
+    h = make_harness(ddb_store, serving_root, [{"intent": "transaction_status", "target": "ambiguous"}])
+    r = h.turn("¿Qué pasó con mi pago?")
+    assert r["awaiting"] == "clarification" and r["options"]
+    for label in r["options"]:
+        assert not {"Purchase", "Approved", "Web", "POS"} & set(label.split(" · ")), label
+    assert "Amazon · 2026-06-15 · 120.00 USD · Rechazada" in r["options"]
+
+
 def test_decline_explanation_pt(ddb_store, serving_root):
     h = make_harness(ddb_store, serving_root, [{"intent": "decline_explanation", "target": "Amazon"}],
                      llm=FakeLLM(language="pt"))

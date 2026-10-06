@@ -19,7 +19,6 @@ from bankagent.decisions.jev import ChoiceAnswer, JevError
 from bankagent.decisions.routing import Counters, decide
 from bankagent.decisions.understand import (
     build_understand_request,
-    describe_txn,
     parse_understanding,
     select_candidates,
 )
@@ -41,6 +40,7 @@ from bankagent.llm.templates import (
     fallback_reply,
     handoff_failed,
     handoff_notice,
+    txn_option,
 )
 from bankagent.tools.read import NotDeclined, NotFound
 from bankagent.tools.write import AlreadyDisputed, HandoffFailed, PolicyRejected, WriteFailed
@@ -516,7 +516,7 @@ class Nodes:
         
         if topic == "transaction":
             by_id = {x["transaction_id"]: x for x in state.get("candidates") or []}
-            display = [describe_txn(by_id[o]) for o in options if o in by_id]
+            display = [txn_option(by_id[o], lang) for o in options if o in by_id]
         elif topic == "intent":
             display = [INTENT_LABELS[lang][o] for o in options if o in INTENT_LABELS[lang]]
         elif topic == "dispute_reason":
@@ -640,7 +640,8 @@ class Nodes:
             cfg = self.d.models["compose"]
             cfg = replace(cfg, timeout_s=max(1.0, min(cfg.timeout_s, left)))
             try:
-                composed, call = compose(self.d.llm_client, cfg, goal, receipts, lang, feedback)
+                composed, call = compose(self.d.llm_client, cfg, goal, receipts, lang, feedback,
+                                         (state.get("extraction") or {}).get("english_gloss"))
             except LLMError as e:
                 self._log(state, config, "reply", "error", {"role": "compose", "error": str(e)})
                 return None
@@ -652,7 +653,9 @@ class Nodes:
             leaked = unknown_ids(composed.reply_text, allowed)
             if leaked:
                 self._log(state, config, "reply", "guard", {"unknown_ids": sorted(leaked)})
-                feedback = [f"Remove these identifiers; they are not in the receipts: {sorted(leaked)}"]
+                # Say where: "not in the receipts" made the model also blank its claims' receipt_ids (Jev then fails all)
+                feedback = [f"reply_text must not contain these identifiers: {sorted(leaked)}. Remove them from "
+                            "reply_text only; keep citing receipt_ids in claims."]
                 continue
             
             try:

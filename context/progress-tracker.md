@@ -490,6 +490,19 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-06: Reply fixes (balance answers, chip labels, statement swap, local money)
+
+Root causes of the open issue below, from the two turns' decision records:
+- **Compose never saw the request.** §6.2 gave `compose` only receipts, goal and language. For `goal: answer` with four products it could not tell "mis cuentas" from "mis tarjetas" and once replied "No tengo información para responder a tu consulta". **Contract change:** `compose(..., request_en=None)` now gets the extracted `english_gloss` (never the raw message) as an untrusted `<request>` used only to pick receipt facts (`compose.v3`). `compose.v4` adds: money in the local format, and never add up amounts (live v8 summed credit card debt into "En total tienes …").
+- **`effort: low` was never sent.** `models.yaml` configured it but `call_json` dropped it (lost in the move to the OpenAI client), so gpt-oss-120b reasoned at its default effort and hit `max_tokens` (`truncated output` → template). `call_json` now sends `reasoning_effort` when the role sets `effort`.
+- **Chip labels** reused `describe_txn` (the English description for Jev). Customer chips now use `templates.txn_option`: merchant (or localized type) · date · amount · localized status. `describe_txn` is unchanged, so Jev questions and resolver data stay as measured.
+- **Statement swap:** `extract` reorients `customer_statement` with a stopword vote when Ministral swaps `original` and `en` (es/pt only). The `extract.v2` prompt is unchanged, so the adopted resolver's numbers still hold.
+- **Local money:** `fmt_money` writes `1.234,56` for ARS, BRL, COP and CLP (`1,234.56` for MXN, PEN and USD). Customers write amounts this way too (resolver sheet: "1.897.101,15 pesos").
+
+- **Id-guard feedback** (found in the live smoke): draft 1 wrote its receipt id in the text; the regeneration feedback said the id was "not in the receipts", so draft 2 blanked every claim's `receipt_ids`, Jev failed them all and the turn fell back to the template. The feedback now says to remove the ids from `reply_text` only and keep citing `receipt_ids`.
+
+Agent suite 319 passed; root offline 46; eval 65. Live (owner-approved): Mantle accepts `reasoning_effort`. Deployed `lb-demo-agent:fa84fc4` as runtime v9. Smoke through CloudFront: three demo01 balance turns (incl. "¿Cuánto tengo en total?", no sum) and one demo04 PT turn, all model-written on the first draft, Jev ok, 250–340 output tokens. Localized chips are covered by tests only (no live turn produced a clarification).
+
 ### 2026-10-06: Live verification of HTTPS + warm-up (runtime v6) and an open issue
 
 - CloudFront applied by `infra.yml` (run 37393228612). Verified: `https://d21y0qq5d8ixnr.cloudfront.net` serves the app; HTTP → 301 HTTPS; the ALB's own name is unreachable; the session cookie is `Secure; HttpOnly; SameSite=lax`. Agent `lb-demo-agent:b999f49` (warm-up) live as runtime v6: the first turn on the fresh container was model-written (no cold-start template).

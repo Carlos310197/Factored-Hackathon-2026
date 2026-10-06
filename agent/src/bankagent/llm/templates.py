@@ -24,6 +24,12 @@ STATUS_LABELS = {
     "pt": {"Active": "Ativa", "Blocked": "Bloqueada", "Closed": "Encerrada", "Suspended": "Suspensa",
            "Approved": "Aprovada", "Declined": "Recusada", "Pending": "Pendente", "Reversed": "Estornada"},
 }
+TYPE_LABELS = {
+    "es": {"Deposit": "Depósito", "Withdrawal": "Retiro", "Transfer": "Transferencia", "Payment": "Pago",
+           "Purchase": "Compra", "Adjustment": "Ajuste"},
+    "pt": {"Deposit": "Depósito", "Withdrawal": "Saque", "Transfer": "Transferência", "Payment": "Pagamento",
+           "Purchase": "Compra", "Adjustment": "Ajuste"},
+}
 FALLBACK = {
     "es": {"answer": "Esto es lo que encontré:", "ask_clarification": "¿Me ayudas a precisar tu solicitud?",
            "ask_confirmation": "¿Confirmas que registre esta disputa?",
@@ -75,6 +81,7 @@ AUTH = {
            "invalid_message": "Não consegui ler sua mensagem. Escreva novamente, por favor (máximo 2000 caracteres)."},
 }
 NO_DECIMALS = {"COP"}
+COMMA_DECIMAL = {"ARS", "BRL", "COP", "CLP"}  # 1.234,56; MXN, PEN and USD write 1,234.56
 
 
 def _lang(lang: str) -> str:
@@ -83,7 +90,18 @@ def _lang(lang: str) -> str:
 
 def fmt_money(amount, currency: str) -> str:
     a = float(amount)
-    return f"{a:,.0f} {currency}" if currency in NO_DECIMALS else f"{a:,.2f} {currency}"
+    text = f"{a:,.0f}" if currency in NO_DECIMALS else f"{a:,.2f}"
+    if currency in COMMA_DECIMAL:
+        text = text.translate(str.maketrans(",.", ".,"))
+    return f"{text} {currency}"
+
+
+def txn_option(txn: dict, lang: str) -> str:
+    """A clarification chip: what the customer would recognize, in their language (Jev gets describe_txn instead)."""
+    lang = _lang(lang)
+    what = txn.get("merchant_name") or TYPE_LABELS[lang].get(txn["transaction_type"], txn["transaction_type"])
+    return " · ".join([what, str(txn["process_date"])[:10], fmt_money(txn["amount"], txn["currency"]),
+                       _status(txn["transaction_status"], lang)])
 
 
 def confirmation_summary(txn: dict, reason: str, lang: str) -> str:
