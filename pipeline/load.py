@@ -1,4 +1,3 @@
-"""Loader: LIST the organizer stage, compare ETags with META.RUN_MANIFEST, COPY new/changed files into RAW."""
 from dataclasses import dataclass
 from typing import Literal
 
@@ -75,7 +74,7 @@ def read_manifest(cur, table: str) -> dict[str, str]:
 def copy_files(cur, table: str, stage: str, paths: list[str], force: bool) -> dict[str, int]:
     loaded: dict[str, int] = {}
     for batch in chunks(paths, FILES_PER_COPY):
-        files = ", ".join("'" + p.replace("'", "''") + "'" for p in batch)  # SQL string literals
+        files = ", ".join("'" + p.replace("'", "''") + "'" for p in batch)
         res = cur.execute(
             f"copy into RAW.{table} from @{stage} files = ({files}) "
             # named here, not on the stage: Terraform-managed stages carry no default format

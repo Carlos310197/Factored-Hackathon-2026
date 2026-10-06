@@ -1,4 +1,4 @@
-"""Run infra/snowflake/*.sql with ${TOKEN} substitution. Usage: uv run python -m pipeline.setup 02_raw_tables.sql
+"""Run infra/snowflake/*.sql with ${TOKEN} substitution.
 
 Account objects (warehouse, roles, databases, schemas, stages) are Terraform-managed; these scripts only hold
 tables whose columns evolve on purpose (ENABLE_SCHEMA_EVOLUTION), which Terraform would fight.

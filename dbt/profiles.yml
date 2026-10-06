@@ -1,5 +1,3 @@
-# Committed; no secrets. dev/fixture: your user + SNOWFLAKE_PASSWORD (bin/dbt exports it from the snow CLI config).
-# ci/ci_fixture: PIPELINE_SVC via AWS workload identity (role pipeline-runner, ambient AWS credentials).
 latam_bank:
   target: dev
   outputs:
