@@ -25,6 +25,7 @@ Every handler parses its input with Zod, checks the cookie's JWT (signature, exp
 | `GET /api/auth/debug-claims` | agent (demo only) | Decoded claims of the customer token in this browser's `cust_session` cookie (the embedded phone), for Act 1 (§9.1). Disabled outside demo builds. |
 | `POST /api/chat` | customer | If `control ≠ agent`: store the message and return `awaiting: human`. Otherwise invoke AgentCore with the Bearer JWT, the runtime session id and the message-id header, and return the §4.7 response. *(2026-10-06)* Logs one JSON line per call (`status`, `ms`, `sid`, `client_message_id`, `turn_id`). |
 | `GET /api/sessions/:sid/messages?after=` | owner customer, agent | History |
+| `GET /api/customer/cases` | customer | The signed-in customer's 20 newest disputes (`CustomerCase`), id from the token only |
 | `POST /api/sessions/:sid/messages` | agent holding the takeover | Agent message |
 | `GET /api/handoffs?status=` | agent | Queue |
 | `GET /api/handoffs/:id` | agent | Packet |
@@ -116,6 +117,7 @@ There's one orchestrated moment: **the trace block reveal** when a turn complete
   - `useExternalStoreRuntime` over a Zustand store that merges POST replies, pushed `message` events and history, de-duplicated by `message_id`.
   - Thread, composer and message are primitives styled in world B. Chips, the summary card, receipt chips, system lines and agent messages are custom message parts.
   - No default assistant-ui theme.
+- **Mis casos / Meus casos:** a header button opens a bottom sheet (dialog; Escape, backdrop and *Cerrar* close it, focus returns to the button) listing the customer's disputes from `GET /api/customer/cases`, fetched on each open: reason, amount, short `DSP-…` id, date and a status pill (`submitted` Enviada, `pending_review` En revisión / Em análise, `resolved`, `rejected`). Empty state "No tienes casos abiertos" / "Você não tem casos abertos". Hidden in embed mode with the rest of the header.
 - **Embed mode:** `/chat?embed=1` hides the page chrome and tells the parent its `sid` and turn events through `postMessage` (origin-checked) for `/demo`.
 
 ### Agent console (`/agent`, `/agent/[handoffId]`; world C, desktop) · ui §8.2
