@@ -11,7 +11,7 @@ terraform {
 # (gh api repos/<owner>/<repo>/actions/oidc/customization/sub -> sub_claim_prefix).
 variable "github_sub_prefix" {
   type    = string
-  default = "repo:Carlos310197@66190532/Factored-Hackathon-2026@1389485180"
+  default = "repo:Carlos310197@66190532/factored-hackathon-2026-aignostics@1389485180"
 }
 
 variable "organizer_key_id" {

@@ -320,7 +320,7 @@ What is live today, from `docs/design/2026-10-01-infra-iac-design.md` and `infra
 | AWS account | `762197749808`, admin through the SSO profile `hackathon-sso` |
 | Region | **us-east-1** for all our resources. The organizer bucket stays in us-east-2 (theirs). |
 | Snowflake account | `RLQHFPF-AXC97788`, AWS us-east-1 |
-| Repository | `Carlos310197/Factored-Hackathon-2026` (private; public before submission) |
+| Repository | `Carlos310197/factored-hackathon-2026-aignostics` (renamed from `Factored-Hackathon-2026`; private, public before submission) |
 | Terraform state | `s3://fh26-tfstate-762197749808-use1`, keys `bootstrap/`, `platform/`, `app/terraform.tfstate`, `use_lockfile = true` |
 | Name prefixes | `latam-bank-`/`fh26` for the resources that exist (bucket, cluster, service, roles, parameters); `lb-demo-` for the resources the new roots add (tables, runtime `lb_demo_agent`, Lambdas, API, alarms) |
 
@@ -472,7 +472,7 @@ No browser ever holds AWS credentials. Each hop authenticates.
 | Agent → Bedrock | *(2026-10-06)* Assumes a cross-account role in the AI Account with an external id; receipts are redacted before they are sent |
 | Agent → Jev | *(2026-10-06)* API key from Secrets Manager `lb-demo/jev`; transactions as aliases only |
 | Snowflake → S3 | Integration `SI_SERVING` assumes the AWS role `snowflake-serving` with an external-ID trust condition; read/write/list on the serving bucket only (Terraform `platform`) |
-| GitHub → AWS | OIDC. *(updated 2026-10-04)* Deployed today: one role `gha-deploy` trusting `repo:Carlos310197/Factored-Hackathon-2026` on `ref:refs/heads/main` and `pull_request`, plus `pipeline-runner` with the same trust. Splitting a read-only PR role is remaining work. |
+| GitHub → AWS | OIDC. *(updated 2026-10-04)* Deployed today: one role `gha-deploy` trusting the immutable subject `repo:Carlos310197@66190532/factored-hackathon-2026-aignostics@1389485180` (the name is part of the subject: a repo rename needs `bootstrap` and `platform` re-applied) on `ref:refs/heads/main` and `pull_request`, plus `pipeline-runner` with the same trust. Splitting a read-only PR role is remaining work. |
 
 #### Roles · deployment §4.2
 
