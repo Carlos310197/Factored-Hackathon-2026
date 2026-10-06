@@ -20,7 +20,7 @@ async function preview(sid: string): Promise<string | null> {
     TableName: tableName("conversation_messages"), KeyConditionExpression: "session_id = :s",
     FilterExpression: "kind = :m AND #r = :c", ExpressionAttributeNames: { "#r": "role" },
     ExpressionAttributeValues: { ":s": sid, ":m": "message", ":c": "customer" },
-    Limit: 25, // ponytail: Limit applies before the filter; the first customer message is always within the first few items
+    Limit: 25, // Limit applies before the filter; the first customer message is always within the first few items
   }));
   const text = (r.Items?.[0]?.text as string | undefined)?.trim();
   return text ? text.slice(0, PREVIEW_CHARS) : null;

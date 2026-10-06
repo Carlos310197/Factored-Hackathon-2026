@@ -1,4 +1,4 @@
-# Transaction-resolver simulator (resolver spec §5.1). These rates are ASSUMPTIONS about how customers describe a
+# Transaction-resolver simulator. These rates are ASSUMPTIONS about how customers describe a
 # transaction, not measurements. The real-text dev and test sets show any mismatch.
 version: simulate.v1
 hard_share: 0.50            # target drawn from hard candidates when the history has any

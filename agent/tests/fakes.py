@@ -1,4 +1,4 @@
-"""Test doubles for OpenAI (Bedrock) and, from Task 10, Jev."""
+"""Test doubles for OpenAI (Bedrock) and Jev."""
 import json
 import re
 from types import SimpleNamespace
@@ -70,7 +70,7 @@ class FakeLLM:
                 "claims": [{"claim_en": f"{goal.get('kind')} reply", "receipt_ids": [r["receipt_id"] for r in receipts]}]}
 
 
-# ---- Jev test double (Task 10) ----
+# ---- Jev test double ----
 
 from bankagent.decisions.jev import JevError, JevResult, state_hash, validate_answers
 from bankagent.decisions.understand import NOUL_QUESTIONS

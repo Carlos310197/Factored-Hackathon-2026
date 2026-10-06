@@ -1,4 +1,4 @@
-"""Tag each demo identity with the /demo scenarios its real (synthetic) data supports (UI spec §4.9, §9.3).
+"""Tag each demo identity with the /demo scenarios its real (synthetic) data supports.
 Never fabricates: a scenario no customer supports is printed as MISSING.
 DEMO ONLY: the demo customer accounts it adds have guessable passwords (the IdP accepts them in any mode);
 they must not ship to a non-demo deployment. Staff accounts take their password from STAFF_PASSWORD (kept out of the
@@ -87,7 +87,7 @@ def add_demo_passwords_and_staff(users: list[dict], staff_password: str) -> list
     out = [dict(u) for u in users]
     for u in out:
         m = re.fullmatch(r"demo(\d+)", u["username"])
-        if m and "demo_password" not in u:  # ponytail: other usernames (hand-added) keep whatever they have
+        if m and "demo_password" not in u:  # other usernames (hand-added) keep whatever they have
             u["demo_password"] = f"demo-{m[1]}"
     have = {u["username"] for u in out}
     missing_staff = [s for s in STAFF if s[0] not in have]

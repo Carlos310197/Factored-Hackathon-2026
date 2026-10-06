@@ -1,4 +1,4 @@
-"""Customer split rule, identical to the resolver spec §5.2: first byte of sha256(customer_id) mod 10."""
+"""Customer split rule, identical to the resolver's split: first byte of sha256(customer_id) mod 10."""
 import hashlib
 
 

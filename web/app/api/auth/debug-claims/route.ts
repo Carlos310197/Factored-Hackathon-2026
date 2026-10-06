@@ -3,7 +3,7 @@ import { demoMode } from "@/lib/server/env";
 import { fail, ok } from "@/lib/server/http";
 import { customerFrom, staffFrom } from "@/lib/server/session";
 
-/** /demo Act 1 (UI spec §9.1): the embedded phone's verified claims, shown to a signed-in presenter. */
+/** /demo Act 1: the embedded phone's verified claims, shown to a signed-in presenter. */
 export async function GET(req: NextRequest) {
   if (!demoMode()) return fail("not_found", "Not found", 404);
   if (!(await staffFrom(req))) return fail("unauthorized", "Staff sign-in required", 401);

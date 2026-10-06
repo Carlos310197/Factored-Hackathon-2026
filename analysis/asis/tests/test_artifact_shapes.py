@@ -1,4 +1,4 @@
-"""Detector behaviour on the shapes seen in the real drop (spec §2): flat per-slice medians and rates, not flat
+"""Detector behaviour on the shapes seen in the real drop: flat per-slice medians and rates, not flat
 percentiles or tiny buckets. Crafted in-memory tables, SYNTHETIC."""
 import duckdb
 import pytest

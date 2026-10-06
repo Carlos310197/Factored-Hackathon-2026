@@ -1,4 +1,4 @@
-"""handoff.v1: the structured packet a human agent receives (spec §7.3). Facts come only from receipts."""
+"""handoff.v1: the structured packet a human agent receives. Facts come only from receipts."""
 import json
 from datetime import datetime
 from typing import Literal

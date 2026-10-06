@@ -1,6 +1,6 @@
 """DEV ONLY: approximate the pipeline's serving export from the organizer CSVs on disk, so the agent can run before
 the Snowflake pipeline is live. Follows the serving contract (data/contract.py), sorted by customer_id like the real
-export, and drops every PII column. The authoritative export is the pipeline's (pipeline spec §5.4)."""
+export, and drops every PII column. The authoritative export is the pipeline's."""
 import json
 from datetime import datetime, timezone
 from pathlib import Path

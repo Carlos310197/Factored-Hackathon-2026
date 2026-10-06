@@ -1,4 +1,4 @@
-"""Aggregate metrics (spec §5.2), slices, variability, goal-clustered bootstrap intervals and cost (§5.4)."""
+"""Aggregate metrics, slices, variability, goal-clustered bootstrap intervals and cost."""
 import random
 from collections import Counter, defaultdict
 

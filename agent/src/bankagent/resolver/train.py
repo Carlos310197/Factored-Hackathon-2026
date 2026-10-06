@@ -1,4 +1,4 @@
-"""Offline training and model selection (resolver spec §4.2-4.5). Never imported by the agent at runtime.
+"""Offline training and model selection. Never imported by the agent at runtime.
 Both families are pointwise binary classifiers over candidate rows. Hyperparameters are chosen on SIMULATED
 validation cases; the small real-text dev set is kept for the final choice
 between the two family finalists and for calibration (finalize.py)."""

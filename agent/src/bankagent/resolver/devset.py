@@ -1,4 +1,4 @@
-"""Dev set (resolver spec §5.3): the simulator picks history, target and description style; the dev_writer model
+"""Dev set: the simulator picks history, target and description style; the dev_writer model
 writes the customer's ES/PT message from those details only; the real extract reads the message. The label is known
 by construction. Committed rows keep transaction fields only (no customer or product ids)."""
 import random

@@ -1,4 +1,4 @@
-/** UI spec §7.3: each signal owns a fixed colour (dataviz reference categorical palette, validated). */
+/** Each signal owns a fixed colour (dataviz reference categorical palette, validated). */
 export const SIGNALS = [
   { key: "intent", label: "Intent", kind: "choice", color: "#2a78d6" },
   { key: "target_transaction", label: "Target", kind: "choice", color: "#eb6834" },

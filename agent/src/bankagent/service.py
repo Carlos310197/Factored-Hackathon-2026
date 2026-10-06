@@ -43,7 +43,7 @@ class AgentService:
 
         # Spend cap: the demo identities are public, so a session gets a fixed number of turns, counted atomically in
         # the sessions table before the model runs. A capped turn makes no Bedrock or Jev call.
-        # ponytail: per session only; a per-customer cap would count on the customer id the same way.
+        # per session only; a per-customer cap would count on the customer id the same way.
         if self.deps.store.sessions and not self.deps.store.sessions.take_turn(ctx.session_id, self.max_turns):
             from bankagent.llm.templates import fallback_reply
             logger.warning("session turn cap reached", extra={"session_id": ctx.session_id})

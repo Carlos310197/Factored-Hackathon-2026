@@ -12,7 +12,7 @@ export const Summary = z.object({
 });
 export type Summary = z.infer<typeof Summary>;
 
-/** POST /invocations response (UI spec §4.7) */
+/** POST /invocations response */
 export const ChatReply = z.object({
   reply_text: z.string(),
   language: Lang.catch("es"),

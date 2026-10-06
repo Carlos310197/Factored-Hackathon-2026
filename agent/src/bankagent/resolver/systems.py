@@ -1,4 +1,4 @@
-"""The four resolution systems compared in the evaluation (resolver spec §6.1) and the per-case outcome (§6.2).
+"""The four resolution systems compared in the evaluation and the per-case outcome.
 B0 heuristic filter · B1 ranker alone · B2 Jev alone (understand.v1) · P Jev + ranker scores (understand.v2)."""
 from dataclasses import dataclass
 from typing import TYPE_CHECKING

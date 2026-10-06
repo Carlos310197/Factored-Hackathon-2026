@@ -1,4 +1,4 @@
-"""Simulated training cases (resolver spec §5.1): a real history, a target transaction, and the structured mentions a
+"""Simulated training cases: a real history, a target transaction, and the structured mentions a
 customer (plus extract) might produce for it. No text and no LLM. Deterministic for a given seed."""
 import hashlib
 import math
@@ -139,7 +139,7 @@ def describe(rng: random.Random, cfg: dict, t: dict, anchor: date, others: list[
 
 
 def simulate(histories: list[History], cfg: dict, seed: int) -> list[dict]:
-    """One case per history (resolver spec §5.1). Cases with no candidates left are skipped."""
+    """One case per history. Cases with no candidates left are skipped."""
     rng = random.Random(seed)
     cases = []
     for k, h in enumerate(histories):

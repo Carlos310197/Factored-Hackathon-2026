@@ -6,7 +6,7 @@ import yaml
 
 @dataclass
 class Thresholds:
-    """Decision thresholds (labeled synthetic illustrative values; tuned in spec 2)."""
+    """Decision thresholds (labeled synthetic illustrative values; not calibrated)."""
     version: str
     intent_min_p: float
     intent_min_margin: float

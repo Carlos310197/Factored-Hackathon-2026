@@ -26,7 +26,7 @@ function schemaFor(channel: string) {
   return SessionEvent;
 }
 
-/** Load-then-listen (UI spec §3 rule 2): every (re)connect triggers onResync so missed pushes are refetched.
+/** Load-then-listen: every (re)connect triggers onResync so missed pushes are refetched.
  *  Events are validated against the channel's contract schema; malformed ones are dropped. */
 export function connectChannel(channel: string, onEvent: (payload: unknown) => void, opts: Opts): () => void {
   const domain = process.env.NEXT_PUBLIC_EVENTS_HTTP_DOMAIN;

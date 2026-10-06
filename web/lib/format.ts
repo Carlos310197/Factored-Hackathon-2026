@@ -5,7 +5,7 @@ const MONEY_LOCALE: Record<Lang, (currency: string) => string> = {
   pt: () => "pt-BR",
 };
 
-/** Money by currency code (agent-core spec §6.3): COP without decimals, everything else with 2. */
+/** Money by currency code: COP without decimals, everything else with 2. */
 export function fmtMoney(amount: number, currency: string, lang: Lang): string {
   const digits = currency === "COP" ? 0 : 2;
   const n = new Intl.NumberFormat(MONEY_LOCALE[lang](currency), {

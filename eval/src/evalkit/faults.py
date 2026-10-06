@@ -1,4 +1,4 @@
-"""Fault injection for tool-failure goals (spec §4.5). Faults replace a runtime's dependencies; the agent's code is
+"""Fault injection for tool-failure goals. Faults replace a runtime's dependencies; the agent's code is
 never changed. The graph's nodes read deps attributes at call time, so patching deps after build takes effect."""
 import copy
 

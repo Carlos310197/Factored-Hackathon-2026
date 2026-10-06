@@ -60,7 +60,7 @@ class HandoffRepo:
 
 
 class DecisionLog:
-    """The execution record (spec §7.4): one item per step, keyed session → turn#seq, 90-day TTL."""
+    """The execution record: one item per step, keyed session → turn#seq, 90-day TTL."""
     TTL_DAYS = 90
 
     def __init__(self, table, clock=time.time):
@@ -96,7 +96,7 @@ def _iso(ts: float) -> str:
 
 
 class SessionRepo:
-    """One item per conversation (UI spec §4.1). `control` is changed only by the BFF's takeover/return."""
+    """One item per conversation. `control` is changed only by the BFF's takeover/return."""
 
     TTL_DAYS = 90
 
@@ -135,7 +135,7 @@ class SessionRepo:
 
 
 class MessageLog:
-    """The conversation transcript (UI spec §4.2) plus idempotency markers (`~idem#<message_id>`, kind=idem)."""
+    """The conversation transcript plus idempotency markers (`~idem#<message_id>`, kind=idem)."""
     TTL_DAYS = 90
     IDEM = "~idem#"
 

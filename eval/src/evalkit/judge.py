@@ -1,4 +1,4 @@
-"""LLM judge for soft criteria only (spec §5.3): reply language and faithfulness, handoff packet usefulness.
+"""LLM judge for soft criteria only: reply language and faithfulness, handoff packet usefulness.
 It never decides an outcome class or an unsafe outcome. Validated against human labels with Cohen's kappa."""
 import argparse
 import csv

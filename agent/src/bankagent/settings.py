@@ -21,7 +21,7 @@ class Settings:
     issuer: str
     audience: str
     jwks_url: str
-    resolver_artifact: str | None = None  # a resolver artifact directory; unset = Jev alone (resolver spec 6.4)
+    resolver_artifact: str | None = None  # a resolver artifact directory; unset = Jev alone
     thresholds_file: str | None = None  # e.g. decisions/thresholds.v2.yaml once the resolver is adopted
     git_sha: str = "dev"
 

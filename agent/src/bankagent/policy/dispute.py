@@ -1,4 +1,4 @@
-"""Team-authored, labeled synthetic dispute policy (spec §5). Pure code: no model can override it."""
+"""Team-authored, labeled synthetic dispute policy. Pure code: no model can override it."""
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path

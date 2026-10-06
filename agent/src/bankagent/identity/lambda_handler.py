@@ -1,4 +1,4 @@
-"""AWS Lambda entrypoint for the mock IdP (deployment spec §3, Identity stack).
+"""AWS Lambda entrypoint for the mock IdP.
 On cold start it reads the RS256 key from Secrets Manager and the labeled test identities from S3. The identities
 file names dataset customer ids, so it is gitignored and never baked into an image. Then it serves the FastAPI
 app through Mangum. A failed cold start answers 503 and is retried on the next request."""

@@ -1,4 +1,4 @@
-"""As-is metrics (evaluation spec §3.2). Every metric is {"value": float|int|None, "n": int} under a flat dotted key."""
+"""As-is metrics. Every metric is {"value": float|int|None, "n": int} under a flat dotted key."""
 from asis.load import MONTHS_IN_WINDOW
 
 IN_SCOPE_REASON = "Transaccional"

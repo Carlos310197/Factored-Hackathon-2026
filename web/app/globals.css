@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* UI spec §7. Light only. Colours are referenced ONLY through these tokens. */
+/* Light only. Colours are referenced ONLY through these tokens. */
 @theme {
   --font-customer: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
   --font-staff: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
@@ -47,12 +47,12 @@ body { background: var(--color-c-canvas); color: var(--color-c-ink); }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
-/* World C numbers use tabular figures (UI spec §7.2): applies wherever font-staff does. */
+/* World C numbers use tabular figures: applies wherever font-staff does. */
 @layer utilities {
   .font-staff { font-variant-numeric: tabular-nums; }
 }
 
 @keyframes grow { from { width: 0; } }
-/* New chat rows settle in; typing dots breathe. Both run only under motion-safe (see Architecture Decisions, UI polish). */
+/* New chat rows settle in; typing dots breathe. Both run only under motion-safe. */
 @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } }
 @keyframes dot { 0%, 80%, 100% { opacity: .3; } 40% { opacity: 1; } }

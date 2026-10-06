@@ -1,4 +1,4 @@
-"""Unit 39 adopted P (Jev + ranker): the local stack must turn the resolver on, pointing at committed files."""
+"""P (Jev + ranker) is the adopted resolver: the local stack must turn the resolver on, pointing at committed files."""
 from pathlib import Path
 
 import yaml

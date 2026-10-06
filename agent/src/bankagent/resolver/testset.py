@@ -1,4 +1,4 @@
-"""Blind test set (resolver spec §5.4): the sheet Andrés writes from, the ingestion of his completed sheet (hash, then
+"""Blind test set: the sheet Andrés writes from, the ingestion of his completed sheet (hash, then
 the real extract), and the human-ceiling sheet Carlos fills after the test run."""
 import csv
 import hashlib
