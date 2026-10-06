@@ -18,9 +18,15 @@ class VerifyOutcome:
 REDACTED_FIELDS = frozenset({"customer_id", "product_id", "is_fraud", "fraud_score"})
 
 
+def _drop_fraud_triggers(detail: str) -> str:
+    # Policy rule details list their triggers ("unauthorized_reason,fraud_flag,fraud_score_high"): fraud ones stay here.
+    return ",".join(t for t in detail.split(",") if not t.startswith("fraud"))
+
+
 def redact(value):
     if isinstance(value, dict):
-        return {k: redact(v) for k, v in value.items() if k not in REDACTED_FIELDS}
+        return {k: (_drop_fraud_triggers(v) if k == "detail" and isinstance(v, str) else redact(v))
+                for k, v in value.items() if k not in REDACTED_FIELDS}
     if isinstance(value, list):
         return [redact(v) for v in value]
     return value

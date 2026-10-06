@@ -217,3 +217,35 @@ def test_slow_turn_is_logged_for_the_alarm(ddb_store, serving_root, caplog):
     with caplog.at_level("WARNING"):
         h.turn("¿Mi saldo?")
     assert any(r.getMessage() == "slow turn" for r in caplog.records)
+
+
+def test_failed_dispute_write_hands_off_end_to_end(ddb_store, serving_root, monkeypatch):
+    """The customer confirmed, the write failed: nothing is filed, a person gets the case, the customer is told so."""
+    from bankagent.tools.write import WriteFailed, WriteTools
+
+    def boom(self, *a, **kw):
+        raise WriteFailed("conditional write lost")
+    monkeypatch.setattr(WriteTools, "create_dispute", boom)
+    h = make_harness(ddb_store, serving_root, [DISPUTE, CONFIRM])
+    assert h.turn("Me cobraron dos veces Netflix")["awaiting"] == "confirmation"
+    r = h.turn("sí, confirmo")
+    assert ddb_store.disputes.get(t(101)) is None
+    [hnd] = ddb_store.handoffs.list_by_status("open")
+    assert "dispute_write_failed" in hnd["reason_codes"] and r["refs"] == [hnd["handoff_id"]]
+    assert hnd["handoff_id"] in r["reply_text"] and r["awaiting"] == "none"
+
+
+def test_failed_write_and_failed_handoff_tell_the_customer_to_call(ddb_store, serving_root, monkeypatch):
+    """Both writes fail: no dispute, no case, and the customer gets the fixed 'call us' text, never a false promise."""
+    from bankagent.tools.write import WriteFailed, WriteTools
+
+    def boom(self, *a, **kw):
+        raise WriteFailed("conditional write lost")
+    monkeypatch.setattr(WriteTools, "create_dispute", boom)
+    monkeypatch.setattr(ddb_store.handoffs, "put", lambda packet: (_ for _ in ()).throw(RuntimeError("throttled")))
+    h = make_harness(ddb_store, serving_root, [DISPUTE, CONFIRM])
+    h.turn("Me cobraron dos veces Netflix")
+    r = h.turn("sí, confirmo")
+    assert ddb_store.disputes.get(t(101)) is None and ddb_store.handoffs.list_by_status("open") == []
+    assert "línea de atención telefónica" in r["reply_text"] and r["refs"] == []
+    assert "error" in [rec["kind"] for rec in ddb_store.log.list(CTX_ES.session_id) if rec["node"] == "handoff"]
