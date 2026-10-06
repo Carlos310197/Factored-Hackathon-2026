@@ -194,3 +194,9 @@ def test_each_call_uses_its_roles_timeout():
     llm = FakeLLM()
     extract(llm, M["extract"], "hola", "2026-06-17", [])
     assert llm.calls[-1]["timeout"] == M["extract"].timeout_s == 10.0
+
+
+def test_compose_prompt_version_matches_the_prompt_text():
+    """Decision records name the prompt version; it must be the one whose text runs (v2 adds the tú/você rule)."""
+    from bankagent.llm.compose import COMPOSE_SYSTEM
+    assert "tú" in COMPOSE_SYSTEM and M["compose"].prompt_version == "compose.v2"
