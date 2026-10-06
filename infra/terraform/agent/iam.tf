@@ -24,8 +24,7 @@ locals {
 }
 
 data "aws_iam_policy_document" "agent" {
-  # The LLM client (bankagent.llm.client) sends a short-term Bedrock API key, minted from this role's
-  # credentials, to the bedrock-mantle chat-completions endpoint.
+  # The LLM client mints short-term Mantle bearer tokens from this role's credentials.
   statement {
     actions   = ["bedrock-mantle:CallWithBearerToken"]
     resources = ["*"]
@@ -44,7 +43,6 @@ data "aws_iam_policy_document" "agent" {
       values   = values(local.models)
     }
   }
-  # Cross-account Bedrock: the client assumes this role and mints the Mantle token from its credentials.
   statement {
     actions   = ["sts:AssumeRole"]
     resources = [local.bedrock_role_arn]
@@ -62,7 +60,6 @@ data "aws_iam_policy_document" "agent" {
       values   = ["serving/", "serving/*"]
     }
   }
-  # Item operations on the six tables and their indexes; no Scan, and deletes only on checkpoints.
   statement {
     actions = [
       "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:Query",
@@ -111,7 +108,7 @@ data "aws_iam_policy_document" "agent" {
       values   = ["LatamBank"]
     }
   }
-  # AgentCore obtains the workload access token for inbound JWT calls with this role.
+  # AgentCore uses this role to get workload access tokens for inbound JWT calls.
   statement {
     actions = ["bedrock-agentcore:GetWorkloadAccessToken", "bedrock-agentcore:GetWorkloadAccessTokenForJWT"]
     resources = [

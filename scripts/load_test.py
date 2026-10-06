@@ -1,11 +1,4 @@
-"""Small concurrent load test against the live app (stdlib only).
-
-N customers sign in at once (each sign-in warms its own agent session), wait like a person would, then send the same
-short conversation. Prints one line per turn and a summary (p50/p95, errors). Costs real Bedrock and Jev calls: run
-only with the owner's approval.
-
-    python3 scripts/load_test.py https://d21y0qq5d8ixnr.cloudfront.net --users 10
-"""
+"""Load test against the live app. Costs real Bedrock and Jev calls: run only with the owner's approval."""
 import argparse
 import http.cookiejar
 import json

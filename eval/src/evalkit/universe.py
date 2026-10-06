@@ -1,4 +1,3 @@
-"""Read-only view of the serving set the agent reads, used only to build goals."""
 import json
 from datetime import date, timedelta
 from decimal import Decimal

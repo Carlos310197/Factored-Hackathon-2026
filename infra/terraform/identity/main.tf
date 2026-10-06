@@ -1,4 +1,3 @@
-# Identity: mock IdP Lambda (container image) behind a throttled HTTP API.
 terraform {
   required_version = ">= 1.10"
   required_providers {
@@ -25,12 +24,10 @@ data "terraform_remote_state" "data" {
   }
 }
 
-# The data root seeds a placeholder; the image push updates it.
 data "aws_ssm_parameter" "image" {
   name = data.terraform_remote_state.data.outputs.identity_image_parameter
 }
 
-# Secret container comes from bootstrap; only its ARN is needed.
 data "aws_secretsmanager_secret" "signing_key" {
   name = "lb-demo/idp-signing-key"
 }

@@ -1,5 +1,4 @@
-"""SYNTHETIC fixture: labeled test data, NOT organizer records. Mirrors the organizer layout
-(<table>/year=YYYY/month=MM/day=DD/<table>_YYYYMMDD.csv, UTF-8 BOM headers)."""
+"""SYNTHETIC fixture: labeled test data, NOT organizer records."""
 import csv
 from pathlib import Path
 

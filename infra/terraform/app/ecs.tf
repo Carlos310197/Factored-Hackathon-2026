@@ -1,6 +1,6 @@
 resource "aws_ecr_repository" "web" {
   name                 = "latam-bank-web"
-  image_tag_mutability = "IMMUTABLE" # tags are git SHAs
+  image_tag_mutability = "IMMUTABLE"
   force_delete         = true
   image_scanning_configuration {
     scan_on_push = true
@@ -39,11 +39,11 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
 
 resource "aws_security_group" "web" {
   name        = "latam-bank-web"
-  description = "Web UI: team IPs only, until the demo ALB exists" # unchanged: a new description would replace the group
+  description = "Web UI: team IPs only, until the demo ALB exists" # changing it replaces the group
   vpc_id      = data.aws_vpc.default.id
 }
 
-# The task port admits only the ALB. The task keeps a public IP for pulling images (no NAT), but nothing else can reach it.
+# Only the ALB reaches the task; its public IP is just for image pulls (no NAT).
 resource "aws_vpc_security_group_ingress_rule" "app" {
   security_group_id            = aws_security_group.web.id
   referenced_security_group_id = aws_security_group.alb.id
@@ -58,7 +58,7 @@ resource "aws_security_group" "alb" {
   vpc_id      = data.aws_vpc.default.id
 }
 
-# Only CloudFront reaches the ALB: viewers get HTTPS there, and the plain-HTTP ALB name is no side door.
+# Only CloudFront reaches the ALB, so its plain-HTTP name is no side door.
 data "aws_ec2_managed_prefix_list" "cloudfront" {
   name = "com.amazonaws.global.cloudfront.origin-facing"
 }
@@ -71,8 +71,6 @@ resource "aws_vpc_security_group_ingress_rule" "alb_http" {
   to_port           = 80
 }
 
-# HTTPS for viewers on CloudFront's default certificate (no domain needed). Nothing is cached: every request,
-# header, cookie and query string goes to the ALB (managed CachingDisabled + AllViewer policies).
 resource "aws_cloudfront_distribution" "web" {
   enabled     = true
   comment     = "latam-bank web (HTTPS in front of the ALB)"
@@ -169,7 +167,6 @@ locals {
   })
 }
 
-# ECS agent: pull images, write logs.
 resource "aws_iam_role" "execution" {
   name               = "latam-bank-web-execution"
   assume_role_policy = local.ecs_tasks_trust
@@ -180,7 +177,7 @@ resource "aws_iam_role_policy_attachment" "execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# App code (the BFF): DynamoDB only (no InvokeAgentRuntime: it calls the agent over its HTTPS URL, no Scan, no Secrets Manager).
+# BFF: DynamoDB only. No InvokeAgentRuntime (it calls the agent's HTTPS URL), no Scan, no Secrets Manager.
 resource "aws_iam_role" "task" {
   name               = "latam-bank-web-task"
   assume_role_policy = local.ecs_tasks_trust
@@ -191,9 +188,9 @@ locals {
   # TransactWriteItems has no IAM action of its own: it is authorized by the Put/UpdateItem on each item's table.
   rw_tables = [for t in ["sessions", "conversation_messages", "handoffs"] : local.table_arns[t]]
   ro_tables = [local.table_arns["decision_records"]]
-  # "Mis casos": the customer's disputes through the by_customer GSI (Query on a GSI is authorized on the index ARN).
+  # Query on a GSI is authorized on the index ARN.
   disputes_ro = [local.table_arns["disputes"], "${local.table_arns["disputes"]}/index/*"]
-  # The BFF's environment. No secret belongs here (use the task definition's `secrets` from Secrets Manager).
+  # No secrets here: use the task definition's `secrets`.
   web_env = {
     PORT                           = "3000"
     HOSTNAME                       = "0.0.0.0"
@@ -207,7 +204,7 @@ locals {
     DEMO_MODE                      = "1"
     CHAT_ASYNC                     = "0"
     COOKIE_SECURE                  = "1"                                                      # viewers reach the app over HTTPS (CloudFront)
-    NEXT_PUBLIC_EVENTS_HTTP_DOMAIN = data.terraform_remote_state.realtime.outputs.http_domain # also baked at build time (Dockerfile build arg)
+    NEXT_PUBLIC_EVENTS_HTTP_DOMAIN = data.terraform_remote_state.realtime.outputs.http_domain # also baked in at build time
     NEXT_PUBLIC_EVENTS_REGION      = "us-east-1"
   }
   # The real image runs its own CMD; the placeholder needs the command override.

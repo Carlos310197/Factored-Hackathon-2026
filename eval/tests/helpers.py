@@ -1,4 +1,3 @@
-"""Test builders shared by evalkit tests."""
 from evalkit.goals import GoalCard
 
 

@@ -1,5 +1,4 @@
-"""Detector behaviour on the shapes seen in the real drop: flat per-slice medians and rates, not flat
-percentiles or tiny buckets. Crafted in-memory tables, SYNTHETIC."""
+"""SYNTHETIC in-memory tables shaped like the real drop."""
 import duckdb
 import pytest
 

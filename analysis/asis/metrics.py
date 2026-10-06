@@ -1,4 +1,3 @@
-"""As-is metrics. Every metric is {"value": float|int|None, "n": int} under a flat dotted key."""
 from asis.load import MONTHS_IN_WINDOW
 
 IN_SCOPE_REASON = "Transaccional"
@@ -83,7 +82,7 @@ def capacity(c) -> dict:
                                      avg(try_cast(total_monthly_interactions as double)) from agents""")[0]
     out = {"capacity.agents_total": m(n_agents, n_agents), "capacity.pt_agent_share": m(pt, n_agents),
            "capacity.monthly_load_mean": m(load, n_agents)}
-    # What the logs support, next to the generator's per-agent attribute (which does not reconcile with them).
+    # The generator's per-agent attribute does not reconcile with the logs.
     (n_contacts,) = _rows(c, "select count(*) from interactions")[0]
     out["capacity.observed_monthly_per_agent"] = m(n_contacts / 12 / n_agents if n_agents else None, n_contacts)
     for t, n in _rows(c, "select agent_type, count(*) from agents group by 1"):

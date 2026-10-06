@@ -1,4 +1,3 @@
-"""Aggregate metrics, slices, variability, goal-clustered bootstrap intervals and cost."""
 import random
 from collections import Counter, defaultdict
 
@@ -140,7 +139,7 @@ def cost(rows: list[dict], prices: dict) -> dict:
                 tokens[model][k] += u.get(k, 0)
     out = {"tokens": dict(tokens), "attempted": len(s), "successes": sum(r["class"] == "automated_correct" for r in s)}
     missing = sorted(m for m in tokens if not _priced(prices.get(m)))
-    if missing:  # the priced models still give a lower bound (e.g. Jev has no public price)
+    if missing:  # lower bound: Jev has no public price
         priced = sum(t["input_tokens"] / 1e6 * prices[m]["input"] + t["output_tokens"] / 1e6 * prices[m]["output"]
                      for m, t in tokens.items() if m not in missing)
         return out | {"status": "incomplete", "missing_prices": missing, "per_attempted_case": None,

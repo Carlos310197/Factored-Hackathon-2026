@@ -1,5 +1,4 @@
-# Realtime: AppSync Events API, Lambda authorizer, and the stream publisher with its DLQ.
-# Handler bundles come from `npm ci && npm run build` in infra/realtime (dist/ is gitignored).
+# Handler bundles need `npm ci && npm run build` in infra/realtime first.
 terraform {
   required_version = ">= 1.10"
   required_providers {

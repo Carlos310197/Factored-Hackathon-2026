@@ -1,5 +1,3 @@
-# App: the web UI (Next.js BFF) on ECS Fargate Spot behind an ALB that only CloudFront can reach. Viewers use HTTPS on
-# CloudFront's default certificate; session cookies are Secure. Applied only by GitHub Actions as gha-deploy.
 terraform {
   required_version = ">= 1.10"
   required_providers {
@@ -29,7 +27,6 @@ variable "command" {
   default     = ["node", "-e", "require('http').createServer((q,s)=>s.end('latam-bank web placeholder')).listen(3000)"]
 }
 
-# Other roots' outputs (read-only).
 data "terraform_remote_state" "data" {
   backend = "s3"
   config = {
@@ -48,7 +45,7 @@ data "terraform_remote_state" "identity" {
   }
 }
 
-# needs the agent root applied first; it exports invoke_url.
+# Apply the agent root first.
 data "terraform_remote_state" "agent" {
   backend = "s3"
   config = {
@@ -67,8 +64,7 @@ data "terraform_remote_state" "realtime" {
   }
 }
 
-# The image the service runs. Created with the placeholder; the deploy workflow overwrites it with
-# <ecr_repository_url>:<git sha>, and ignore_changes keeps a later apply from rolling it back.
+# The deploy workflow writes the pushed image; ignore_changes keeps applies from rolling it back.
 resource "aws_ssm_parameter" "web_image" {
   name  = "/fh26/web/image"
   type  = "String"
@@ -83,7 +79,7 @@ data "aws_vpc" "default" {
   default = true
 }
 
-# Default VPC public subnets; us-east-1e historically lacks Fargate.
+# us-east-1e lacks Fargate.
 data "aws_subnets" "public" {
   filter {
     name   = "vpc-id"
@@ -124,7 +120,7 @@ output "image_parameter" {
   value = aws_ssm_parameter.web_image.name
 }
 
-# NEXT_PUBLIC_* are inlined at build time: the deploy workflow passes this as a docker --build-arg.
+# NEXT_PUBLIC_* are inlined at build time, so the deploy workflow passes this as a --build-arg.
 output "events_http_domain" {
   value = data.terraform_remote_state.realtime.outputs.http_domain
 }

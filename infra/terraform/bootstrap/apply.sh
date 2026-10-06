@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# One-time bootstrap from a laptop (and again only if the trust chain changes, e.g. repo rename).
-# Needs: `aws sso login --profile hackathon-sso` and the snow CLI connection `sbx`.
 set -euo pipefail
 cd "$(dirname "$0")"
 ENV_FILE=../../../.env

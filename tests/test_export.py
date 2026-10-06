@@ -33,7 +33,7 @@ def test_runs_to_prune_keeps_newest_three_by_write_time():
 
 
 def test_runs_to_prune_never_removes_the_live_run():
-    # names sort in any order (CI ids "18…-1", "readme-check", attempt "-10" < "-9"); write time decides, live run always stays
+    # run ids don't sort ("-10" < "-9"), so write time decides; the live run always stays
     from datetime import datetime
     t = lambda h: datetime(2026, 10, 1, h)
     runs = {"zzz-old": t(1), "readme-check": t(2), "20261001-initial": t(3), "18000000000-1": t(4), "18000000000-10": t(5)}

@@ -37,7 +37,7 @@ resource "aws_ecr_lifecycle_policy" "identity" {
   policy     = local.keep_last_10
 }
 
-# Placeholder values; the deploy workflow overwrites them with the pushed image URI.
+# The deploy workflow writes the pushed image URI.
 resource "aws_ssm_parameter" "agent_image" {
   name  = "/fh26/agent/image"
   type  = "String"

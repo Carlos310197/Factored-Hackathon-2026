@@ -83,7 +83,6 @@ resource "snowflake_stage_internal" "fixture" {
   name     = each.key
 }
 
-# --- grants to PIPELINE_ROLE ---
 resource "snowflake_grant_privileges_to_account_role" "warehouse" {
   account_role_name = snowflake_account_role.pipeline.name
   privileges        = ["USAGE", "OPERATE"]
@@ -134,7 +133,6 @@ resource "snowflake_grant_privileges_to_account_role" "stages_and_formats" {
   depends_on = [snowflake_stage_external_s3.organizer, snowflake_stage_external_s3.serving, snowflake_stage_internal.fixture, snowflake_file_format_csv.csv_header]
 }
 
-# --- pipeline service user: own AWS role (pipeline-runner), workload identity, no secret ---
 resource "snowflake_execute" "pipeline_user" {
   execute = "CREATE USER PIPELINE_SVC TYPE = SERVICE WORKLOAD_IDENTITY = (TYPE = AWS ARN = '${aws_iam_role.pipeline_runner.arn}') DEFAULT_ROLE = PIPELINE_ROLE DEFAULT_WAREHOUSE = WH_PIPELINE"
   revert  = "DROP USER PIPELINE_SVC"

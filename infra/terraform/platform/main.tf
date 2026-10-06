@@ -1,4 +1,3 @@
-# Platform: applied only by GitHub Actions as role gha-deploy (see .github/workflows/infra.yml).
 terraform {
   required_version = ">= 1.10"
   required_providers {
@@ -17,7 +16,6 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# Logs in as TF_DEPLOY using the ambient gha-deploy credentials (no secret).
 provider "snowflake" {
   organization_name          = "RLQHFPF"
   account_name               = "AXC97788"
@@ -37,8 +35,8 @@ data "aws_caller_identity" "me" {}
 
 locals {
   account_id          = data.aws_caller_identity.me.account_id
-  github_sub_prefix   = "repo:Carlos310197@66190532/factored-hackathon-2026-aignostics@1389485180" # immutable OIDC subject, see bootstrap
-  serving_bucket      = "latam-bank-serving-${local.account_id}-use1"                   # -use1: the old name stays pinned to us-east-2 for a while after deletion
+  github_sub_prefix   = "repo:Carlos310197@66190532/factored-hackathon-2026-aignostics@1389485180" # immutable OIDC subject
+  serving_bucket      = "latam-bank-serving-${local.account_id}-use1"                              # -use1: the old name stays pinned to us-east-2 for a while after deletion
   serving_url         = "s3://${local.serving_bucket}/serving/"
   snowflake_role_name = "snowflake-serving"
   organizer_bucket    = "factored-datathon-2026-s3-157725502942-us-east-2-an"

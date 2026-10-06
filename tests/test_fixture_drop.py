@@ -1,4 +1,4 @@
-"""Proof of update correctness on a labeled synthetic drop. Needs Snowflake env vars; runs in CI."""
+"""Update correctness on a labeled synthetic drop."""
 import json
 import os
 import subprocess
@@ -26,8 +26,8 @@ def dbt(*args):
 
 def upload(cur, files, base):
     for p in files:
-        rel = p.relative_to(base)  # transactions/year=.../file.csv or customers.csv
-        folder = "" if rel.parent == Path(".") else f"{rel.parent.as_posix()}/"  # "@stage/./" got a 403 from S3
+        rel = p.relative_to(base)
+        folder = "" if rel.parent == Path(".") else f"{rel.parent.as_posix()}/"  # S3 rejects "@stage/./" with 403
         cur.execute(f"put file://{p} @{STAGE}/{folder} auto_compress=false overwrite=true")
 
 
@@ -40,7 +40,7 @@ def conn():
 def reset(cur):
     cur.execute(f"remove @{STAGE}/")
     cur.execute(f"remove @{SERVING}/")
-    for t in ALL_RAW:  # every RAW table: other live tests (e.g. test_load_live) leave rows behind
+    for t in ALL_RAW:  # other live tests leave rows behind
         cur.execute(f"truncate table RAW.{t}")
     cur.execute("delete from META.RUN_MANIFEST")
     cur.execute("delete from META.DQ_RESULTS")
@@ -121,14 +121,13 @@ def test_fixture_drop_end_to_end(conn, tmp_path):
     upload(cur, write_phase(tmp_path / "p4", 4), tmp_path / "p4")
     assert run_load(conn, "fix-5", STAGE, "", TABLES)["TRANSACTIONS"] == {"new": 1, "restated": 0, "skipped": 5}
     rc, out = dbt(*full)
-    assert rc != 0, out  # the build fails; pipeline.yml then skips the export (tested in test_pipeline_workflows)
+    assert rc != 0, out  # the build fails, so pipeline.yml skips the export
     results = json.loads(Path("dbt/target/run_results.json").read_text())["results"]
     failed = [r for r in results if r["status"] in ("fail", "error")]
     assert [r["unique_id"].split(".")[2] for r in failed] == ["relationships_stg_transactions_product_id__product_id__ref_stg_products_"], out
     assert failed[0]["failures"] == 1
     assert q(f"select from_field from {failed[0]['relation_name']}") == [("PRD-ORPHAN0001",)]  # store_failures keeps the evidence
-    # Live CI showed dbt does not skip fct_transaction for this two-parent test: the orphan reaches the Snowflake mart.
-    # What protects the agent is the failed build: pipeline.yml skips the export, so serving stays on the last good run.
+    # dbt does not skip fct_transaction for this two-parent test; the failed build blocking the export protects serving.
     status = {r["unique_id"].split(".")[2]: r["status"] for r in results}
     assert status["fct_transaction"] == "success"
     assert q("select count(*) from STAGING.STG_TRANSACTIONS where transaction_id = 'FIX-22-0001'")[0][0] == 1

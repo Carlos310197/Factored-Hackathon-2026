@@ -1,5 +1,3 @@
-"""LLM judge for soft criteria only: reply language and faithfulness, handoff packet usefulness.
-It never decides an outcome class or an unsafe outcome. Validated against human labels with Cohen's kappa."""
 import argparse
 import csv
 import json
@@ -26,10 +24,7 @@ PACKET_SCHEMA = {"type": "object", "additionalProperties": False, "required": [*
 
 
 class OpenCodeResponsesClient:
-    """The judge model is served by OpenCode on the Responses API (Claude Sonnet 5.5 is not available to this account,
-    and the Mantle endpoint behind bankagent's client does not serve it). This adapter exposes the chat.completions
-    shape that call_json expects, so the judge reuses call_json's JSON parsing and error handling. No temperature is
-    sent: the model rejects it."""
+    """Responses API behind the chat.completions shape call_json expects. No temperature: the model rejects it."""
 
     def __init__(self, base_url: str, api_key: str, timeout_s: float = 90.0, http: httpx.Client | None = None):
         self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
@@ -108,7 +103,7 @@ def judge_item(client, role: RoleConfig, item: dict) -> dict:
 def run_judge(records: list[dict], languages: dict[str, str], client, role: RoleConfig, workers: int = 1) -> list[dict]:
     items = [item for rec in records if rec.get("end_reason") not in ("harness_error", "persona_discarded")
              for item in items_for(rec, languages[rec["goal_id"]])]
-    with ThreadPoolExecutor(max_workers=workers) as pool:  # map keeps the record order
+    with ThreadPoolExecutor(max_workers=workers) as pool:
         return list(pool.map(lambda item: judge_item(client, role, item), items))
 
 

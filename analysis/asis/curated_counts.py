@@ -1,7 +1,4 @@
-"""Run reconcile.sql read-only against LATAM_BANK and write out/curated_counts.json.
-
-From the repo root (needs the root env and .env): uv run python analysis/asis/curated_counts.py
-"""
+"""Runs reconcile.sql read-only against LATAM_BANK (live Snowflake)."""
 import json
 import re
 import sys

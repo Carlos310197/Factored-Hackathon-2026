@@ -1,8 +1,4 @@
-"""Threshold check: how well each Jev handoff signal separates real cases from the rest in a finished run.
-
-Reads the Jev scores the agent already recorded (no model calls). A conversation is a real case for a signal when its
-goal expects that handoff reason (injection: the goal group). The score is the highest `understand` p in the
-conversation. This measures the thresholds in use; it does not tune them (a held-out run must not pick thresholds).
+"""Measures the thresholds in use; never tunes them (a held-out run must not pick thresholds).
 """
 import argparse
 import json

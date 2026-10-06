@@ -1,4 +1,3 @@
-"""python -m evalkit.report: classifications, metrics, comparison and reports/eval-<date>.md."""
 import argparse
 import csv
 import json

@@ -25,7 +25,6 @@ data "archive_file" "publisher" {
   output_path = "${path.module}/.build/publisher.zip"
 }
 
-# ---- DLQ for records the publisher cannot deliver
 
 resource "aws_sqs_queue" "dlq" {
   name                      = "lb-demo-realtime-dlq"
@@ -56,7 +55,6 @@ resource "aws_sqs_queue_policy" "dlq" {
   policy    = data.aws_iam_policy_document.dlq.json
 }
 
-# ---- Authorizer
 
 resource "aws_cloudwatch_log_group" "authorizer" {
   name              = "/aws/lambda/lb-demo-realtime-authorizer"
@@ -110,7 +108,6 @@ resource "aws_lambda_function" "authorizer" {
   depends_on = [aws_cloudwatch_log_group.authorizer, aws_iam_role_policy.authorizer]
 }
 
-# ---- Publisher: DynamoDB Streams to Events channels
 
 resource "aws_cloudwatch_log_group" "publisher" {
   name              = "/aws/lambda/lb-demo-realtime-publisher"

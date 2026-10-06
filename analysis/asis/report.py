@@ -1,6 +1,3 @@
-"""Markdown for reports/asis-<date>.md. Numbers come only from the metrics dict."""
-
-
 def _v(metrics: dict, key: str, fmt: str = "{:.1%}") -> str:
     x = metrics.get(key)
     if not x or x["value"] is None:

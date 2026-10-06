@@ -1,4 +1,3 @@
-"""As-is charts for the deck (dataviz skill rules: one series colour, one accent, direct labels, light grid)."""
 from pathlib import Path
 
 import matplotlib
@@ -55,7 +54,6 @@ def demand_by_hour(metrics: dict, path: Path) -> None:
 
 
 def dispute_handling(metrics: dict, path: Path) -> None:
-    """Three hero numbers, not a chart: different units, one message (the slide-1 problem)."""
     get = lambda k: (metrics.get(k) or {}).get("value")  # noqa: E731
     stats = [(f"{get('disputes.first_response_h_p50'):.0f} h", "median time to first response"),
              (f"{get('disputes.resolution_days_p50'):.1f} days", "median time to resolve"),
@@ -78,7 +76,7 @@ def render_all(metrics: dict, out_dir: Path) -> list[str]:
     out_dir.mkdir(parents=True, exist_ok=True)
     demand_by_hour(metrics, out_dir / "asis-demand-by-hour.png")
     _barh(_prefixed(metrics, "quality.", ".fcr"), "First-contact resolution by contact reason",
-          out_dir / "asis-fcr-by-reason.png", "{:.0%}", accent="Queja")  # the pain, not the solved case
+          out_dir / "asis-fcr-by-reason.png", "{:.0%}", accent="Queja")
     _barh(_prefixed(metrics, "demand.by_channel."), "Share of contacts by channel",
           out_dir / "asis-channel-mix.png", "{:.0%}", accent="Phone")
     dispute_handling(metrics, out_dir / "asis-dispute-handling.png")

@@ -24,13 +24,11 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
     }
   }
 
-  # The BFF sends the message id in the custom header; listing it documents the dependency (agent README).
+  # The BFF sends the message id in this custom header.
   request_header_configuration {
     request_header_allowlist = ["Authorization", "X-Amzn-Bedrock-AgentCore-Runtime-Custom-Message-Id"]
   }
 
-  # Names only: the Jev key is read from Secrets Manager at start (bankagent.settings.load_settings).
-  # table_name() joins prefix and name with "-", so "lb-demo" gives lb-demo-<name>.
   environment_variables = {
     TABLE_PREFIX        = "lb-demo"
     SERVING_URI         = "s3://${data.terraform_remote_state.data.outputs.serving_bucket}/serving/"
@@ -58,8 +56,7 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
   depends_on = [aws_iam_role_policy.agent]
 }
 
-# AgentCore logs to /aws/bedrock-agentcore/runtimes/<runtime id>-<endpoint>; created before the endpoint so
-# Terraform owns its retention.
+# Created before the endpoint so Terraform, not AgentCore, owns its retention.
 resource "aws_cloudwatch_log_group" "runtime" {
   name              = "/aws/bedrock-agentcore/runtimes/${aws_bedrockagentcore_agent_runtime.agent.agent_runtime_id}-${local.endpoint}"
   retention_in_days = 30

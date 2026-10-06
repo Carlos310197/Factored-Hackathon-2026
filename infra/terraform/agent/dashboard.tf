@@ -1,6 +1,3 @@
-# Operations dashboard: turn latency from the agent's `turn_end <ms>` line, every alarm metric, alarm states, and the
-# web load balancer. One page answers "is it up, is it fast, is it failing, is anyone abusing it".
-
 resource "aws_cloudwatch_log_metric_filter" "turn_duration" {
   name           = "lb-demo-agent-TurnDurationMs"
   log_group_name = aws_cloudwatch_log_group.runtime.name
@@ -14,8 +11,6 @@ resource "aws_cloudwatch_log_metric_filter" "turn_duration" {
   }
 }
 
-# One `request <outcome> <session> <message_id>` line per request (turns, rejected tokens, bad messages, duplicates,
-# warm-ups), counted per outcome.
 resource "aws_cloudwatch_log_metric_filter" "requests" {
   name           = "lb-demo-agent-Requests"
   log_group_name = aws_cloudwatch_log_group.runtime.name

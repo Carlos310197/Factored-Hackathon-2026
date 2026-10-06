@@ -1,4 +1,3 @@
-"""eval/config.yaml loader and live-run validation."""
 import os
 from pathlib import Path
 
