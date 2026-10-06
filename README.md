@@ -14,6 +14,8 @@ decision record you can open in the trace view; the write is best-effort (see Li
 
 **Live app: https://d21y0qq5d8ixnr.cloudfront.net** (HTTPS through CloudFront, us-east-1)
 
+**Deck:** [`docs/recibra-deck.pdf`](docs/recibra-deck.pdf) (6 slides: the 37-hour problem, what Recibra does, one dispute end to end, measured results, architecture and controls, the road to a pilot).
+
 | Customer sign-in (`/login`) | Staff console (`/agent`) | Demo stage (`/demo`) |
 |---|---|---|
 | [![Customer sign-in](docs/screenshots/login.png)](docs/screenshots/login.png) | [![Staff console with a handoff packet](docs/screenshots/agent-console.png)](docs/screenshots/agent-console.png) | [![Demo stage](docs/screenshots/demo-stage.png)](docs/screenshots/demo-stage.png) |
