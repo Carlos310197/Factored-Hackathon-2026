@@ -71,6 +71,10 @@ over the legacy process. Those need a pilot.
 
 ## Architecture
 
+[![System architecture](docs/diagrams/system-architecture.drawio.png)](docs/diagrams/system-architecture.drawio.svg)
+
+The whole system as deployed, with the 10 numbered flows explained beside it. The SVG and PNG embed the draw.io source, so either opens for editing in draw.io.
+
 | Layer | What | Where |
 |---|---|---|
 | Data | Organizer S3 drop → Snowflake `RAW` → dbt `STAGING` (typed, deduplicated, quarantined) → `CURATED` (enforced contracts) → versioned parquet + `latest.json` pointer | [`docs/data-pipeline.md`](docs/data-pipeline.md), `dbt/`, `pipeline/`, [`docs/diagrams/pipeline.svg`](docs/diagrams/pipeline.svg) |
