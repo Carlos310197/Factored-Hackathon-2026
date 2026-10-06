@@ -21,6 +21,22 @@ def test_account_inquiry_es(ddb_store, serving_root):
     _assert_jev_never_sees_customer_or_product_ids(h)
 
 
+def test_compose_gets_the_customers_request(ddb_store, serving_root):
+    h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}])
+    h.turn("Dime el saldo de mis tarjetas")
+    compose_calls = [c for c in h.llm.calls if c["model"] == "openai.gpt-oss-120b"]
+    assert "<request>EN: Dime el saldo de mis tarjetas</request>" in compose_calls[0]["messages"][1]["content"]
+
+
+def test_transaction_clarification_chips_are_localized(ddb_store, serving_root):
+    h = make_harness(ddb_store, serving_root, [{"intent": "transaction_status", "target": "ambiguous"}])
+    r = h.turn("¿Qué pasó con mi pago?")
+    assert r["awaiting"] == "clarification" and r["options"]
+    for label in r["options"]:
+        assert not {"Purchase", "Approved", "Web", "POS"} & set(label.split(" · ")), label
+    assert "Amazon · 2026-06-15 · 120.00 USD · Rechazada" in r["options"]
+
+
 def test_decline_explanation_pt(ddb_store, serving_root):
     h = make_harness(ddb_store, serving_root, [{"intent": "decline_explanation", "target": "Amazon"}],
                      llm=FakeLLM(language="pt"))

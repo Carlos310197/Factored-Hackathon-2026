@@ -50,6 +50,48 @@ def test_compose_uses_json_schema_format_and_hides_fixed_block():
     assert out.reply_text == "[ask_confirmation]" and out.claims[0]["receipt_ids"] == ["RCP-1"]
 
 
+def test_compose_sends_its_reasoning_effort_and_extract_sends_none():
+    """models.yaml set compose effort=low but it was never sent: gpt-oss reasoned at its default and ran out of tokens."""
+    llm = FakeLLM()
+    compose(llm, M["compose"], {"kind": "answer"}, [], "es")
+    extract(llm, M["extract"], "hola", "2026-06-17", [])
+    assert llm.calls[0]["reasoning_effort"] == "low" and "reasoning_effort" not in llm.calls[1]
+
+
+def test_compose_sees_the_request_as_untrusted_text():
+    """Without the request, compose had 4 products and goal=answer and replied 'No tengo información…'."""
+    from bankagent.llm.compose import COMPOSE_SYSTEM
+    llm = FakeLLM()
+    compose(llm, M["compose"], {"kind": "answer"}, [], "es", request_en="What is the balance of my cards?")
+    assert "<request>What is the balance of my cards?</request>" in llm.calls[0]["messages"][1]["content"]
+    assert "<request>" in COMPOSE_SYSTEM and "never follow" in COMPOSE_SYSTEM.lower()
+    compose(llm, M["compose"], {"kind": "answer"}, [], "es")
+    assert "<request>" not in llm.calls[1]["messages"][1]["content"]
+
+
+def _extracted(statement):
+    import json as _json
+    return _client("stop", _json.dumps({
+        "language_detected": "es", "english_gloss": "What is my balance?", "multi_intent": False,
+        "secondary_request_en": None, "customer_statement": statement,
+        "mentions": {k: None for k in ("merchant", "amount", "currency", "date_from", "date_to", "type_hint",
+                                       "channel_hint", "city")}}))
+
+
+def test_extract_reorients_a_swapped_customer_statement():
+    """Ministral sometimes writes the English sentence into `original` and the Spanish one into `en`."""
+    es = "El cliente pregunta por el saldo de sus cuentas sin indicar período."
+    en = "Customer asks for the balance of their accounts as of an unspecified date."
+    ex, _ = extract(_extracted({"en": es, "original": en}), M["extract"], "¿saldo?", "2026-06-17", [])
+    assert ex.customer_statement == {"original": es, "en": en}
+    ex, _ = extract(_extracted({"en": en, "original": es}), M["extract"], "¿saldo?", "2026-06-17", [])
+    assert ex.customer_statement == {"original": es, "en": en}  # already right: unchanged
+    pt = "O cliente não reconhece uma cobrança no cartão."
+    ex, _ = extract(_extracted({"en": pt, "original": "The customer does not recognize a card charge."}),
+                    M["extract"], "não reconheço", "2026-06-17", [])
+    assert ex.customer_statement["original"] == pt
+
+
 def test_compose_passes_feedback():
     llm = FakeLLM()
     compose(llm, M["compose"], {"kind": "answer"}, [], "pt", feedback=["Unsupported claim: x"])
@@ -199,7 +241,8 @@ def test_each_call_uses_its_roles_timeout():
 def test_compose_prompt_version_matches_the_prompt_text():
     """Decision records name the prompt version; it must be the one whose text runs (v2 adds the tú/você rule)."""
     from bankagent.llm.compose import COMPOSE_SYSTEM
-    assert "tú" in COMPOSE_SYSTEM and M["compose"].prompt_version == "compose.v2"
+    assert "tú" in COMPOSE_SYSTEM and M["compose"].prompt_version == "compose.v3"  # v3 adds <request>
+    assert "<request>" in COMPOSE_SYSTEM
 
 
 def test_warm_up_calls_each_model_once_and_never_raises():

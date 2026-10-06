@@ -123,6 +123,8 @@ def call_json(client, cfg: RoleConfig, system: str, user: str, schema: dict) -> 
         ],
         response_format={"type": "json_schema", "json_schema": {"name": "response", "schema": schema}},
     )
+    if cfg.effort:  # reasoning models only (gpt-oss): left unset they reason at default effort and hit max_tokens
+        request["reasoning_effort"] = cfg.effort
     try:
         try:
             resp = client.chat.completions.create(**request, timeout=cfg.timeout_s)

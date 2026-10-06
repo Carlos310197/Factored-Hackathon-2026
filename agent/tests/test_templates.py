@@ -1,5 +1,5 @@
 from bankagent.llm.templates import (auth_message, confirmation_summary, dispute_filed, fallback_reply, fmt_money,
-                                     handoff_notice)
+                                     handoff_notice, txn_option)
 
 TXN = {"merchant_name": "Netflix", "process_date": "2026-06-10", "amount": 15.99, "currency": "USD",
        "transaction_type": "Purchase"}
@@ -7,8 +7,22 @@ TXN = {"merchant_name": "Netflix", "process_date": "2026-06-10", "amount": 15.99
 
 def test_fmt_money():
     assert fmt_money(15.99, "USD") == "15.99 USD"
-    assert fmt_money(45000, "COP") == "45,000 COP"
-    assert fmt_money(1250.4, "ARS") == "1,250.40 ARS"
+    assert fmt_money(1250.4, "MXN") == "1,250.40 MXN"
+    # Argentina, Brazil, Colombia and Chile write 1.234,56: a 309,666.73 ARS balance reads as 309 pesos
+    assert fmt_money(45000, "COP") == "45.000 COP"
+    assert fmt_money(1250.4, "ARS") == "1.250,40 ARS"
+    assert fmt_money(-309666.73, "BRL") == "-309.666,73 BRL"
+
+
+def test_txn_option_is_the_customers_language_not_the_jev_description():
+    """Clarification chips showed `2026-05-06 · Taxi Seguro · 41223.86 ARS · Purchase · Approved · Web · Buenos Aires`."""
+    txn = {"merchant_name": "Taxi Seguro", "process_date": "2026-05-06", "amount": 41223.86, "currency": "ARS",
+           "transaction_type": "Purchase", "transaction_status": "Approved", "channel": "Web"}
+    assert txn_option(txn, "es") == "Taxi Seguro · 2026-05-06 · 41.223,86 ARS · Aprobada"
+    assert txn_option(txn, "pt") == "Taxi Seguro · 2026-05-06 · 41.223,86 ARS · Aprovada"
+    no_merchant = {**txn, "merchant_name": None, "transaction_type": "Withdrawal"}
+    assert txn_option(no_merchant, "es").startswith("Retiro · ")
+    assert txn_option(no_merchant, "pt").startswith("Saque · ")
 
 
 def test_confirmation_summary_es_and_pt():

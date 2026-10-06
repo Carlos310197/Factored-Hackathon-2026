@@ -52,6 +52,26 @@ EXTRACT_SCHEMA = {
 }
 
 
+_EN_WORDS = frozenset("the customer customers says asks about their they is was of and for with an has does not "
+                      "my card charge balance".split())
+_ES_PT_WORDS = frozenset("el la los las del de que por para su sus mi mis cliente pregunta dice una un no se "
+                         "o os do da dos das não sua seu uma em com cobrança cartão".split())
+
+
+def _englishness(text: str) -> int:
+    words = [w.strip(".,;:¿?¡!\"'()").lower() for w in text.split()]
+    return sum(w in _EN_WORDS for w in words) - sum(w in _ES_PT_WORDS for w in words)
+
+
+def _oriented(statement: dict, language: str) -> dict:
+    """Ministral sometimes swaps the two sentences. The dispute record keeps both, so put each in its place.
+    ponytail: stopword vote, not a language detector; only swaps when both sides clearly disagree."""
+    original, en = statement.get("original", ""), statement.get("en", "")
+    if language in ("es", "pt") and _englishness(original) > 0 > _englishness(en):
+        return {"original": en, "en": original}
+    return statement
+
+
 @dataclass(frozen=True)
 class Extraction:
     language_detected: str
@@ -69,7 +89,8 @@ def extract(client, cfg: RoleConfig, message: str, as_of: str, recent: list[dict
     d = call.data
     try:
         ex = Extraction(d["language_detected"], d["english_gloss"], bool(d["multi_intent"]),
-                        d.get("secondary_request_en"), dict(d["mentions"]), dict(d["customer_statement"]))
+                        d.get("secondary_request_en"), dict(d["mentions"]),
+                        _oriented(dict(d["customer_statement"]), d["language_detected"]))
     except (KeyError, TypeError) as e:
         raise LLMError("extraction schema mismatch") from e
     return ex, call
