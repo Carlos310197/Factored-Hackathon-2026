@@ -62,6 +62,10 @@ const es = {
   newConversation: "Nueva conversación",
   actionFailed: "No pudimos completarlo. Intenta de nuevo.",
   stage: { understand: "Entendiendo tu mensaje…", decide: "Pensando cómo ayudarte…", act: "Revisando tu cuenta…", verify: "Verificando la respuesta…" },
+  myCases: "Mis casos",
+  noCases: "No tienes casos abiertos",
+  casesFailed: "No pudimos cargar tus casos.",
+  caseStatus: { submitted: "Enviada", pending_review: "En revisión", resolved: "Resuelta", rejected: "Rechazada" } as Record<string, string>,
   reasons: {
     duplicate_charge: "Cargo duplicado", wrong_amount: "Monto incorrecto", not_received: "No recibido",
     cancelled_but_charged: "Cancelado pero cobrado", unauthorized: "No autorizado",
@@ -130,6 +134,10 @@ const pt: Dict = {
   newConversation: "Nova conversa",
   actionFailed: "Não conseguimos concluir. Tente de novo.",
   stage: { understand: "Entendendo sua mensagem…", decide: "Pensando em como ajudar…", act: "Verificando sua conta…", verify: "Conferindo a resposta…" },
+  myCases: "Meus casos",
+  noCases: "Você não tem casos abertos",
+  casesFailed: "Não conseguimos carregar seus casos.",
+  caseStatus: { submitted: "Enviada", pending_review: "Em análise", resolved: "Resolvida", rejected: "Recusada" },
   reasons: {
     duplicate_charge: "Cobrança duplicada", wrong_amount: "Valor incorreto", not_received: "Não recebido",
     cancelled_but_charged: "Cancelado mas cobrado", unauthorized: "Não autorizado",

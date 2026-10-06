@@ -13,6 +13,7 @@ import { signOut } from "@/lib/signout";
 import { useChannel } from "@/lib/realtime/useChannel";
 import { AsOfBanner } from "./AsOfBanner";
 import { EndedBanner } from "./EndedBanner";
+import { CasesPanel } from "./CasesPanel";
 import { ExpiredSheet } from "./ExpiredSheet";
 import { HistoryDrawer } from "./HistoryDrawer";
 import { customerText, MessageView, toThreadMessage } from "./MessageView";
@@ -122,6 +123,7 @@ export function ChatScreen({ sid, lang: sessionLang, embed }: { sid: string; lan
                   className="flex size-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-surface">
                   <svg aria-hidden viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2" /></svg>
                 </button>
+                <CasesPanel lang={lang} />
                 <button type="button" aria-label={`${lang.toUpperCase()}, ${d.switchLang}`} onClick={() => setManual({ lang: lang === "es" ? "pt" : "es", at: replyKey })}
                   className="min-h-11 min-w-11 rounded-full px-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-surface">
                   <span className="rounded-full bg-b-surface px-2.5 py-0.5 text-xs font-bold text-b-ink">{lang.toUpperCase()}</span>
