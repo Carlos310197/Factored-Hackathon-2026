@@ -3,7 +3,6 @@ export const STAGES: { key: Stage; label: string }[] = [
   { key: "understand", label: "Understand" }, { key: "decide", label: "Decide" }, { key: "act", label: "Act" }, { key: "verify", label: "Verify reply" },
 ];
 
-/** /demo stage lights, driven by slim /trace/<sid> record events. */
 export function stageOf(node: string, kind: string): Stage | null {
   if (kind === "turn_end") return null;
   if (node === "reply") return "verify";

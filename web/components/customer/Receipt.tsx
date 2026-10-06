@@ -1,7 +1,6 @@
 import type { Lang } from "@/lib/contract";
 import { t } from "@/lib/i18n";
 
-/** DSP- = dispute filed (green, only shown once the read-back confirmed it); anything else (HND-) is a plain reference. */
 export function Receipt({ refId, lang }: { refId: string; lang: Lang }) {
   const d = t(lang);
   const filed = refId.startsWith("DSP-");

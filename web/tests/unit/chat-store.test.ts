@@ -53,7 +53,7 @@ describe("chat store", () => {
     s.getState().sendOptimistic("cm-1", "hola");
     s.getState().merge([q("cm-1", "0001")]);
     expect(s.getState().running).toBe(true);
-    s.getState().merge([msg({ id: "a0", role: "assistant", cursor: "0000" })]);  // older: not ours
+    s.getState().merge([msg({ id: "a0", role: "assistant", cursor: "0000" })]);
     expect(s.getState().running).toBe(true);
     s.getState().applyEvent({ type: "message", id: "a1", cursor: "0002", role: "assistant", text: "ok", turn_id: "T1", ts: "t" });
     expect(s.getState().running).toBe(false);
@@ -64,9 +64,9 @@ describe("chat store", () => {
   });
   it("(a) turn 1's late push does not end turn 2", () => {
     const s = createChatStore();
-    s.getState().sendOptimistic("cm-1", "uno");  // 202
+    s.getState().sendOptimistic("cm-1", "uno");
     s.getState().merge([q("cm-1", "0001")]);
-    s.getState().sendOptimistic("cm-2", "dos");  // 202
+    s.getState().sendOptimistic("cm-2", "dos");
     s.getState().merge([q("cm-2", "0003")]);
     s.getState().applyEvent({ type: "message", id: "a1", cursor: "0002", role: "assistant", text: "r1", turn_id: "T1", ts: "t" });
     expect(s.getState().running).toBe(true);
@@ -77,13 +77,13 @@ describe("chat store", () => {
     const s = createChatStore();
     s.getState().sendOptimistic("cm-1", "uno");
     s.getState().merge([q("cm-1", "0001")]);
-    s.getState().applyReply("cm-1", reply());  // provisional reply:TRN-1
+    s.getState().applyReply("cm-1", reply());
     expect(s.getState().running).toBe(false);
-    s.getState().sendOptimistic("cm-2", "dos");  // queued, still unstored
+    s.getState().sendOptimistic("cm-2", "dos");
     s.getState().merge([msg({ id: "MSG-1", role: "assistant", cursor: "0002", turn_id: "TRN-1" })]);
     expect(s.getState().running).toBe(true);
     s.getState().merge([q("cm-2", "0003")]);
-    s.getState().merge([msg({ id: "MSG-1", role: "assistant", cursor: "0004", turn_id: "TRN-1" })]);  // no question-after reply yet
+    s.getState().merge([msg({ id: "MSG-1", role: "assistant", cursor: "0004", turn_id: "TRN-1" })]);
     expect(s.getState().running).toBe(true);
   });
   it("a provisional reply sorts directly after its own question", () => {

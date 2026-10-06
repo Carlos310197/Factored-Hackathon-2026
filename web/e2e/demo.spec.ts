@@ -75,7 +75,7 @@ test("act 4: the human-agent view and stats next to the phone", async ({ page, c
   await expect(page.getByText(/Disputes today/)).toBeVisible();
   if (process.env.SHOT) await page.screenshot({ path: `${process.env.SHOT}-act4.png`, fullPage: true });
   await noSeriousA11y(page);
-  await page.goto("/agent/HND-7Q2K"); // the same case and stats in the real console, with counts on the queue chips
+  await page.goto("/agent/HND-7Q2K");
   await expect(page.getByRole("button", { name: "Mine 1" })).toBeVisible();
   await expect(page.getByRole("list", { name: "Conversation stats" })).toContainText("1 turn");
   if (process.env.SHOT) await page.screenshot({ path: `${process.env.SHOT}-agent.png`, fullPage: true });

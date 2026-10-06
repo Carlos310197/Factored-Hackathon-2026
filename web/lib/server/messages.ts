@@ -36,7 +36,7 @@ export async function appendMessage(sid: string, m: { role: ChatMessage["role"];
   return toMessage(item);
 }
 
-/** Idempotency marker, same convention as the agent (`~idem#<id>`). True when the id is new. */
+/** Same idempotency marker as the agent (`~idem#<id>`). */
 export async function claimMessageId(sid: string, id: string): Promise<boolean> {
   try {
     await doc().send(new PutCommand({ TableName: tableName("conversation_messages"),

@@ -12,7 +12,6 @@ export const Summary = z.object({
 });
 export type Summary = z.infer<typeof Summary>;
 
-/** POST /invocations response */
 export const ChatReply = z.object({
   reply_text: z.string(),
   language: Lang.catch("es"),
@@ -30,7 +29,7 @@ export const MessageMeta = z.object({
   awaiting: Awaiting.optional(), options: z.array(z.string()).optional(), refs: z.array(z.string()).optional(),
   summary: Summary.optional(), data_as_of: z.string().optional(), control: z.string().optional(),
   agent_name: z.string().optional(), error_code: z.string().optional(),
-  language: Lang.optional().catch(undefined),  // the reply language; drives the customer UI chrome
+  language: Lang.optional().catch(undefined),
 });
 export type MessageMeta = z.infer<typeof MessageMeta>;
 
@@ -48,7 +47,6 @@ export const SessionEvent = z.discriminatedUnion("type", [
 ]);
 export type SessionEvent = z.infer<typeof SessionEvent>;
 
-/** GET /api/customer/sessions: the customer's own conversations, newest first, hidden ones excluded. */
 export const SessionSummary = z.object({
   session_id: z.string(), created_at: z.string(), language: Lang.catch("es"),
   current: z.boolean(), ended: z.boolean(), preview: z.string().nullable(),
@@ -66,7 +64,6 @@ export const HandoffRow = z.object({
   reason_codes: z.array(z.string()), language: Lang, created_at: z.string(), claimed_by: z.string().nullish(),
 });
 export type HandoffRow = z.infer<typeof HandoffRow>;
-/** A customer's dispute as the BFF exposes it (no statement, session or routing internals). */
 export const CustomerCase = z.object({
   dispute_id: z.string(), status: z.string(), created_at: z.string(), reason: z.string(),
   amount: z.number().nullish(), currency: z.string().nullish(),

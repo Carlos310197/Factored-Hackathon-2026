@@ -50,7 +50,7 @@ describe("Console stats", () => {
     api({ mine: [row("HND-C", "S1", "claimed")] }, [turn(3200), turn(4800, true)]);
     render(<Console me={me} initialId="HND-C" />);
     const stats = await screen.findByRole("list", { name: "Conversation stats" });
-    await waitFor(() => expect(stats).toHaveTextContent("2 turns")); // the turn numbers arrive with the trace
+    await waitFor(() => expect(stats).toHaveTextContent("2 turns"));
     expect(stats).toHaveTextContent("mean reply 4.0 s");
     expect(stats).toHaveTextContent("1 template fallback");
     expect(stats).toHaveTextContent("claimed 42 s after handoff");

@@ -104,7 +104,7 @@ describe("conversation history drawer", () => {
     const rows = within(dialog).getAllByRole("listitem");
     expect(within(rows[0]).queryByRole("button", { name: "Ocultar de mi lista" })).not.toBeInTheDocument();
     await userEvent.click(within(rows[1]).getByRole("button", { name: "Ocultar de mi lista" }));
-    expect(calls(f, "/api/customer/sessions/S-OLD/hide")).toHaveLength(0);  // confirm first
+    expect(calls(f, "/api/customer/sessions/S-OLD/hide")).toHaveLength(0);
     await userEvent.click(within(rows[1]).getByRole("button", { name: "Ocultar" }));
     await waitFor(() => expect(within(dialog).getAllByRole("listitem")).toHaveLength(2));
     expect(calls(f, "/api/customer/sessions/S-OLD/hide")).toHaveLength(1);

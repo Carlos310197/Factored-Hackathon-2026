@@ -1,7 +1,4 @@
-# Web (Next.js standalone) for ECS Fargate Spot, linux/amd64 (the task definition is X86_64).
-# NEXT_PUBLIC_* values are inlined into the client bundle at BUILD time, so they are build args, not runtime env:
-#   docker build --platform linux/amd64 --build-arg NEXT_PUBLIC_GIT_SHA=<sha> \
-#     --build-arg NEXT_PUBLIC_EVENTS_HTTP_DOMAIN=<realtime http_domain> -t <ecr>:<sha> web/
+# NEXT_PUBLIC_* values are inlined into the client bundle at build time, so they are build args, not runtime env.
 FROM --platform=linux/amd64 public.ecr.aws/docker/library/node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -18,7 +15,6 @@ RUN npm run build
 FROM --platform=linux/amd64 public.ecr.aws/docker/library/node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0
-# busybox wget (health check) ships with alpine
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static
 USER node

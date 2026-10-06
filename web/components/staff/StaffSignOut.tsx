@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import { signOut } from "@/lib/signout";
 
-/** Clears only the staff cookie (the customer one may coexist on /demo), then goes to the staff login. */
+/** Clears only the staff cookie: the customer one may coexist on /demo. */
 export function StaffSignOut({ className = "" }: { className?: string }) {
   const router = useRouter();
   return (

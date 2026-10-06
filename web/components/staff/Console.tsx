@@ -14,11 +14,9 @@ export type Tab = "packet" | "conversation" | "trace";
 const FRESH_MS = 4000;
 type CaseState = "missing" | "error" | null;
 
-/** `caseOnly`: just the case (no queue, no top bar), for embedding next to the phone on the demo stage. */
 export function Console({ me, initialId, renderTab, caseOnly }: { me: { sub: string; name: string }; initialId?: string;
   renderTab?: (tab: Tab, c: CaseData) => React.ReactNode; caseOnly?: boolean }) {
   const [filter, setFilter] = useState<QueueFilter>("open");
-  // every filter at once: the chips show counts, and switching filters is instant
   const [lists, setLists] = useState<Record<QueueFilter, HandoffRow[]> | null>(null);
   const rows = lists?.[filter] ?? [];
   const [fresh, setFresh] = useState<Set<string>>(new Set());
@@ -35,7 +33,7 @@ export function Console({ me, initialId, renderTab, caseOnly }: { me: { sub: str
   const [pending, setPending] = useState<CaseAction | null>(null);
   const selectedRef = useRef(selected);
   useEffect(() => { selectedRef.current = selected; });
-  const seen = useRef<Set<string>>(new Set()); // ids already shown, so only truly new rows get the highlight
+  const seen = useRef<Set<string>>(new Set());
   const timers = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
   useEffect(() => { const t = timers.current; return () => t.forEach(clearTimeout); }, []);
 
@@ -65,7 +63,6 @@ export function Console({ me, initialId, renderTab, caseOnly }: { me: { sub: str
       setCaseState(null);
     } catch { if (seq === caseSeq.current) setCaseState((s) => (dataRef.current ? s : "error")); }
   }, []);
-  // Load-then-listen: these effects only start fetches; state is set after the response arrives.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void loadRows(); }, [loadRows]);
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -86,7 +83,7 @@ export function Console({ me, initialId, renderTab, caseOnly }: { me: { sub: str
 
   async function act(a: CaseAction, body?: { code: ResolutionCode; note: string }) {
     if (!data || busy.current) return;
-    const id = data.packet.handoff_id; // the case on screen, not whatever is selected now
+    const id = data.packet.handoff_id;
     busy.current = true;
     setPending(a);
     try {

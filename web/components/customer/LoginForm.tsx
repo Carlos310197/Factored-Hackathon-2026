@@ -32,7 +32,7 @@ export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = f
 
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
-  useEffect(() => {  // only when the server could not hand the users in (cold IdP)
+  useEffect(() => {
     if (initialUsers) return;
     fetch("/api/auth/demo-users").then(async (r) => (r.ok ? ((await r.json()).data as DemoUser[]) : [])).then((list) => {
       setUsers(list);
@@ -87,11 +87,11 @@ export function LoginForm({ next, embed, prefillUser, shortTtl = false, auto = f
   const typeOtp = (raw: string) => {
     const code = raw.replace(/\D/g, "").slice(0, 6);
     setOtp(code);
-    if (code.length === 6 && code !== otp && !busy) void submitOtp(code);  // sign in as soon as the sixth digit lands
+    if (code.length === 6 && code !== otp && !busy) void submitOtp(code);
   };
   const me = users.find((u) => u.username === username);
 
-  useEffect(() => {  // /demo scenarios: sign in without clicks (demo users only)
+  useEffect(() => {
     if (!auto || !username || !password || ticket) return;
     void (async () => {
       try {

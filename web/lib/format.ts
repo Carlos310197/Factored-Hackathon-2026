@@ -5,7 +5,6 @@ const MONEY_LOCALE: Record<Lang, (currency: string) => string> = {
   pt: () => "pt-BR",
 };
 
-/** Money by currency code: COP without decimals, everything else with 2. */
 export function fmtMoney(amount: number, currency: string, lang: Lang): string {
   const digits = currency === "COP" ? 0 : 2;
   const n = new Intl.NumberFormat(MONEY_LOCALE[lang](currency), {
@@ -28,7 +27,6 @@ export function fmtAge(fromIso: string, now: Date = new Date()): string {
   return `${Math.floor(mins / (60 * 24))} d`;
 }
 
-/** Message time in the viewer's own timezone ("" when the stamp can't be read). */
 export function fmtTime(iso: string, lang: Lang, timeZone?: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";

@@ -6,7 +6,6 @@ export type DemoMessage =
   | { type: "demo:turn-reply"; turn_id: string | null }
   | { type: "demo:prefill"; text: string };
 
-/** Embedded /chat talks to /demo (same origin only). */
 export function notifyParent(msg: DemoMessage) {
   if (typeof window !== "undefined" && window.parent !== window) window.parent.postMessage(msg, window.location.origin);
 }

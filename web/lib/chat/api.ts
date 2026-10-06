@@ -35,7 +35,6 @@ export const api = {
   },
 };
 
-/** Load history after the store's cursor and merge it; a 401 expires the session. */
 export async function syncHistory(store: ChatStore, sid: string): Promise<void> {
   const r = await api.history(sid, store.getState().cursor ?? undefined);
   if (r.kind === "ok") store.getState().merge(r.messages);
@@ -60,7 +59,6 @@ async function call<T>(url: string, schema: z.ZodType<T>, method = "GET"): Promi
   }
 }
 
-/** The customer's own conversations: list, hide a past one, end the current one, start a new one. */
 export const sessionsApi = {
   list: () => call("/api/customer/sessions", SessionSummary.array()),
   hide: (sid: string) => call(`/api/customer/sessions/${encodeURIComponent(sid)}/hide`, z.object({ hidden: z.literal(true) }), "POST"),

@@ -40,8 +40,7 @@ export async function invokeAgent(a: { token: string; sid: string; message: stri
   }
 }
 
-/** Login-time warm-up: AgentCore starts a microVM per runtime session, so without this a conversation's first turn
- *  pays ~11 s of container start. Fire-and-forget from the OTP route; never throws (failure = a cold first turn). */
+/** AgentCore starts a microVM per runtime session; warming at login spares the first turn the cold start. Never throws. */
 export async function warmAgent(a: { token: string; sid: string }): Promise<void> {
   try {
     const res = await fetch(env().AGENTCORE_INVOKE_URL, {

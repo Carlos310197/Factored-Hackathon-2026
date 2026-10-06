@@ -13,21 +13,18 @@ export interface MessageCustom { role: "customer" | "assistant" | "agent" | "sys
 
 const ROLE: Record<ViewMessage["role"], ThreadMessageLike["role"]> = { customer: "user", assistant: "assistant", agent: "assistant", system: "system" };
 
-/** Store row → assistant-ui message; the row itself rides along as metadata.custom for MessageView. */
 export function toThreadMessage(m: ViewMessage): ThreadMessageLike {
   return { id: m.id, role: ROLE[m.role], content: [{ type: "text", text: m.text }], createdAt: new Date(m.ts),
     metadata: { custom: { role: m.role, text: m.text, meta: m.meta, author: m.author, ts: m.ts, status: m.status } satisfies MessageCustom } };
 }
 
-/** The confirm button's wire message is a token; the transcript shows the button's label instead. */
 export function customerText(text: string, lang: Lang): string {
   return text.startsWith("confirm:") ? t(lang).confirm : text;
 }
 
-/** Control lines come from the system message's meta (takeover/return), never from its stored text. */
 export function systemLine(c: Pick<MessageCustom, "text" | "meta" | "author">, lang: Lang): string {
   const d = t(lang);
-  if (c.meta?.error_code) return c.text;  // async agent failure: shown as a plain line, no control change
+  if (c.meta?.error_code) return c.text;
   if (c.meta?.control === "agent") return d.backToAssistant;
   if (c.meta?.control) return d.agentJoined(c.meta.agent_name ?? c.author ?? "");
   return c.text;

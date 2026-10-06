@@ -3,7 +3,6 @@ import { useState } from "react";
 import type { Lang } from "@/lib/contract";
 import { t } from "@/lib/i18n";
 
-/** Shown in place of the composer once the conversation has ended (here or in another tab). */
 export function EndedBanner({ lang, onNew, onSignOut }: { lang: Lang; onNew: () => Promise<boolean>; onSignOut: () => void }) {
   const d = t(lang);
   const [failed, setFailed] = useState(false);

@@ -8,10 +8,8 @@ const PILL: Record<string, string> = {
   submitted: "bg-b-mist text-b-cobalt", pending_review: "bg-b-sun-tint text-b-ink",
   resolved: "bg-b-receipt text-b-receipt-ink", rejected: "bg-b-fog text-b-muted",
 };
-/** DSP-<13 digit ms><8 hex>: the prefix plus the random tail is enough to tell cases apart on a phone. */
 const shortId = (id: string) => (id.length > 16 ? `${id.slice(0, 4)}…${id.slice(-8)}` : id);
 
-/** "Mis casos": a header button opening a sheet with the customer's disputes, fetched on each open. */
 export function CasesPanel({ lang }: { lang: Lang }) {
   const d = t(lang);
   const titleId = useId();

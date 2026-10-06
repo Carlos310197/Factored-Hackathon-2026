@@ -2,7 +2,6 @@ import type { HandoffPacket } from "@/lib/contract";
 import type { TraceBar, TraceTurn } from "@/lib/trace/viewModel";
 import { Gauge } from "../trace/Gauge";
 
-/** The crossed bars of the turn that routed to handoff. */
 export function whyBars(turns: TraceTurn[]): TraceBar[] {
   const t = turns.find((x) => x.route.next === "handoff");
   return t ? t.bars.filter((b) => b.crossed) : [];
@@ -16,7 +15,7 @@ const Box = ({ title, children }: { title: string; children: React.ReactNode }) 
 const words = (s: string) => s.replaceAll("_", " ");
 
 export function PacketTab({ packet, why }: { packet: HandoffPacket; why: TraceBar[] }) {
-  const checks = [...packet.policy_checks].sort((a, b) => Number(a.passed) - Number(b.passed)); // failed first
+  const checks = [...packet.policy_checks].sort((a, b) => Number(a.passed) - Number(b.passed));
   return (
     <div className="grid grid-cols-[1.2fr_1fr] gap-3 text-[13px]">
       <div>

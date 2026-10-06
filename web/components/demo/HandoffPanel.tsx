@@ -7,7 +7,6 @@ import { FILTERS } from "../staff/Queue";
 
 type Me = { sub: string; name: string };
 
-/** Demo act 4: the human-agent side of the phone's conversation. The case's own numbers live in the console (CaseStats). */
 export function HandoffPanel({ sid, me, refreshKey }: { sid: string | null; me: Me; refreshKey: number }) {
   const [rows, setRows] = useState<HandoffRow[]>([]);
   const load = useCallback(async () => {
@@ -15,7 +14,7 @@ export function HandoffPanel({ sid, me, refreshKey }: { sid: string | null; me: 
       try {
         const r = await fetch(`/api/handoffs?filter=${f}`, { cache: "no-store" });
         return r.ok ? HandoffRow.array().parse((await r.json()).data) : [];
-      } catch { return []; } // the next push or poll retries
+      } catch { return []; }
     }));
     setRows(got.flat());
   }, []);
@@ -28,7 +27,6 @@ export function HandoffPanel({ sid, me, refreshKey }: { sid: string | null; me: 
 
   return (
     <div className="min-w-0">
-      {/* Evidence-tagged medians from reports/asis-2026-10-05.md §4 (8,199 dispute complaints, 2025-06-17 → 2026-06-17). */}
       <p className="mb-3 text-sm text-c-muted"><b className="text-c-ink">Disputes today:</b> first response 37.0 h · resolved in 15.5 d · 69.8 % still open
         <span className="text-xs"> (medians, 8,199 complaints, Jun 2025–Jun 2026)</span></p>
       {id ? <ConsoleWithTabs key={id} me={me} initialId={id} caseOnly />
