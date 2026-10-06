@@ -241,7 +241,7 @@ Spanish-speaking customers' histories. The nil slice (15 cases) is too small to 
 | Agent end-to-end check | All 8 scenarios against real Jev and Bedrock on 2026-10-05 (`agent/docs/smoke-results.md`) |
 | Evaluation harness (`eval/`) | Code done and tested offline; **no live evaluation run yet**, so no resolution, containment or cost metrics are reported |
 | Transaction resolver | Trained, calibrated and evaluated on the frozen test set (two runs, both reported). In the agent it is switched on by `RESOLVER_ARTIFACT` / `THRESHOLDS_FILE` (set in Docker Compose); the deployed runtime gets them with the next agent deploy |
-| Monitoring and alarms | Six CloudWatch alarms on the agent's log lines (turn failures, template fallbacks, decision-record write failures, turns over 20 s, a serving export older than 2 days, sessions hitting the turn cap; `infra/terraform/agent/alarms.tf`) emailing an SNS topic, plus a monthly AWS Budget (80 % actual / 100 % forecast); no dashboard |
+| Monitoring and alarms | Six CloudWatch alarms on the agent's log lines (turn failures, template fallbacks, decision-record write failures, turns over 20 s, a serving export older than 2 days, sessions hitting the turn cap; `infra/terraform/agent/alarms.tf`) emailing an SNS topic, plus a monthly AWS Budget (80 % actual / 100 % forecast). CloudWatch dashboard `lb-demo-ops` (`infra/terraform/agent/dashboard.tf`): turn latency p50/p95/max from a `turn_end <ms>` log line, turns per 5 min, every alarm metric and state, web load-balancer 5xx and p95. One alarm drill recorded in [`docs/operations.md`](docs/operations.md) |
 
 We report what we measured. We don't report numbers we haven't run.
 
@@ -281,7 +281,7 @@ We report what we measured. We don't report numbers we haven't run.
 **Before production**
 - A real identity provider, HTTPS, and `Secure` cookies.
 - An egress check in CI for every third-party payload (today it covers Jev in the offline suite).
-- Notifications wired to an on-call channel, a dashboard, and alarms on DynamoDB throttling and AgentCore errors.
+- Notifications wired to an on-call channel (today: one email address), and alarms on DynamoDB throttling and AgentCore errors.
 - A load test against the capacity limits above.
 - A per-customer turn cap (today it is per session), and a budget alert in the account that pays for Bedrock and on Jev.
 - A calibrated threshold set (current Jev thresholds are labeled "not calibrated").
