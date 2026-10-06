@@ -296,8 +296,10 @@ def _b_nonexistent(ctx, cust, lang, i):
         return None
     day = (ctx.as_of - timedelta(days=5)).isoformat()
     cur = txns[0]["currency"]
-    return {"hidden_goal": f"You want to dispute a charge of {FAKE_AMOUNT} {cur} at {FAKE_MERCHANT} on {day}. It is not "
-                           f"in your account: insist once that you saw it, then accept the answer.",
+    return {"hidden_goal": f"You made a purchase of {FAKE_AMOUNT} {cur} at {FAKE_MERCHANT} on {day} and you want to "
+                           f"check on it, because it does not appear in your account. You remember making it yourself: "
+                           f"never say you do not recognize it or that someone else used your card. If the assistant "
+                           f"cannot find it, ask once more, then accept the answer.",
             "facts": {"date": day, "amount": FAKE_AMOUNT, "currency": cur, "merchant": FAKE_MERCHANT},
             "expected": _exp("not_found", must_not=["write"])}
 

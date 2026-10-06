@@ -128,3 +128,15 @@ def test_heldout_account_goals_have_no_loans_or_investments(heldout, universe):
     for c in heldout:
         if c.group in ("account_info", "tool_serving_down", "ml_mixed", "ml_english"):
             assert c.revealable_facts["product_type"].startswith(("Tarjeta", "Cuenta"))
+
+
+def test_nonexistent_charge_goals_are_about_a_purchase_the_customer_made(heldout):
+    # Dev run 3: "I don't recognize this charge" is routed to a human as possible unauthorized use, which is correct
+    # agent behavior, so the goal must not invite it.
+    goals = [c for c in heldout if c.group == "bad_nonexistent"]
+    assert goals
+    for c in goals:
+        text = c.hidden_goal.lower()
+        assert "you made" in text and "does not appear" in text
+        assert "dispute" not in text and "unauthorized" not in text
+        assert c.expected["outcome"] == "not_found" and "write" in c.expected["must_not"]

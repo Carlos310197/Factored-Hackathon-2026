@@ -23,7 +23,11 @@ goal uses a loan. Cost is `incomplete` (no Jev price).
 
 **D029 (`bad_nonexistent`) is still `handoff_unnecessary`.** The persona says it does not recognize the charge, and the
 agent correctly sends "charge I don't recognize" to a human (`reports_unauthorized_use`). The goal text, not the agent,
-invites that. Raised with the owner before the freeze.
+invites that. Owner decision (A): the `bad_nonexistent` goal now says the customer made the purchase and wants to check on it
+because it does not appear, never that they do not recognize it or that someone else used the card (test
+`test_nonexistent_charge_goals_are_about_a_purchase_the_customer_made`). Only D029 and held-out H111 and H112
+changed; the dev set was regenerated (sha256 `a14c204d…`), but dev3 was not rerun for that one card. Held-out sha256
+is now `c8b185c7…`, still not final until the label review and the freeze.
 
 ## Persona and harness findings (fixed here)
 
