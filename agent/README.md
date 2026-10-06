@@ -23,9 +23,10 @@ Local data (dev only, until the pipeline export exists): `uv run python scripts/
 | `LLM_EXTRACT_MODEL`, `LLM_COMPOSE_MODEL` | override `llm/models.yaml` (Bedrock model ids) |
 | `TABLE_PREFIX`, `DYNAMODB_ENDPOINT`, `AWS_REGION` | DynamoDB tables `<prefix>-checkpoints/disputes/handoffs/decision_records` (region `us-east-1`) |
 | `IDP_ISSUER`, `IDP_AUDIENCE`, `IDP_JWKS_URL` | mock IdP the agent trusts |
+| `RESOLVER_ARTIFACT`, `THRESHOLDS_FILE` | turn the transaction resolver on (artifact directory, thresholds file); unset, the agent runs Jev alone with `understand.v1`. The compose stack sets both (`resolver.v1`, `thresholds.v2`) |
 | `AWS_PROFILE` | credentials for Bedrock (SigV4 to the Bedrock Mantle endpoint) and the S3 serving set |
 
-Models per role live in `llm/models.yaml` (currently `openai.gpt-oss-20b` for `extract` and `openai.gpt-oss-120b`
+Models per role live in `llm/models.yaml` (currently `mistral.ministral-3-14b-instruct` for `extract` and `openai.gpt-oss-120b`
 for `compose`, over the Bedrock Mantle chat-completions endpoint). Every call is input-to-JSON with a schema;
 OpenAI has no tools.
 
@@ -46,6 +47,15 @@ Each script below calls a real service and runs **only with the owner's approval
 input) and `scripts/smoke_serving.py` (serving read latency; local directory or `s3://`). Results are appended to
 `docs/smoke-results.md`.
 
+## Transaction resolver
+A logistic-regression ranker (`resolver/artifacts/v1`, card in `MODEL_CARD.md`) scores the 60-day candidates and Jev reads the
+scores as evidence (`understand.v2`). Adopted after evaluating Andrés's 150 blind messages twice (n = 150, so differences inside about ±7 points are not
+established). Run 1 (`extract` = gpt-oss-20b, 27% of extractions failed): wrong-action 0.7% for B2 and P, hard-slice
+resolved-within-one-step P 96.0% vs B2 95.6%. Run 2, after switching `extract` to Ministral 3 14B (1 of 150 failed): wrong-action
+0.7% for both, hard-slice P 98.7% vs B2 94.2% (paired 95% interval +1.3 to +10.7 points). Thresholds and the dev set were not
+redone: they come from gpt-oss-20b extractions. Reports: `resolver/reports/eval-2026-10-05.md` (run 1) and
+`resolver/ministral/reports/eval-2026-10-05.md` (run 2). Any resolver failure falls back to `understand.v1`.
+
 ## Known limitations
 - Dispute policy and thresholds are labeled synthetic starting values, not calibrated (spec 2 tunes them).
 - No Portuguese-speaking customers exist in the dataset; Portuguese is a session choice and PT test cases are team-written.
@@ -58,3 +68,6 @@ input) and `scripts/smoke_serving.py` (serving read latency; local directory or 
   rejects it (`llm/client.py`) and the reply falls back to the fixed template; see `tests/test_llm.py`.
 - `scripts/pick_demo_users.py` picks customers with an approved purchase and a declined payment; scenario data beyond
   that (for example a genuine double charge) needs an identity picked by query — report gaps, never fabricate.
+- `extract` was `openai.gpt-oss-20b`, which failed on 27% of the test messages (truncated output or a restarted JSON object);
+  it is now `mistral.ministral-3-14b-instruct` (1 failure in 150). The dev set and the tuned thresholds still come from
+  gpt-oss-20b extractions; override with `LLM_EXTRACT_MODEL`.

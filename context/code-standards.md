@@ -161,7 +161,7 @@ Quality metrics (automated resolution, containment, escalation quality, unsafe o
 - `customer_id` comes **only** from a verified JWT (`SessionContext`). No tool takes a `customer_id` argument, and a transaction that isn't owned gives the same `not_found` as one that doesn't exist.
 - **OpenAI has no tools.** Both calls (`extract`, `compose`) are input-to-JSON with `response_format`. No LLM chooses a graph edge.
 - **Jev:** TypeSafe `POST https://api.typesafe.ai/v1/systemone`, model `jev-1.13.0`, key `JEV_API_KEY`; 3-second timeout; one retry on timeouts and 5xx only; invalid responses are errors, never approval; no model substitution.
-- **OpenAI on Bedrock defaults:** `extract` = `openai.gpt-oss-20b`; `compose` = `openai.gpt-oss-120b` (effort `low`); overridable via `LLM_EXTRACT_MODEL` / `LLM_COMPOSE_MODEL` *(updated 2026-10-05: the commercial GPT-5.6 roles need special account access, so the shipped defaults are the OSS models available to every account — see Architecture Decisions 2026-10-05; pinned by `test_model_defaults_and_env_override`)*.
+- **OpenAI on Bedrock defaults:** `extract` = `mistral.ministral-3-14b-instruct` *(changed 2026-10-05 from `openai.gpt-oss-20b`, see Architecture Decisions)*; `compose` = `openai.gpt-oss-120b` (effort `low`); overridable via `LLM_EXTRACT_MODEL` / `LLM_COMPOSE_MODEL` *(updated 2026-10-05: the commercial GPT-5.6 roles need special account access, so the shipped defaults are the OSS models available to every account — see Architecture Decisions 2026-10-05; pinned by `test_model_defaults_and_env_override`)*.
 - **Dispute policy** `dispute-policy.v1` (labeled synthetic):
   - only `Approved`; types `Purchase, Withdrawal, Payment, Transfer`;
   - 60-day window before `max_process_date`;

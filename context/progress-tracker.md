@@ -11,7 +11,7 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## Current Goal
 
-- Transaction resolver units 38 (train, dev set, finalize, tune; about 600 Bedrock + 600 Jev calls) and 39 (freeze, evaluate once; Andrés's completed sheet needed first) are `[live]`: each step needs the owner's approval. Send `agent/resolver/data/test_sheet_v1.csv` and `TEST_SHEET_README.md` to Andrés. The evaluation's offline code (units 40–50) is done; its live runs (51–52) wait for 39's adoption decision. The UI (53+) and deployment (77+) follow.
+- Transaction resolver is complete (units 26–39, both runs, human ceiling).
 
 ## Completed
 
@@ -213,6 +213,39 @@ Update this file whenever the current phase, the active unit or the implementati
 - 82 (deploy) `infra/terraform/identity/`: `lb-demo-identity` arm64 image Lambda (512 MB, 10 s, X-Ray) behind a `$default` AWS_PROXY HTTP API (10/s, burst 20, permission scoped to the API). Image URI read from the `/fh26/identity/image` parameter via `data` remote state; signing secret referenced by name (`data.aws_secretsmanager_secret`). `IDP_ISSUER` = `api_endpoint`, `IDP_DEMO_MODE=1`, outputs `issuer`, `jwks_url` (`<issuer>/jwks.json`), `api_id`, `function_name`. `terraform test`: 4 runs pass (offline, mocked).
 
 - 78 (deploy) agent deployed settings: `load_settings()` reads the Jev key from `JEV_SECRET_ID` (raw string, stripped) when `JEV_API_KEY` is unset and logs an error instead of raising on failure (empty key, no crash loop); `Settings.git_sha` from `GIT_SHA` (default `dev`); `sessions` TTL 90 days (`SessionRepo.TTL_DAYS`, attribute `ttl`); `DecisionLog.append(trace_id=)` stores `trace_id` only when given; `turn_end` payload carries `language`. `tables.json` regenerated and `data.tftest.hcl` TTL assertions flipped (sessions now has TTL): the controller must apply the in-place TTL update on the `data` root. 284 agent tests pass, `terraform test` in `data` passes. The local `.env` rename (`TYPESAFE_API_KEY` to `JEV_API_KEY`) was not done: no `.env` in the worktree.
+- 2026-10-05: **Unit 38: Resolver Real Run I** (owner approved the Bedrock dev-set build and the Jev dev runs; run with `AWS_PROFILE=hackathon-sso`, the default profile is the organizers' S3-only user and gets a 403 on Bedrock Mantle):
+  - Train (offline, `train --serving .serving-full`, 30k train / 3k simulated-validation cases, 17 grid points, MLflow in `agent/mlruns`): logreg C=1 simulated-validation top-1 0.919 (hard 0.905), LightGBM 31 leaves / lr 0.1 / 500 trees top-1 0.927 (hard 0.894);
+  - Dev set: `agent/resolver/data/dev_v1.jsonl`, 300 rows (150 ES / 150 PT), 158 cases skipped after LLM errors (mostly gpt-oss output truncated at `max_tokens`). **Slice mix is skewed**: 186 easy / 84 hard / 30 not_in_list, because the skipped cases were disproportionately hard; the simulator targets about 50% hard. 17 extractions had no mentions. No scientific-notation amounts, no `CLI-`/`PRD-` ids. Carlos has not yet reviewed 30 rows for realism (spec §5.3 item 5), so the regeneration count `k` is not recorded;
+  - Finalize (`finalize --promote`): **logreg chosen**, dev hard-slice top-1 0.917 vs LightGBM 0.833, temperature **1.337**; dev ECE 0.168 (logreg), nil AUC 0.873. Artifact and `MODEL_CARD.md` in `src/bankagent/resolver/artifacts/v1/`. LightGBM stays a resolver-group dependency;
+  - Jev on dev (1 run each, 300 calls per system, 0 errors): `resolver/runs/jev/dev/{B2,P}_r1.jsonl`;
+  - Tune (≤ 2% dev wrong-action): B1 τ=0.62 φ=0.30 (coverage 0.637, resolved-in-one-step 0.853); B2 t=0.59 m=0.18 (0.747, 0.910); **P t=0.74 m=0.48** (0.767, 0.947). `decisions/thresholds.v2.yaml` written; figures `dev_coverage_curve.png` and `dev_reliability.png`. These are dev numbers, not the adoption decision: that is unit 39 on the frozen test set;
+  - Bugs fixed on the way, with tests: the dev writer is now a plain-text call (the model returned `{ {"message": ...}` 9 times out of 10 in JSON mode) and writes amounts in plain digits (`:g` produced `3.39847e+07`); `call_json` now accepts a bare doubled opening brace `{ {` (no content dropped; a restart after content stays rejected, unit 25's regression test still passes). The same doubled brace made the production `extract` fail about 70% of the time on `openai.gpt-oss-20b`, so this also helps the agent. Open: `extract` still hits `truncated output` on roughly 20% of calls at `max_tokens: 1024`;
+  - Tests: agent suite 245 passed.
+
+- 2026-10-05: **Unit 39: Resolver Real Run II** (worktree `worktree-resolver-real-run-test`, branch `feature/39-resolver-real-run-test`; owner approved the Bedrock ingest and the Jev test runs):
+  - **Process note:** PR #28 merged at its first push, so the unit 38 commits (artifact, dev set, tuned thresholds, the `{ {` JSON fix) were not on `main`; the first test ingest ran without the fix (92 of 150 extractions failed) and was discarded. Those commits are now merged into this branch and the 150 Bedrock calls were redone (so 300 `extract` calls in total were spent on the test set; no Jev call had been made, so the evaluate-once rule is intact). The discarded file is not in the repo;
+  - Test set frozen before any evaluation (SHA-256 in Spec Changelog → Resolver), ingested to `agent/resolver/data/test_v1.jsonl` (150 rows, transaction fields only). **41 of 150 rows (27%) have extraction errors** (34 truncated output, 7 restarted JSON) and run with empty mentions, as the live agent would; every system reads the same extraction. The dev set excluded such cases, so dev-tuned thresholds never saw them;
+  - Jev test runs: B2 and P, 3 repeats, 900 calls, 0 errors (`resolver/runs/jev/test/`);
+  - Result (`resolver/reports/eval-2026-10-05.md`, `errors.csv`): wrong-action 0.7% for both B2 and P (1 of 150); hard-slice resolved-within-one-step P 96.0% vs B2 95.6% (paired P−B2 95% interval −1.3 to +10.7 points, so **not established at n = 150**); coverage 76.2% vs 76.0%; B0 28.0% / B1 43.3% coverage with 0 wrong actions; on the 15 not_in_list cases P resolved 57.8% in one step vs B2 80.0% and B2 acted wrongly once (small sample); P adds about 117 median Jev input tokens per call, latency unchanged (p50 about 280 ms);
+  - **Adoption decision: adopt P** (the rule fixed in code: wrong-action(P) ≤ B2 and hard-slice resolved-one-step(P) > B2, both on point estimates). `agent/docker-compose.yml` now sets `RESOLVER_ARTIFACT` and `THRESHOLDS_FILE` (pinned by `tests/test_compose_resolver.py`); `agent/README.md` documents the resolver, the evidence and the `extract` failure rate. The Terraform `agent` root (units 83+) must set the same two variables when it is built;
+  - Error analysis in the report labels every cause "unconfirmed": 9 failed cases for P (6 simulator-gap/other, mostly not_in_list cases where P asked instead of resolving), 1 act-wrong (ranker ranked the target below another candidate);
+  - **Human ceiling not done**: `agent/resolver/data/ceiling_v1.csv` (40 blind cases) is waiting for Carlos to fill the `pick` column (a candidate number or `none`); then rerun `uv run python scripts/resolver.py report` (offline) to add the ceiling to the report;
+  - Tests: agent suite 293 passed.
+
+- 2026-10-05: **`extract` model comparison on the 150 test messages** (owner-approved, about 300 Bedrock calls; `agent/scripts/compare_extract_models.py`, production `extract.v2` prompt and `max_tokens` 1024, only the model swapped; no Jev calls, `models.yaml` unchanged):
+  - `openai.gpt-oss-20b` (current): 41 of 150 failed (27%); on the 99 non-nil rows where it worked, 61% of extractions are consistent with the known target (`matches_mentions`, a strict check: merchant substring, amount within 1%, date inside range);
+  - `mistral.ministral-3-14b-instruct`: **0 of 150 failed**, p50 1.8 s / p95 2.9 s, about 209 output tokens, 64% consistent on all 135 non-nil rows (65% on the 99 rows where gpt-oss worked);
+  - `qwen.qwen3-next-80b-a3b-instruct`: **0 of 150 failed**, p50 3.3 s / p95 4.3 s, about 202 output tokens, 61% consistent (63% on the same 99 rows);
+  - `xai.grok-4.3`: listed by the Mantle endpoint, but chat-completions rejects it (`isn't supported on this route`); a one-off Responses-API probe timed out at 30 s on a trivial prompt. Not testable through the current client, so not compared;
+  - Reading: the new models fix reliability (27% → 0%) at equal extraction quality on this metric. Not measured: end-to-end effect on B2/P (would need a labeled rerun of the Jev test runs), Spanish/Portuguese gloss quality, cost. Switching is `LLM_EXTRACT_MODEL=<id>`; the dev set, thresholds and test evaluation were all produced with gpt-oss-20b.
+
+- 2026-10-05: **Resolver run 2: `extract` switched to `mistral.ministral-3-14b-instruct` and the test evaluation redone** (owner-approved: 150 Bedrock + 900 Jev calls; same frozen sheet SHA-256, same artifact and thresholds; files in `agent/resolver/ministral/{data,runs,reports}`, run 1 kept untouched in `agent/resolver/{data,runs,reports}`):
+  - Extraction errors 41/150 → 1/150. Coverage rose for the non-Jev systems (B0 28% → 44%, B1 43% → 58%) because fewer messages lost their mentions; B0 and B1 each made 1 wrong action (0 in run 1);
+  - B2 and P: wrong-action 0.7% each (1 case); coverage 76.0% vs 76.7%; hard-slice resolved-within-one-step **P 98.7% vs B2 94.2%**, paired P−B2 95% interval +1.3 to +10.7 points (run 1: 96.0% vs 95.6%, interval −1.3 to +10.7); top-3 recall when asking P 98.3% vs B2 89.3%;
+  - **Adoption decision unchanged: adopt P**, now with the paired interval excluding zero on the hard slice. Caveats: the two runs share the same 150 messages, so they are not independent evidence; thresholds were tuned on gpt-oss extractions; both results are reported;
+  - `scripts/resolver.py report` now prints the extract model next to the prompt version. Docs updated (`agent/README.md`, `context/code-standards.md`, Architecture Decisions 2026-10-05).
+
+- 2026-10-05: **Human ceiling done** (Carlos, blind, 40 random test cases: 16 hard / 21 easy / 3 not_in_list; `agent/resolver/data/ceiling_v1.csv`, also linked from `resolver/ministral/data`): 27/40 = 67.5%. Rule used: type `none` when a message is ambiguous. Misses: 11 `none` answers where the target was in the list (abstentions), 1 wrong candidate, 1 candidate picked on a not-in-list case; of the 27 answers that named a candidate, 25 were right (92.6%). Both reports (`resolver/reports/` and `resolver/ministral/reports/`) now carry the ceiling and this reading; it is not comparable to `resolved_one_step`. Resolver definition of done: complete.
 
 ## In Progress
 
@@ -226,7 +259,7 @@ Unit ranges, in build order (see `feature-specs/README.md` for the full list and
 | --- | --- | --- | --- |
 | 01–11 | Data pipeline | **done**, running daily and green | none |
 | 12–25 | Agent core | **done**; 25 ran and recorded the definition-of-done run | none (16 uses a synthetic fixture; 23 uses the local drop) |
-| 26–39 | Transaction resolver | 26–37 **done**; 38–39 are `[live]` and wait for the owner's approval | 12, 16 |
+| 26–39 | Transaction resolver | 26–39 **done** (P adopted; human ceiling done) | 12, 16 |
 | 40–52 | Evaluation | 40–50 **done** (offline code, branch `feature/40-50-evaluation`); 51–52 are `[live]` and wait for the owner's approval and for unit 39's adoption decision | 43+ need agent core 12–24 |
 | 53–76 | UI | not started | agent core 12–22 |
 | 77–90 | Deployment | not started; Terraform `bootstrap`, `platform` and the `app` web shell already exist | 77 has none; the rest follow the agent core and UI |
@@ -336,6 +369,10 @@ Each is checked in plan task 1, with the fallback chosen in advance.
 Fixed in `web/`: C1 HandoffPacket now matches `packet.py` (decision `value` string or number, `p`, policy `detail`); I1 `COOKIE_SECURE`; I2 ECS guard on forged cookies; I3 Summary amount/currency/reason_code are nullish; M1 takeover/return condition on `sessions.control`; M2 resolve refuses an already resolved case; M4 history GET is 401 without any session (404 kept for a non-owner); M5 staff 401s in Console, ConversationTab and the demo stage go to `/login?staff=1&next=...`; M61 `<html lang>` follows the customer's language (en for staff). Tests: `tests/unit/review-fixes.test.ts` plus additions to ddb, messages-route and console tests.
 
 ## Architecture Decisions
+
+### 2026-10-05: `extract` model (resolver real run)
+
+`extract` moved from `openai.gpt-oss-20b` to `mistral.ministral-3-14b-instruct` (Bedrock Mantle, same chat-completions client, `LLM_EXTRACT_MODEL` still overrides). **Why:** gpt-oss-20b failed on 41 of 150 real test messages (27%: truncated output or restarted JSON) and Ministral on 0 to 1 of 150, with equal extraction quality on a target-consistency check. **Effect:** the resolver test set was evaluated twice (run 1 gpt-oss, run 2 Ministral; both disclosed, same frozen sheet and thresholds); both adopt P. The dev set, the promoted artifact and the tuned thresholds were not rebuilt, so they still reflect gpt-oss extractions. `xai.grok-4.3` is listed by Mantle but not served on the chat-completions route.
 
 Decisions that change or settle the copied spec text. **They take precedence over the spec text in `context/` and `feature-specs/`.** Numbering follows each plan, so feature specs cite them as "agent-core plan #2", "UI plan #1", and so on.
 
@@ -604,8 +641,8 @@ Records that the specs say to fill in at fixed points. Fill them here.
 
 **Changelog:**
 - 2026-09-29: draft.
-- Test-set SHA-256: to be filled at freeze (§5.4).
-- Adoption decision: to be filled after the test run (§6.4).
+- Test-set SHA-256 (frozen 2026-10-05, before any evaluation; `agent/resolver/data/test_sheet_v1_completed.csv`, 150 messages, committed on `main` in `b3d60a7`): `1ab867754edd05bf8ed136071e9cd1326c59831119f2de06ad1b136d1f9a4bdd`.
+- Adoption decision (2026-10-05, §6.4): **adopt P** (Jev + ranker, `understand.v2`, `thresholds.v2`). wrong-action P 0.7% = B2 0.7%; hard-slice resolved-within-one-step P 96.0% > B2 95.6% (not statistically established at n = 150). Report: `agent/resolver/reports/eval-2026-10-05.md`. Human ceiling 27/40 (abstain-on-ambiguity rule, see reports).
 
 ### Evaluation
 

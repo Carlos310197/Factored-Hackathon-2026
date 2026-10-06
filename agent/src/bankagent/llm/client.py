@@ -200,9 +200,9 @@ def call_json(client, cfg: RoleConfig, system: str, user: str, schema: dict) -> 
                     except (TypeError, ValueError):
                         # Not valid JSON, continue searching
                         continue
-                    if start_idx != first_brace:
+                    if start_idx != first_brace and set(text[first_brace:start_idx]) - set("{ \t\r\n"):
                         # The output started an object that never parsed and a later fragment did:
-                        # a decoder restart. Never reply from a salvaged fragment.
+                        # a decoder restart. Never reply from a salvaged fragment. (A bare doubled opener, '{ {', drops no content.)
                         raise LLMError(f"ambiguous JSON output: {text[:200]}")
                     # Successfully parsed!
                     text = candidate

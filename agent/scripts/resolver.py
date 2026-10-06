@@ -190,7 +190,7 @@ def cmd_report(a):
     text = render_report(day=date.today().isoformat(),
                          versions={"resolver": resolver.version, "family": resolver.spec["metadata"].get("family"),
                                    "question sets": "understand.v1 (B2) / understand.v2 (P)",
-                                   "extract": test[0]["versions"]["extract"][1] if test else "n/a"},
+                                   "extract": " on ".join(reversed(test[0]["versions"]["extract"])) if test else "n/a"},
                          rows=test, dev_n=len(dev), thresholds=th, results=results, decision=adoption(results, test),
                          latency=lat, tokens=tokens,
                          calibration={"temperature": resolver.temperature, "ece_before": cal["ece"],
