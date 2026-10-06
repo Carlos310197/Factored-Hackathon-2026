@@ -200,10 +200,12 @@ A presenter rail on the left:
 
 ### Act 4: Handoff (added 2026-10-05, not in ui §9)
 
-The phone stays on the left; the right panel is the human-agent side of the same conversation (`components/demo/HandoffPanel.tsx`):
+The phone stays on the left; the right panel is the human-agent side of the same conversation (`components/demo/HandoffPanel.tsx`): one line with the as-is report's evidence medians for disputes (37.0 h first response, 15.5 d to resolve, 69.8 % still open), then the real console (`ConsoleWithTabs` with `caseOnly`: no queue, no top bar) on the newest handoff whose `session_id` is the phone's session, so Take over / Resolve and the composer work as in `/agent`. Until one exists it says so.
 
-- **Stat cards:** *This conversation* (turns, mean reply time, template fallbacks, handoff → claimed), *Queue now* (counts per queue filter, oldest open) and *Disputes today vs here* (the as-is report's evidence medians: 37.0 h first response, 15.5 d to resolve, 69.8 % still open, with this conversation's first reply time next to them).
-- **Case:** the real console (`ConsoleWithTabs` with `caseOnly`: no queue, no top bar) on the newest handoff whose `session_id` is the phone's session, so Take over / Resolve and the Conversation composer work as in `/agent`. Until one exists it says so.
+### Console stats (`/agent`, added 2026-10-05)
+
+- Queue filter chips carry counts ("Open 3", "Mine 1"; `Console` loads all four filters at once), and the queue header shows the oldest open case's age.
+- `CaseStats` under the case header: turns, mean reply time, template fallbacks (from `/api/trace/:sid`) and how long after the handoff the case was claimed (or how long it has waited).
 
 ## Accessibility and language · ui §11
 

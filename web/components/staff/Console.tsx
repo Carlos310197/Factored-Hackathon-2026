@@ -5,8 +5,9 @@ import { HandoffPacket, HandoffRow, QueueEvent, type ResolutionCode } from "@/li
 import { useChannel } from "@/lib/realtime/useChannel";
 import type { CaseAction } from "@/lib/staff/actions";
 import { CaseHeader } from "./CaseHeader";
+import { CaseStats } from "./CaseStats";
 import { StaffSignOut } from "./StaffSignOut";
-import { Queue, type QueueFilter } from "./Queue";
+import { FILTERS, Queue, type QueueFilter } from "./Queue";
 
 export type CaseData = { packet: HandoffPacket; control: string };
 export type Tab = "packet" | "conversation" | "trace";
@@ -17,7 +18,9 @@ type CaseState = "missing" | "error" | null;
 export function Console({ me, initialId, renderTab, caseOnly }: { me: { sub: string; name: string }; initialId?: string;
   renderTab?: (tab: Tab, c: CaseData) => React.ReactNode; caseOnly?: boolean }) {
   const [filter, setFilter] = useState<QueueFilter>("open");
-  const [rows, setRows] = useState<HandoffRow[]>([]);
+  // every filter at once: the chips show counts, and switching filters is instant
+  const [lists, setLists] = useState<Record<QueueFilter, HandoffRow[]> | null>(null);
+  const rows = lists?.[filter] ?? [];
   const [fresh, setFresh] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<string | undefined>(initialId);
   const [data, setData] = useState<CaseData | null>(null);
@@ -37,17 +40,17 @@ export function Console({ me, initialId, renderTab, caseOnly }: { me: { sub: str
   useEffect(() => { const t = timers.current; return () => t.forEach(clearTimeout); }, []);
 
   const loadRows = useCallback(async () => {
-    const seq = ++rowsSeq.current; // a slow response for an old filter must not overwrite the current one
+    const seq = ++rowsSeq.current; // a slow response must not overwrite a newer one
     try {
-      const r = await fetch(`/api/handoffs?filter=${filter}`, { cache: "no-store" });
-      if (r.status === 401) return redirectToStaffLogin();
-      if (r.ok && seq === rowsSeq.current) {
-        const list = HandoffRow.array().parse((await r.json()).data);
-        list.forEach((x) => seen.current.add(x.handoff_id));
-        setRows(list);
-      }
+      const rs = await Promise.all(FILTERS.map(([f]) => fetch(`/api/handoffs?filter=${f}`, { cache: "no-store" })));
+      if (rs.some((r) => r.status === 401)) return redirectToStaffLogin();
+      if (!rs.every((r) => r.ok)) return;
+      const got = await Promise.all(rs.map(async (r) => HandoffRow.array().parse((await r.json()).data)));
+      if (seq !== rowsSeq.current) return;
+      got.flat().forEach((x) => seen.current.add(x.handoff_id));
+      setLists(Object.fromEntries(FILTERS.map(([f], i) => [f, got[i]])) as Record<QueueFilter, HandoffRow[]>);
     } catch { /* the next poll or push retries */ }
-  }, [filter]);
+  }, []);
   const loadCase = useCallback(async (id: string) => {
     const seq = ++caseSeq.current; // a stale response must not show case A while B is selected
     try {
@@ -104,7 +107,9 @@ export function Console({ me, initialId, renderTab, caseOnly }: { me: { sub: str
         <b>LATAM Bank · Agent console</b><span className="flex items-center gap-3"><span className="text-xs opacity-80">{me.name} · test identity</span><StaffSignOut /></span>
       </div>}
       <div className={`grid flex-1 min-h-0 ${caseOnly ? "grid-cols-1" : "grid-cols-[290px_1fr]"}`}>
-        {!caseOnly && <Queue rows={rows} filter={filter} onFilter={setFilter} selected={selected} onSelect={(id) => { if (id === selected) return; caseSeq.current++; setData(null); setCaseState(null); setSelected(id); setTab("packet"); setNotice(null); }} fresh={fresh} me={me.sub} />}
+        {!caseOnly && <Queue rows={rows} filter={filter} onFilter={setFilter} selected={selected} onSelect={(id) => { if (id === selected) return; caseSeq.current++; setData(null); setCaseState(null); setSelected(id); setTab("packet"); setNotice(null); }} fresh={fresh} me={me.sub}
+          counts={lists ? Object.fromEntries(FILTERS.map(([f]) => [f, lists[f].length])) as Record<QueueFilter, number> : undefined}
+          oldestOpen={lists?.open.map((r) => r.created_at).sort()[0]} />}
         <section className={`overflow-y-auto min-w-0 ${caseOnly ? "" : "p-5"}`}>
           {notice && <p role="status" className="mb-2 text-sm text-c-alert">{notice}</p>}
           {!data ? (
@@ -114,6 +119,7 @@ export function Console({ me, initialId, renderTab, caseOnly }: { me: { sub: str
           ) : (
             <>
               <CaseHeader packet={data.packet} control={data.control} me={me} onAction={(a, b) => void act(a, b)} pending={pending} />
+              <CaseStats packet={data.packet} />
               <div role="tablist" className="flex gap-0.5 mt-4 mb-3 border-b border-c-line">
                 {(["packet", "conversation", "trace"] as const).map((k) => (
                   <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}

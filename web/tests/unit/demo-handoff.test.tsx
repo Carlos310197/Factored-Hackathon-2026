@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Console } from "@/components/staff/Console";
 import { HandoffPanel } from "@/components/demo/HandoffPanel";
@@ -10,7 +10,7 @@ vi.mock("@/lib/realtime/useChannel", () => ({ useChannel: () => "polling" }));
 vi.mock("@/components/staff/ConsoleWithTabs", () => ({
   ConsoleWithTabs: (p: { initialId?: string; caseOnly?: boolean }) => <p>{`console ${p.initialId} caseOnly=${p.caseOnly}`}</p>,
 }));
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 const me = { sub: "agent.ana", name: "Ana R." };
 const T0 = "2026-10-05T21:00:00.000Z";
@@ -33,8 +33,30 @@ function api(lists: Record<string, object[]>, turns: object[] = []) {
   }));
 }
 
-describe("Console caseOnly", () => {
-  it("shows the case without the queue or the console's own top bar", async () => {
+describe("Console stats", () => {
+  it("counts every queue filter on its chip and shows the oldest open case", async () => {
+    vi.useFakeTimers({ now: Date.parse("2026-10-05T21:09:00.000Z"), toFake: ["Date"] });
+    api({ open: [row("HND-A", "S9"), row("HND-B", "S8", "open", "2026-10-05T21:05:00.000Z")], mine: [row("HND-C", "S1", "claimed")],
+      resolved: [row("HND-D", "S7", "resolved")] });
+    render(<Console me={me} />);
+    expect(await screen.findByRole("button", { name: "Open 2" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mine 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "In takeover 0" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Resolved 1" })).toBeInTheDocument();
+    expect(screen.getByText("oldest open 9 min")).toBeInTheDocument();
+  });
+
+  it("shows the conversation's numbers under the case header", async () => {
+    api({ mine: [row("HND-C", "S1", "claimed")] }, [turn(3200), turn(4800, true)]);
+    render(<Console me={me} initialId="HND-C" />);
+    const stats = await screen.findByRole("list", { name: "Conversation stats" });
+    await waitFor(() => expect(stats).toHaveTextContent("2 turns")); // the turn numbers arrive with the trace
+    expect(stats).toHaveTextContent("mean reply 4.0 s");
+    expect(stats).toHaveTextContent("1 template fallback");
+    expect(stats).toHaveTextContent("claimed 42 s after handoff");
+  });
+
+  it("caseOnly shows the case without the queue or the console's own top bar", async () => {
     api({ open: [row("HND-A", "S1")] });
     render(<Console me={me} initialId="HND-A" caseOnly />);
     expect(await screen.findByRole("heading", { name: /HND-A/ })).toBeInTheDocument();
@@ -57,28 +79,13 @@ describe("HandoffPanel", () => {
     expect(screen.queryByText(/console HND-OTHER/)).toBeNull();
   });
 
-  it("opens this session's newest handoff in a case-only console", async () => {
+  it("opens this session's newest handoff in a case-only console under the as-is dispute line", async () => {
     api({ open: [row("HND-OLD", "S1", "open", "2026-10-05T20:00:00.000Z"), row("HND-OTHER", "S9")], mine: [row("HND-NEW", "S1", "claimed")] });
     render(<HandoffPanel sid="S1" me={me} refreshKey={0} />);
     expect(await screen.findByText("console HND-NEW caseOnly=true")).toBeInTheDocument();
-  });
-
-  it("shows queue counts, this conversation's numbers and the as-is dispute baseline", async () => {
-    api({ open: [row("HND-A", "S9"), row("HND-B", "S8")], mine: [row("HND-C", "S1", "claimed")], resolved: [row("HND-D", "S7", "resolved")] },
-      [turn(3200), turn(4800, true)]);
-    render(<HandoffPanel sid="S1" me={me} refreshKey={0} />);
-    const queue = await screen.findByRole("region", { name: "Queue now" });
-    expect(within(queue).getByText("Open").nextSibling).toHaveTextContent("2");
-    expect(within(queue).getByText("Mine").nextSibling).toHaveTextContent("1");
-    expect(within(queue).getByText("Resolved").nextSibling).toHaveTextContent("1");
-    const conv = screen.getByRole("region", { name: "This conversation" });
-    expect(await within(conv).findByText("42 s")).toBeInTheDocument(); // handoff → claimed
-    expect(within(conv).getByText("2")).toBeInTheDocument(); // turns
-    expect(within(conv).getByText("4.0 s")).toBeInTheDocument(); // mean reply time
-    expect(within(conv).getByText("1")).toBeInTheDocument(); // template fallbacks
-    const kpi = screen.getByRole("region", { name: "Disputes today vs here" });
-    expect(within(kpi).getByText("37.0 h")).toBeInTheDocument();
-    expect(within(kpi).getByText("here: 3.2 s")).toBeInTheDocument(); // first reply in this conversation
-    expect(within(kpi).getByText("15.5 d")).toBeInTheDocument();
+    const line = screen.getByText(/Disputes today/).closest("p")!;
+    expect(line).toHaveTextContent("37.0 h");
+    expect(line).toHaveTextContent("15.5 d");
+    expect(line).toHaveTextContent("69.8 %");
   });
 });
