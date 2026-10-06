@@ -8,6 +8,10 @@ def _v(metrics: dict, key: str, fmt: str = "{:.1%}") -> str:
     return f"{fmt.format(x['value'])} (n={x['n']:,})"
 
 
+def _num(x) -> str:
+    return f"{x:,.0f}" if float(x).is_integer() else f"{x:.6f}"
+
+
 def render(metrics: dict, artifacts: list[dict], recon: dict, date: str, figures: list[str]) -> str:
     arts = {a["name"]: a for a in artifacts}
 
@@ -84,5 +88,15 @@ def render(metrics: dict, artifacts: list[dict], recon: dict, date: str, figures
             _, dim, val, _ = k.split(".", 3)
             L.append(f"| {dim.removeprefix('by_')} | {val} | {v(k)} | "
                      f"{v(f'fairness.{dim}.{val}.handle_time_s_p50', '{:,.0f}')} |")
+    if recon["checks"]:
+        L += ["", "## 9. Reconciliation with the curated marts", "",
+              "Same window (`process_date` 2025-06-17 → 2026-06-17) counted in `LATAM_BANK.CURATED` by "
+              "`analysis/asis/reconcile.sql` (read-only); tolerance 0.1%.", "",
+              "| Metric | As-is (raw drop) | Curated mart | Relative difference | Within tolerance |", "|---|---|---|---|---|"]
+        L += [f"| {c['key']} | {_num(c['ours'])} | {_num(c['curated'])} | {c['rel_diff']:.1%} | {'yes' if c['ok'] else 'no'} |"
+              for c in recon["checks"]]
+        if recon.get("context"):
+            L += ["", "Why they match: " + "; ".join(f"{k.removesuffix('_n').removesuffix('_rows').replace('_', ' ')} rows: {_num(v)}"
+                                                   for k, v in sorted(recon["context"].items())) + "."]
     L += ["", "## Figures", ""] + [f"![{f}](figures/{f})" for f in figures]
     return "\n".join(L) + "\n"
