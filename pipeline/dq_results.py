@@ -1,4 +1,4 @@
-"""Persist dbt test outcomes into META.DQ_RESULTS. Usage: uv run python -m pipeline.dq_results --run-id <id>"""
+"""Persist dbt test outcomes into META.DQ_RESULTS."""
 import argparse
 import json
 from datetime import datetime, timezone

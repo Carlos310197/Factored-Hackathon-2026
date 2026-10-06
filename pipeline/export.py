@@ -1,4 +1,4 @@
-"""Unload curated tables as parquet to <stage>/<run_id>/<table>/ and flip <stage>/latest.json. Usage: uv run python -m pipeline.export --run-id <id>"""
+"""Unload curated tables as parquet to <stage>/<run_id>/<table>/ and flip <stage>/latest.json."""
 import argparse
 import hashlib
 import os
@@ -31,7 +31,6 @@ def contract_hash(columns: dict[str, list[str]]) -> str:
 
 
 def dq_summary(cur, run_id: str) -> dict[str, int]:
-    """dbt test outcomes recorded for this run (META.DQ_RESULTS, written by pipeline.dq_results before the export)."""
     rows = cur.execute("select lower(status), count(*) from META.DQ_RESULTS where run_id = %s group by 1", (run_id,)).fetchall()
     return {s: int(n) for s, n in rows}
 
@@ -41,14 +40,14 @@ def unload_table(cur, table: str, run_id: str, stage: str) -> tuple[int, list[st
     res = cur.execute(
         f"copy into @{stage}/{run_id}/{table}/data_ from ({export_select(table, cols)}) "
         f"file_format = (type = parquet) header = true overwrite = true max_file_size = 268435456").fetchall()
-    return sum(int(r[0]) for r in res), cols  # rows_unloaded per file
+    return sum(int(r[0]) for r in res), cols
 
 
 def build_pointer(run_id: str, exported_at: str, max_process_date: str, tables: dict[str, int],
                   git_sha: str | None = None, contract_hash: str | None = None, dq_summary: dict | None = None) -> dict:
     p = {"run_id": run_id, "exported_at": exported_at, "max_process_date": max_process_date, "tables": tables}
     extra = {"git_sha": git_sha, "contract_hash": contract_hash, "dq_summary": dq_summary}
-    return p | {k: v for k, v in extra.items() if v is not None}  # a self-describing pointer
+    return p | {k: v for k, v in extra.items() if v is not None}
 
 
 def write_pointer(cur, pointer: dict, stage: str) -> None:
