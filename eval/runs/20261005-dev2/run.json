@@ -1,0 +1,21 @@
+{
+  "run_id": "20261005-dev2",
+  "goals": "goals/dev_v1.jsonl",
+  "goals_sha256": "7880faf611903e53dba5e3ce16ec5112806de085d56ee226ba8562bd563c84b7",
+  "git_sha": "d9eb5d21cbe59fbfe982a57721677a37fa83352e",
+  "reps": 1,
+  "persona_model": "gpt-6-luna",
+  "judge_model": "anthropic.claude-sonnet-5-5",
+  "agent_models": {
+    "extract": "mistral.ministral-3-14b-instruct",
+    "compose": "openai.gpt-oss-120b",
+    "dev_writer": "openai.gpt-oss-120b"
+  },
+  "prompt_versions": {
+    "extract": "extract.v2",
+    "compose": "compose.v2",
+    "dev_writer": "devwriter.v1"
+  },
+  "jev_model": "jev-1.13.0",
+  "started_at": "2026-10-06T00:40:37+00:00"
+}

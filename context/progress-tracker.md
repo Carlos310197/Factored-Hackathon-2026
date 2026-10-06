@@ -249,7 +249,7 @@ Update this file whenever the current phase, the active unit or the implementati
 
 ## In Progress
 
-- None.
+- **Unit 51 (evaluation live run I), branch `feature/51-eval-live-dev`.** Done: local stack, persona smoke, dev and held-out goal sets generated (seed 2026, held-out hash not final), dev run `eval/runs/20261005-dev2` (`gpt-6-luna`; the first run with `qwen3.6-plus` is kept as discarded evidence) and `calibration_notes.md`. Open: the teammate's label review of `eval/goals/review_heldout_v1.csv`, the owner's decision on the two open items in the calibration notes (unsupported goals when the persona accepts a human; loan goals in `account_info`), then freeze and record the SHA-256 here. Run 51's live steps from a shell that exports `OPENCODE_API_KEY`, `JEV_API_KEY`, `AWS_PROFILE=hackathon-sso`, `RESOLVER_ARTIFACT` and `THRESHOLDS_FILE`; `agent.serving_uri` is set locally and left blank in the committed config.
 
 ## Next Up
 
@@ -637,6 +637,7 @@ The handler code and its Vitest tests from UI Tasks 7–8 stay. The probe script
 1. **Three artifact detectors rewritten** (`analysis/asis/artifacts.py`, tests in `test_artifact_shapes.py`). On the real drop the plan's detectors said "no" for three artifacts that spec §2 lists, so the report would have tagged them *evidence*: `wait_constant` compared individual waits (p10 41 s, p90 197 s) instead of per-slice medians (119–120 s); `escalation_flat` used 22 reason×channel buckets (sampling noise alone gave range 0.025) instead of contact reasons (range 0.010); `csat_by_resolution` used an absolute 0.05 range although unresolved CSAT varies 0.08 across reasons, so it now compares the resolved-unresolved gap (0.99) with the within-status spread (`max_within_share=0.15`, replacing `max_range`). All seven detectors now hold on the real data. Also added a tiebreaker to the `order by count desc` queries (the run was not deterministic on ties).
 2. **`eval/config.yaml`: `agent.region` is `us-east-1`** (the plan had us-east-2), matching the region decision of 2026-10-04 and `Settings.aws_region`.
 3. **`.gitignore`** tracks `analysis/pyproject.toml`, `uv.lock`, `asis/` and `reports/`; the older untracked profiling scripts in `analysis/` stay local. Appended `eval/runs/*/tmp/` (unit 46).
+4. **Persona model is `gpt-6-luna` through OpenCode's Responses API** (2026-10-05, unit 51). It is served only on `/responses` and rejects `temperature`, so `PersonaClient` supports `api: responses` and an optional temperature, and the persona runs at the model's default sampling (deviation from "temperature fixed", spec §4.4). `qwen3.6-plus` was tried first and discarded: about 1,000 reasoning tokens per message, 20 s per turn, and 19 of 30 dev conversations ended after one turn. The Responses output budget is 1,500 tokens so reasoning cannot cut a message off.
 
 ## Spec Changelog
 

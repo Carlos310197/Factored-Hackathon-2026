@@ -2,9 +2,10 @@
 persona:
   base_url: https://opencode.ai/zen/v1   # OpenAI-compatible chat completions; confirmed by the Task 12 smoke call
   api_key_env: OPENCODE_API_KEY
-  model: ""                              # a non-Claude model served through OpenCode, chosen by the owner
-  temperature: 0.7
-  timeout_s: 30
+  model: "gpt-6-luna"  # a non-Claude model served through OpenCode, chosen by the owner
+  api: responses                         # gpt-6-luna is served on /responses only (chat completions returns ModelProtocolUnsupported)
+  temperature: null                      # gpt-6-luna rejects the parameter; the model's default sampling applies
+  timeout_s: 90
 judge:
   model: anthropic.claude-sonnet-5-5
   prompt_version: judge.v1

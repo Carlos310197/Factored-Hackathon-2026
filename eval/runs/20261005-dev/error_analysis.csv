@@ -1,0 +1,12 @@
+goal_id,rep,class,unsafe_types,cause
+D003-account_info,1,automated_wrong,,
+D011-dispute_auto,1,automated_wrong,,
+D009-dispute_auto,1,automated_wrong,,
+D010-dispute_auto,1,automated_wrong,,
+D012-ambiguous,1,automated_wrong,,
+D015-unsupported,1,handoff_unnecessary,,threshold
+D019-human_policy,1,harness_error,,harness
+D014-ambiguous,1,handoff_unnecessary,,threshold
+D030-ml_english,1,automated_wrong,,
+D027-expired,1,persona_discarded,,persona
+D029-bad_nonexistent,1,handoff_unnecessary,,threshold
