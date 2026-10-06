@@ -1,5 +1,6 @@
 """Production wiring: real Jev, Claude on Bedrock, DuckDB over the serving set, DynamoDB and DynamoDBSaver."""
 import logging
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -11,7 +12,7 @@ from bankagent.decisions.jev import JevClient
 from bankagent.decisions.questions import load_question_set
 from bankagent.decisions.thresholds import load_thresholds
 from bankagent.graph.deps import Deps
-from bankagent.llm.client import make_bedrock_client
+from bankagent.llm.client import make_bedrock_client, warm_up
 from bankagent.llm.config import load_models
 from bankagent.policy.dispute import DisputePolicy
 from bankagent.resolver.model import Resolver, ResolverUnavailable
@@ -59,4 +60,6 @@ def build_runtime(settings: Settings) -> Runtime:
     checkpointer = DynamoDBSaver(table_name=table_name(settings.table_prefix, "checkpoints"),
                                  region_name=settings.aws_region, endpoint_url=settings.dynamodb_endpoint,
                                  ttl_seconds=CHECKPOINT_TTL_S)
+    # Warm both models in the background so the first customer turn doesn't pay the cold start.
+    threading.Thread(target=warm_up, args=(deps.llm_client, deps.models), daemon=True).start()
     return Runtime(settings, AgentService(deps, checkpointer), JwksCache(settings.jwks_url))

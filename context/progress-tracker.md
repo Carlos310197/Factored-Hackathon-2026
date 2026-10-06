@@ -490,6 +490,10 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-06: Model warm-up at container start
+
+- `llm.client.warm_up`: one `max_tokens=1` call per live role (extract, compose) in a background thread started by `build_runtime`; errors logged (`model warm-up failed`), never raised. Fixes the cold first compose (~13 s through the cross-account role) that sent the first turn on a fresh container to the template.
+
 ### 2026-10-06: HTTPS via CloudFront, ALB closed to everything else
 
 - `infra/terraform/app`: CloudFront distribution (default certificate, `redirect-to-https`, managed CachingDisabled + AllViewer, origin read timeout 60 s) in front of the ALB; the ALB security group admits only CloudFront's origin-facing prefix list (`pl-3b927c52`); `COOKIE_SECURE=1`. Output `url` is the CloudFront HTTPS address; `bin/app-url` prints it. Applied by `infra.yml` on merge.
