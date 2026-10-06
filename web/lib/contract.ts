@@ -48,6 +48,14 @@ export const SessionEvent = z.discriminatedUnion("type", [
 ]);
 export type SessionEvent = z.infer<typeof SessionEvent>;
 
+/** GET /api/customer/sessions: the customer's own conversations, newest first, hidden ones excluded. */
+export const SessionSummary = z.object({
+  session_id: z.string(), created_at: z.string(), language: Lang.catch("es"),
+  current: z.boolean(), ended: z.boolean(), preview: z.string().nullable(),
+});
+export type SessionSummary = z.infer<typeof SessionSummary>;
+export const NewSession = z.object({ session_id: z.string(), lang: Lang, expires_in: z.number() });
+
 export const HandoffStatus = z.enum(["open", "claimed", "in_takeover", "returned", "resolved"]);
 export type HandoffStatus = z.infer<typeof HandoffStatus>;
 export const Priority = z.enum(["critical", "high", "medium"]);

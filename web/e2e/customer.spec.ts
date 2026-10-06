@@ -86,6 +86,31 @@ test("login page has no serious accessibility issues", async ({ page }) => {
   await noSeriousA11y(page);
 });
 
+test("history: open the drawer, read a past conversation read-only, go back", async ({ page, context }) => {
+  await signInCustomer(context);
+  await mockApi(page, ({ url }) => {
+    if (url.pathname === "/api/customer/sessions") return { json: { data: [
+      { session_id: "S-1", created_at: "2026-10-06T14:05:00Z", language: "es", current: true, ended: false, preview: "Hola" },
+      { session_id: "S-0", created_at: "2026-10-01T09:00:00Z", language: "es", current: false, ended: true, preview: "Me cobraron dos veces" },
+    ] } };
+    if (url.pathname === "/api/sessions/S-0/messages") return { json: { data: [msg("c0", "customer", "Me cobraron dos veces"), msg("a00", "assistant", "Revisemos ese cargo.")] } };
+    if (url.pathname.endsWith("/messages")) return { json: { data: [] } };
+  });
+  await page.goto("/chat");
+  await page.getByRole("button", { name: "Conversaciones" }).click();
+  const drawer = page.getByRole("dialog", { name: "Conversaciones" });
+  await expect(drawer.getByText("Terminada")).toBeVisible();
+  await drawer.getByRole("button", { name: /Me cobraron dos veces/ }).click();
+  await expect(drawer.getByText("Revisemos ese cargo.")).toBeVisible();
+  await expect(drawer.getByText("Conversación anterior · solo lectura")).toBeVisible();
+  await expect(drawer.getByRole("textbox")).toHaveCount(0);
+  await noSeriousA11y(page);
+  await drawer.getByRole("button", { name: "Volver" }).click();
+  await expect(drawer.getByRole("listitem")).toHaveCount(2);
+  await page.keyboard.press("Escape");
+  await expect(drawer).toBeHidden();
+});
+
 test("my cases: the header opens a sheet with the customer's disputes, Escape closes it", async ({ page, context }) => {
   await signInCustomer(context);
   await mockApi(page, ({ url }) => {
