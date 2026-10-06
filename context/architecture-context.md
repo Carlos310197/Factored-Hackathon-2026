@@ -415,6 +415,7 @@ This is the audit artifact the brief requires: explanations come from these reco
    - **Request:** `{message, client_message_id}`, with the token in the `Authorization` header only. This drops the token-in-payload fallback.
    - **Response:** `{reply_text, language, awaiting: none|clarification|confirmation|human, options[], refs[], data_as_of, turn_id, summary?}`.
    - `summary` is present only when `awaiting = confirmation`: `{merchant, date, amount, currency, reason_code, product_last4}`. It's built from **the same draft object** that `create_dispute` files, so the card can never differ from the filed record.
+   - *(2026-10-06)* `summary.card_hash` is included; the card's button sends `confirm:<card_hash>`, which the agent compares in code (no model reads it). A request `{"warmup": true}` runs no turn (runtime build + one read of the caller's accounts) and returns `{warm}`. Errors are a normal reply with `error` (`auth_required`, `session_expired`, `identity_unavailable`, `invalid_message`, `duplicate_in_progress`, `turn_failed`). Stored assistant messages carry `language` in their meta.
 
 ## Interfaces Between Subsystems
 
@@ -468,6 +469,8 @@ No browser ever holds AWS credentials. Each hop authenticates.
 | BFF → AgentCore | *(updated 2026-10-04, deployment plan #1)* The customer's Bearer JWT only, from the ECS task; the AgentCore authorizer checks it and `app.py` re-verifies. The task role has no `InvokeAgentRuntime` permission. |
 | Browser → AppSync | Subscribe-only realtime token → Lambda authorizer → `onSubscribe` channel check (UI §3 rule 4) |
 | Publisher → AppSync | IAM, `appsync:EventPublish` on this API only |
+| Agent → Bedrock | *(2026-10-06)* Assumes the cross-account role `argos-bedrock-role` with an external id; receipts are redacted before they are sent |
+| Agent → Jev | *(2026-10-06)* API key from Secrets Manager `lb-demo/jev`; transactions as aliases only |
 | Snowflake → S3 | Integration `SI_SERVING` assumes the AWS role `snowflake-serving` with an external-ID trust condition; read/write/list on the serving bucket only (Terraform `platform`) |
 | GitHub → AWS | OIDC. *(updated 2026-10-04)* Deployed today: one role `gha-deploy` trusting `repo:Carlos310197/Factored-Hackathon-2026` on `ref:refs/heads/main` and `pull_request`, plus `pipeline-runner` with the same trust. Splitting a read-only PR role is remaining work. |
 
