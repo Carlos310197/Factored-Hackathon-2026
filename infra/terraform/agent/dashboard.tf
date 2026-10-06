@@ -14,6 +14,21 @@ resource "aws_cloudwatch_log_metric_filter" "turn_duration" {
   }
 }
 
+# One `request <outcome> <session> <message_id>` line per request (turns, rejected tokens, bad messages, duplicates,
+# warm-ups), counted per outcome.
+resource "aws_cloudwatch_log_metric_filter" "requests" {
+  name           = "lb-demo-agent-Requests"
+  log_group_name = aws_cloudwatch_log_group.runtime.name
+  pattern        = "[event=\"request\", outcome, session, message]"
+
+  metric_transformation {
+    name       = "Requests"
+    namespace  = "LBDemo/Agent"
+    value      = "1"
+    dimensions = { Outcome = "$outcome" }
+  }
+}
+
 data "aws_lb" "web" {
   name = "latam-bank-web"
 }
@@ -56,6 +71,10 @@ resource "aws_cloudwatch_dashboard" "ops" {
           ["AWS/ApplicationELB", "HTTPCode_ELB_5XX_Count", "LoadBalancer", data.aws_lb.web.arn_suffix, { stat = "Sum", label = "LB 5xx" }],
           ["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", data.aws_lb.web.arn_suffix, { stat = "p95", label = "response p95 (s)", yAxis = "right" }],
         ]
+      } },
+      { type = "metric", x = 0, y = 16, width = 24, height = 6, properties = {
+        title   = "Agent requests by outcome (per 5 min)", region = "us-east-1", view = "timeSeries", period = 300,
+        metrics = [[{ expression = "SEARCH('{LBDemo/Agent,Outcome} MetricName=\"Requests\"', 'Sum', 300)", id = "requests", label = "" }]]
       } },
     ]
   })

@@ -12,11 +12,29 @@ const Body = z.object({
   client_message_id: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/),
 });
 
+type ChatLog = { sid: string | null; client_message_id: string | null; turn_id: string | null };
+
+/** One JSON line per call (CloudWatch, web log group): joins the agent's `request …` line and decision records by id. */
 export async function POST(req: NextRequest) {
+  const log: ChatLog = { sid: null, client_message_id: null, turn_id: null };
+  const start = Date.now();
+  let status = 500;
+  try {
+    const res = await handle(req, log);
+    status = res.status;
+    return res;
+  } finally {
+    console.log(JSON.stringify({ event: "chat", status, ms: Date.now() - start, ...log }));
+  }
+}
+
+async function handle(req: NextRequest, log: ChatLog) {
   const who = await customerFrom(req);
   if (!who) return fail("session_expired", "Sign in again", 401);
+  log.sid = who.sid;
   const body = await readJson(req, Body);
   if (body instanceof Response) return body;
+  log.client_message_id = body.client_message_id;
 
   const session = await getSession(who.sid);
   if (session && session.control !== "agent") {  // a human holds the conversation: never call the runtime (spec §3 rule 5)
@@ -39,6 +57,7 @@ export async function POST(req: NextRequest) {
   }
   try {
     const reply = await call();
+    log.turn_id = reply.turn_id ?? null;
     if (reply.error === "session_expired" || reply.error === "auth_required") return fail("session_expired", "Sign in again", 401);
     return ok(reply);
   } catch (e) {

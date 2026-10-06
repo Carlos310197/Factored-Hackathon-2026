@@ -161,5 +161,41 @@ def test_each_turn_logs_one_plain_duration_line_for_the_latency_metric():
         entry.handle({"message": ""}, {"Authorization": f"Bearer {tok()}"}, make_rt())  # rejected: no turn, no line
     finally:
         entry.metrics.removeHandler(handler)
-    assert [r.levelno for r in seen] == [logging.INFO]
-    assert re.fullmatch(r"turn_end \d+", seen[0].getMessage())
+    turns = [r for r in seen if r.getMessage().startswith("turn_end")]
+    assert [r.levelno for r in turns] == [logging.INFO]
+    assert re.fullmatch(r"turn_end \d+", turns[0].getMessage())
+
+
+def _request_lines(*calls):
+    import logging
+    seen = []
+    handler = logging.Handler()
+    handler.emit = seen.append
+    entry.metrics.addHandler(handler)
+    try:
+        for payload, headers, rt in calls:
+            entry.handle(payload, headers, rt)
+    finally:
+        entry.metrics.removeHandler(handler)
+    return [r.getMessage() for r in seen if r.getMessage().startswith("request ")]
+
+
+def test_every_request_logs_one_outcome_line_even_without_a_turn():
+    """Rejected tokens, bad messages and warm-ups never become a turn; they still leave one countable line."""
+    auth = {"Authorization": f"Bearer {tok()}"}
+    lines = _request_lines(
+        ({"message": "hola"}, {}, make_rt()),
+        ({"message": "hola"}, {"Authorization": f"Bearer {tok(now=time.time() - 2000)}"}, make_rt()),
+        ({"message": ""}, auth, make_rt()),
+        ({"message": "saldo", "client_message_id": "cm-12345678"}, auth, make_rt()),
+        ({"warmup": True}, auth, _warm_rt()),
+    )
+    assert lines == ["request auth_required - -", "request session_expired - -", "request invalid_message S-1 -",
+                     "request turn S-1 cm-12345678", "request warmup_ok S-1 -"]
+
+
+def test_a_retried_message_logs_duplicate_not_a_second_turn():
+    rt, auth = make_rt(), {"Authorization": f"Bearer {tok()}"}
+    msg = {"message": "saldo", "client_message_id": "cm-12345678"}
+    assert _request_lines((msg, auth, rt), (msg, auth, rt)) == ["request turn S-1 cm-12345678",
+                                                                "request duplicate S-1 cm-12345678"]
