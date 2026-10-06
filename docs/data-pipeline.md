@@ -25,7 +25,9 @@ its source file, row number, file timestamp and load time. `META.DQ_RESULTS` rec
 Rows that fail a cast, a not-null contract column or an enum go to `STAGING.QUARANTINE`, with a reason (`cast_failed:<col>`,
 `null:<col>`, `enum:<col>`) and the raw row. If the latest load run quarantined more than 1% of the rows it loaded, the build fails.
 The rate is per run, so one bad daily partition trips the gate. A broken foreign key also fails the daily build (dbt `relationships`
-tests on the staging models, severity error): the run stops before the export and the curated mart keeps its last good build.
+tests on the staging models, severity error): the run stops before the export, so the serving set the agent reads stays on the last
+good run. The curated mart in Snowflake does get the orphan row (dbt does not skip `fct_transaction` for a two-model test); quarantining
+orphans in `typed_transactions` would keep the mart clean too, and is listed under before production.
 An FK break is not quarantined. Phase 3 of the fixture drop proves this.
 
 ### Update correctness (fixture drop)
@@ -35,8 +37,8 @@ deduplicates by key (newest load, then highest row number).
 Phase 3 adds two proofs. Idempotent re-run: loading and building the same drop again skips every file, and RAW, the manifest,
 staging, quarantine and `fct_transaction` keep identical counts and `hash_agg` content hashes. The new export has the same table
 counts and `contract_hash`. Orphan FK: once the fixture customer and product are loaded, a day-22 row pointing at `PRD-ORPHAN0001`
-fails exactly one test (`relationships` on `stg_transactions.product_id`, 1 failure, row kept by `store_failures`). `fct_transaction`
-is skipped, so the orphan never reaches the mart. Offline guards: `test_rerun_over_same_drop_copies_nothing` (`tests/test_load.py`)
+fails exactly one test (`relationships` on `stg_transactions.product_id`, 1 failure, row kept by `store_failures`). The build fails, so
+the export is skipped and serving keeps the last good run; `fct_transaction` still builds, so the orphan does reach the Snowflake mart. Offline guards: `test_rerun_over_same_drop_copies_nothing` (`tests/test_load.py`)
 and `test_orphan_foreign_keys_fail_the_build_and_block_the_export` (`tests/test_pipeline_workflows.py`).
 `tests/test_fixture_drop.py` runs it end to end against `LATAM_FIXTURE` on every push to `main` (`ci.yml`). Pull requests run the
 offline tests only, so code from a pull request never gets Snowflake credentials.

@@ -248,6 +248,9 @@ We report what we measured. We don't report numbers we haven't run.
 ## Limitations and before production
 
 **Known limitations**
+- **Orphan foreign keys:** a row whose product or customer doesn't exist fails the daily build, so the export is skipped and
+  the agent keeps reading the last good serving run; but the Snowflake curated mart does get the row (live fixture proof,
+  `tests/test_fixture_drop.py` phase 3b). Before production: quarantine orphans in `typed_transactions`.
 - **Portuguese:** the bank has no Portuguese-speaking customers (customers are in México, Colombia and Argentina). PT
   support is conversational; PT test cases are written by the team, with no native-speaker review.
 - **Human-review disputes** (over 500 USD, fraud score over 30, unauthorized) are recorded as `pending_review` **without**
