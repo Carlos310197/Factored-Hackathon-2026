@@ -47,3 +47,23 @@ def test_dq_results_and_failed_steps_are_not_masked():
     # DQ evidence is written even when dbt build fails, but not when dbt never ran (the load error stays the visible failure)
     assert dq.get("if") == "always() && hashFiles('dbt/target/run_results.json') != ''"
     assert PL["defaults"]["run"]["shell"] == "bash"  # -eo pipefail
+
+
+def test_orphan_foreign_keys_fail_the_build_and_block_the_export():
+    """An orphan FK must stop the daily run before export: relationships tests are error severity and never excluded."""
+    schema = yaml.safe_load(Path("dbt/models/staging/schema.yml").read_text())
+    rels = {}
+    for m in schema["models"]:
+        for c in m.get("columns", []):
+            for t in c.get("tests") or []:
+                if isinstance(t, dict) and "relationships" in t:
+                    rels[(m["name"], c["name"])] = t["relationships"]
+    expected = {("stg_products", "customer_id"), ("stg_transactions", "customer_id"), ("stg_transactions", "product_id"),
+                ("stg_complaints", "customer_id"), ("stg_complaints", "affected_product_id"), ("stg_interactions", "customer_id")}
+    assert expected <= set(rels), rels
+    assert all(r.get("config", {}).get("severity", "error") == "error" and "severity" not in r for r in rels.values())
+    steps = PL["jobs"]["run"]["steps"]
+    build = next(s for s in steps if "dbt build" in s.get("run", ""))
+    assert "--exclude" not in build["run"] and "if" not in build
+    export = next(s for s in steps if "pipeline.export" in s.get("run", ""))
+    assert "if" not in export  # default success(): a failed dbt build (e.g. orphan FK) skips the export

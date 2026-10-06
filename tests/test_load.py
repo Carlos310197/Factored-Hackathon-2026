@@ -94,3 +94,25 @@ def test_copy_escapes_quotes_in_file_names():
     cur = Cur()
     copy_files(cur, "TRANSACTIONS", "RAW.ORGANIZER_STAGE", ["transactions/o'brien.csv"], force=False)
     assert "files = ('transactions/o''brien.csv')" in cur.sql
+
+
+def test_rerun_over_same_drop_copies_nothing():
+    """Re-run idempotency at the RAW boundary: same files + same ETags -> every file skipped, no COPY, no new manifest rows."""
+    import pipeline.load as L
+
+    class Cur(FakeCur):
+        def execute(self, sql, params=None):
+            if sql.lower().startswith("select file_path"):  # read_manifest: latest non-skipped row per file
+                self._last = [(r[2], r[3]) for r in self.manifest if r[4] != "skipped"]
+                return self
+            return super().execute(sql, params)
+
+    listing = [(f"s3://b/data/transactions/t{i}.csv", 10, f"e{i}", "x") for i in range(3)]
+    cur = Cur(fail_on_copy=0, listing=listing)
+    tables = {"TRANSACTIONS": "transactions/"}
+    first = L.run_load(FakeConn(cur), "r1", "RAW.ORGANIZER_STAGE", "s3://b/data/", tables)
+    copies, manifest = cur.copies, list(cur.manifest)
+    second = L.run_load(FakeConn(cur), "r2", "RAW.ORGANIZER_STAGE", "s3://b/data/", tables)
+    assert first["TRANSACTIONS"] == {"new": 3, "restated": 0, "skipped": 0}
+    assert second["TRANSACTIONS"] == {"new": 0, "restated": 0, "skipped": 3}
+    assert cur.copies == copies and cur.manifest == manifest

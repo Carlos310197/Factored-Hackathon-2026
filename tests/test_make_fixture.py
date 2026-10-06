@@ -17,3 +17,14 @@ def test_phase1_and_phase2_shapes(tmp_path):
     assert "merchant_country" in rows(by["transactions_20260619.csv"])[0]
     assert any(r["amount"] == "N/A" for r in rows(by["transactions_20260620.csv"]))
     assert rows(by["transactions_20260621.csv"]) == []
+
+
+def test_phase3_dimensions_and_phase4_orphan(tmp_path):
+    cust, prod = write_phase(tmp_path / "p3", 3)
+    assert [p.name for p in (cust, prod)] == ["customers.csv", "products.csv"] and cust.parent == tmp_path / "p3"
+    (c,), (p,) = rows(cust), rows(prod)
+    assert c["customer_id"] == p["customer_id"] == "CUS-FIXTURE0001" and p["product_id"] == "PRD-FIXTURE0001"
+    (d22,) = write_phase(tmp_path / "p4", 4)
+    r = rows(d22)
+    assert d22.name == "transactions_20260622.csv" and list(r[0].keys()) == COLUMNS
+    assert [x["product_id"] for x in r] == ["PRD-FIXTURE0001", "PRD-ORPHAN0001"]
