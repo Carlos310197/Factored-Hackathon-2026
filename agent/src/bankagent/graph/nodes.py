@@ -222,6 +222,14 @@ class Nodes:
         with tracer.start_as_current_span("understand"):
             ctx, msg, ex = _ctx(config), state["message"], None
             
+            # The card's button sends confirm:<card_hash>: code checks equality, so no model reads the "yes".
+            if state["awaiting"] == "confirmation" and msg.startswith("confirm:"):
+                matched = bool(state.get("card_hash")) and msg == f"confirm:{state['card_hash']}"
+                self._log(state, config, "understand", "guard", {"check": "confirm_token", "matched": matched})
+                # A stale or forged token files nothing: show the current card again.
+                return {"route": {"next": "file_dispute" if matched else "confirm"}, "awaiting": "none",
+                        "reasons": [], "goal": {}, "queued_offer": None, "pending": {}}
+            
             # Extract
             try:
                 ex, call = extract(self.d.llm_client, self.d.models["extract"], msg, state["as_of"],
@@ -624,7 +632,8 @@ class Nodes:
                 "data_as_of": state.get("as_of")
             }
             if reply["awaiting"] == "confirmation" and state.get("txn"):
-                reply["summary"] = confirmation_payload(state["txn"], state.get("dispute_reason"))
+                reply["summary"] = {**confirmation_payload(state["txn"], state.get("dispute_reason")),
+                                    "card_hash": state.get("card_hash")}  # the button sends confirm:<card_hash>
             
             recent = ((state.get("recent") or []) + [{"customer": state["message"], "assistant": text}])[-2:]
             

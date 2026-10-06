@@ -75,6 +75,36 @@ def test_dispute_confirm_file_verify(ddb_store, serving_root):
     _assert_jev_never_sees_customer_or_product_ids(h)
 
 
+EXTRACT_MODEL = "mistral.ministral-3-14b-instruct"
+
+
+def test_confirm_token_files_without_extract_or_jev(ddb_store, serving_root):
+    """The card's button sends confirm:<card_hash>; code checks equality, so no model reads the 'yes'."""
+    h = make_harness(ddb_store, serving_root, [DISPUTE_NETFLIX])
+    r1 = h.turn("Me cobraron dos veces Netflix, quiero disputarlo")
+    card_hash = r1["summary"]["card_hash"]
+    assert card_hash == h.state()["card_hash"]
+    extracts, understands = sum(c["model"] == EXTRACT_MODEL for c in h.llm.calls), h.jev.count("understand")
+    r2 = h.turn(f"confirm:{card_hash}")
+    rec = ddb_store.disputes.get(t(101))
+    assert rec["status"] == "submitted" and r2["refs"] == [rec["dispute_id"]] and r2["awaiting"] == "none"
+    assert sum(c["model"] == EXTRACT_MODEL for c in h.llm.calls) == extracts
+    assert h.jev.count("understand") == understands
+    guard = [r for r in ddb_store.log.list("S-es") if r["kind"] == "guard" and r["node"] == "understand"]
+    assert guard[-1]["payload"] == {"check": "confirm_token", "matched": True}
+
+
+def test_stale_confirm_token_does_not_file(ddb_store, serving_root):
+    h = make_harness(ddb_store, serving_root, [DISPUTE_NETFLIX])
+    r1 = h.turn("Me cobraron dos veces Netflix, quiero disputarlo")
+    r2 = h.turn("confirm:" + "0" * 64)
+    assert ddb_store.disputes.get(t(101)) is None
+    assert r2["awaiting"] == "confirmation" and r2["summary"] == r1["summary"]
+    assert h.jev.count("understand") == 1
+    guard = [r for r in ddb_store.log.list("S-es") if r["kind"] == "guard" and r["node"] == "understand"]
+    assert guard[-1]["payload"] == {"check": "confirm_token", "matched": False}
+
+
 def _assert_jev_never_sees_customer_or_product_ids(h):
     """Invariant (architecture-context): no Jev request carries customer_id, product_id or fraud fields."""
     assert h.jev.calls and any(c[0] == "verify" for c in h.jev.calls)

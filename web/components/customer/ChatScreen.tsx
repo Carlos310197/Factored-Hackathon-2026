@@ -13,7 +13,7 @@ import { signOut } from "@/lib/signout";
 import { useChannel } from "@/lib/realtime/useChannel";
 import { AsOfBanner } from "./AsOfBanner";
 import { ExpiredSheet } from "./ExpiredSheet";
-import { MessageView, type MessageCustom } from "./MessageView";
+import { customerText, MessageView, type MessageCustom } from "./MessageView";
 
 const ROLE: Record<ViewMessage["role"], ThreadMessageLike["role"]> = { customer: "user", assistant: "assistant", agent: "assistant", system: "system" };
 const line = "self-center rounded-full bg-b-fog px-3 py-1 text-center text-xs text-b-muted";
@@ -56,14 +56,14 @@ export function ChatScreen({ sid, lang, embed }: { sid: string; lang: Lang; embe
     store.getState().sendOptimistic(clientId, body);
     setInFlight((n) => n + 1);
     queue.current = queue.current.then(async () => {
-      notifyParent({ type: "demo:turn-start", text: body });
+      notifyParent({ type: "demo:turn-start", text: customerText(body, lang) });
       const r = await api.send(body, clientId);
       if (r.kind === "reply") { store.getState().applyReply(clientId, r.reply); notifyParent({ type: "demo:turn-reply", turn_id: r.reply.turn_id }); resync(); }
       else if (r.kind === "expired") store.getState().expire();
       else if (r.kind === "error") store.getState().fail(clientId);
       else { asyncTurn.current = true; resync(); }  // 202: the reply arrives by push or history
     }).finally(() => setInFlight((n) => n - 1));
-  }, [store, resync]);
+  }, [store, resync, lang]);
 
   useEffect(() => {  // 202 path: the turn ended when running cleared by a pushed reply or error line
     if (s.running || !asyncTurn.current) return;
