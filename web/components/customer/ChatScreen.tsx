@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { api, syncHistory } from "@/lib/chat/api";
-import { createChatStore, type ViewMessage } from "@/lib/chat/store";
+import { createChatStore, uiLang, type ViewMessage } from "@/lib/chat/store";
 import { SessionEvent, type Lang } from "@/lib/contract";
 import { isDemoMessage, notifyParent } from "@/lib/demo/bridge";
 import { t } from "@/lib/i18n";
@@ -18,10 +18,16 @@ import { customerText, MessageView, type MessageCustom } from "./MessageView";
 const ROLE: Record<ViewMessage["role"], ThreadMessageLike["role"]> = { customer: "user", assistant: "assistant", agent: "assistant", system: "system" };
 const line = "self-center rounded-full bg-b-fog px-3 py-1 text-center text-xs text-b-muted";
 
-export function ChatScreen({ sid, lang, embed }: { sid: string; lang: Lang; embed: boolean }) {
+export function ChatScreen({ sid, lang: sessionLang, embed }: { sid: string; lang: Lang; embed: boolean }) {
   const [store] = useState(createChatStore);
   const s = useStore(store);
+  // The chrome follows the latest reply's language; the badge overrides it until the next reply.
+  const lastReply = s.messages.findLast((m) => m.role === "assistant");
+  const replyKey = lastReply?.turn_id ?? lastReply?.id;
+  const [manual, setManual] = useState<{ lang: Lang; at?: string } | null>(null);
+  const lang = manual && manual.at === replyKey ? manual.lang : uiLang(s.messages, sessionLang);
   const d = t(lang);
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
   const router = useRouter();
   const [draft, setDraft] = useState("");
   const input = useRef<HTMLInputElement>(null);
@@ -101,7 +107,10 @@ export function ChatScreen({ sid, lang, embed }: { sid: string; lang: Lang; embe
               <span aria-hidden className="absolute -bottom-10 right-14 size-20 rounded-full bg-b-leaf" />
               <h1 className="relative text-lg font-extrabold tracking-tight">{d.bank}</h1>
               <span className="relative flex items-center gap-2">
-                <span className="rounded-full bg-b-surface px-2.5 py-0.5 text-xs font-bold text-b-ink">{lang.toUpperCase()}</span>
+                <button type="button" aria-label={`${lang.toUpperCase()}, ${d.switchLang}`} onClick={() => setManual({ lang: lang === "es" ? "pt" : "es", at: replyKey })}
+                  className="min-h-11 min-w-11 rounded-full px-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-surface">
+                  <span className="rounded-full bg-b-surface px-2.5 py-0.5 text-xs font-bold text-b-ink">{lang.toUpperCase()}</span>
+                </button>
                 <button type="button" onClick={() => void signOut("customer").then(() => router.replace("/login"))}
                   className="min-h-11 rounded-full bg-b-surface px-4 text-sm font-bold text-b-cobalt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-surface">{d.signOut}</button>
               </span>

@@ -1,6 +1,6 @@
 import { createStore } from "zustand/vanilla";
 import type { Stage } from "@/lib/trace/stages";
-import type { Awaiting, ChatMessage, ChatReply, SessionEvent } from "@/lib/contract";
+import type { Awaiting, ChatMessage, ChatReply, Lang, SessionEvent } from "@/lib/contract";
 
 /** "sent": the turn answered, the stored copy has not arrived yet (still never the history cursor). */
 export type ViewMessage = ChatMessage & { status?: "sending" | "sent" | "provisional" };
@@ -28,8 +28,10 @@ function derive(messages: ViewMessage[], control: string): Pick<ChatState, "awai
 function upsert(current: ViewMessage[], incoming: ChatMessage[]): ViewMessage[] {
   const byId = new Map(current.map((m) => [m.id, m]));
   for (const m of incoming) {
-    byId.set(m.id, { ...m, status: undefined });
-    if (m.role === "assistant" && m.turn_id) byId.delete(`reply:${m.turn_id}`);  // drop the provisional POST copy
+    const prov = m.role === "assistant" && m.turn_id ? byId.get(`reply:${m.turn_id}`) : undefined;
+    const language = m.meta?.language ?? prov?.meta?.language;  // stored copies may lack it; keep the POST's
+    byId.set(m.id, { ...m, ...(language && { meta: { ...m.meta, language } }), status: undefined });
+    if (prov) byId.delete(`reply:${m.turn_id}`);  // drop the provisional POST copy
   }
   return [...byId.values()].sort((a, b) => (a.cursor < b.cursor ? -1 : a.cursor > b.cursor ? 1 : 0));
 }
@@ -44,6 +46,11 @@ function settle(before: ViewMessage[], after: ViewMessage[], pending: string[], 
   const ends = incoming.some((m) => (m.role === "assistant" || (m.role === "system" && m.meta?.error_code))
     && !before.some((k) => k.id === m.id) && !(m.turn_id && before.some((k) => k.id === `reply:${m.turn_id}`)) && m.cursor > latest);
   return ends ? [] : pending;
+}
+
+/** UI chrome language: the latest assistant reply that carries one, else the session language. */
+export function uiLang(messages: ChatMessage[], fallback: Lang): Lang {
+  return messages.findLast((m) => m.role === "assistant" && m.meta?.language)?.meta?.language ?? fallback;
 }
 
 export function createChatStore() {
@@ -65,7 +72,7 @@ export function createChatStore() {
       const base = sent(s.messages, clientId);
       const messages = already ? base : [...base.filter((m) => m.id !== id), {
         id, cursor: q ? `${q}~r` : `${PENDING}${Date.now()}#${id}`, role: "assistant" as const, text: reply.reply_text, turn_id: reply.turn_id, ts: new Date().toISOString(),
-        meta: { awaiting: reply.awaiting, options: reply.options, refs: reply.refs, summary: reply.summary, data_as_of: reply.data_as_of ?? undefined },
+        meta: { language: reply.language, awaiting: reply.awaiting, options: reply.options, refs: reply.refs, summary: reply.summary, data_as_of: reply.data_as_of ?? undefined },
         status: "provisional" as const }].sort((a, b) => (a.cursor < b.cursor ? -1 : a.cursor > b.cursor ? 1 : 0));
       return { messages, running: pending.length > 0, ...(pending.length ? {} : { progress: null }), pending, ...derive(messages, s.control) };
     }),
