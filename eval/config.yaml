@@ -7,7 +7,9 @@ persona:
   temperature: null                      # gpt-6-luna rejects the parameter; the model's default sampling applies
   timeout_s: 90
 judge:
-  model: anthropic.claude-sonnet-5-5
+  model: gpt-6-sol                       # spec §5.3 names Claude Sonnet 5.5, which this account cannot invoke (AccessDenied)
+  base_url: https://opencode.ai/zen/v1   # served on /responses, like the persona
+  api_key_env: OPENCODE_API_KEY
   prompt_version: judge.v1
 agent:
   serving_uri: ""                        # absolute path of the local serving set built by the agent's scripts
