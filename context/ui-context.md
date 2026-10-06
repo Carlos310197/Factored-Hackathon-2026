@@ -116,6 +116,7 @@ There's one orchestrated moment: **the trace block reveal** when a turn complete
   - `useExternalStoreRuntime` over a Zustand store that merges POST replies, pushed `message` events and history, de-duplicated by `message_id`.
   - Thread, composer and message are primitives styled in world B. Chips, the summary card, receipt chips, system lines and agent messages are custom message parts.
   - No default assistant-ui theme.
+- **Conversations (2026-10-06):** one login = one conversation (`sid`). A header history button opens a drawer listing the customer's conversations (`GET /api/customer/sessions`, newest first, max 20) with *Actual*/*Terminada* tags. Past ones open read-only (banner "Conversación anterior · solo lectura", no composer) and can be hidden from the list ("Ocultar de mi lista", confirm; the bank keeps them). The drawer also has *Terminar conversación* (confirm → `POST /api/customer/sessions/end`) and *Nueva conversación* (`POST /api/customer/sessions/new`, then `router.refresh()`; `/chat` keys the chat by `sid`). An ended conversation (or chat 409 `session_ended`) swaps the composer for "Conversación terminada" with *Nueva conversación* / *Salir*.
 - **Embed mode:** `/chat?embed=1` hides the page chrome and tells the parent its `sid` and turn events through `postMessage` (origin-checked) for `/demo`.
 
 ### Agent console (`/agent`, `/agent/[handoffId]`; world C, desktop) · ui §8.2

@@ -1,9 +1,10 @@
-import { ChatMessage, ChatReply } from "@/lib/contract";
+import { z } from "zod";
+import { ChatMessage, ChatReply, NewSession, SessionSummary } from "@/lib/contract";
 import type { ChatStore } from "./store";
 
 export type HistoryResult = { kind: "ok"; messages: ChatMessage[] } | { kind: "expired" } | { kind: "error" };
 
-export type SendResult = { kind: "reply"; reply: ChatReply } | { kind: "pending" } | { kind: "expired" } | { kind: "error" };
+export type SendResult = { kind: "reply"; reply: ChatReply } | { kind: "pending" } | { kind: "expired" } | { kind: "ended" } | { kind: "error" };
 
 export const api = {
   async send(text: string, clientId: string): Promise<SendResult> {
@@ -12,6 +13,7 @@ export const api = {
         body: JSON.stringify({ message: text, client_message_id: clientId }) });
       if (res.status === 401) return { kind: "expired" };
       if (res.status === 202) return { kind: "pending" };
+      if (res.status === 409 && (await errorCode(res)) === "session_ended") return { kind: "ended" };
       if (!res.ok) return { kind: "error" };
       const parsed = ChatReply.safeParse((await res.json()).data);
       return parsed.success ? { kind: "reply", reply: parsed.data } : { kind: "error" };
@@ -39,3 +41,29 @@ export async function syncHistory(store: ChatStore, sid: string): Promise<void> 
   if (r.kind === "ok") store.getState().merge(r.messages);
   else if (r.kind === "expired") store.getState().expire();
 }
+
+async function errorCode(res: Response): Promise<string | undefined> {
+  try { return ((await res.json()) as { error?: { code?: string } }).error?.code; } catch { return undefined; }
+}
+
+export type CallResult<T> = { kind: "ok"; data: T } | { kind: "expired" } | { kind: "error"; code?: string };
+
+async function call<T>(url: string, schema: z.ZodType<T>, method = "GET"): Promise<CallResult<T>> {
+  try {
+    const res = await fetch(url, { method, cache: "no-store" });
+    if (res.status === 401) return { kind: "expired" };
+    if (!res.ok) return { kind: "error", code: await errorCode(res) };
+    const parsed = schema.safeParse((await res.json()).data);
+    return parsed.success ? { kind: "ok", data: parsed.data } : { kind: "error", code: undefined };
+  } catch {
+    return { kind: "error" };
+  }
+}
+
+/** The customer's own conversations: list, hide a past one, end the current one, start a new one. */
+export const sessionsApi = {
+  list: () => call("/api/customer/sessions", SessionSummary.array()),
+  hide: (sid: string) => call(`/api/customer/sessions/${encodeURIComponent(sid)}/hide`, z.object({ hidden: z.literal(true) }), "POST"),
+  end: () => call("/api/customer/sessions/end", z.object({ ended: z.literal(true) }), "POST"),
+  create: () => call("/api/customer/sessions/new", NewSession, "POST"),
+};

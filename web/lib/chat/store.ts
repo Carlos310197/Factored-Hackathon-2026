@@ -7,13 +7,14 @@ export type ViewMessage = ChatMessage & { status?: "sending" | "sent" | "provisi
 const sent = (ms: ViewMessage[], id: string) => ms.map((m) => (m.id === id && m.status === "sending" ? { ...m, status: "sent" as const } : m));
 export interface ChatState {
   messages: ViewMessage[]; cursor: string | null; running: boolean; pending: string[]; awaiting: Awaiting; control: string; progress: Stage | null;
-  failed: { clientId: string; text: string } | null; expired: boolean;
+  failed: { clientId: string; text: string } | null; expired: boolean; ended: boolean;
   sendOptimistic(clientId: string, text: string): void;
   applyReply(clientId: string, reply: ChatReply): void;
   merge(incoming: ChatMessage[]): void;
   applyEvent(ev: SessionEvent): void;
   fail(clientId: string): void;
   expire(): void;
+  end(): void;
 }
 
 const PENDING = "~";  // optimistic/provisional rows sort after every stored cursor
@@ -55,7 +56,7 @@ export function uiLang(messages: ChatMessage[], fallback: Lang): Lang {
 
 export function createChatStore() {
   return createStore<ChatState>((set) => ({
-    messages: [], cursor: null, running: false, pending: [], awaiting: "none", control: "agent", progress: null, failed: null, expired: false,
+    messages: [], cursor: null, running: false, pending: [], awaiting: "none", control: "agent", progress: null, failed: null, expired: false, ended: false,
 
     sendOptimistic: (clientId, text) => set((s) => {
       const messages = upsert(s.messages.filter((m) => m.id !== clientId), [])
@@ -101,6 +102,7 @@ export function createChatStore() {
     }),
 
     expire: () => set({ expired: true, running: false, pending: [], progress: null }),
+    end: () => set({ ended: true, running: false, pending: [], progress: null, failed: null }),
   }));
 }
 export type ChatStore = ReturnType<typeof createChatStore>;

@@ -6,5 +6,5 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
   const embed = (await searchParams).embed === "1";
   const who = await customerFromCookies();
   if (!who) redirect(`/login?next=/chat${embed ? "&embed=1" : ""}`);
-  return <ChatScreen sid={who.sid} lang={who.lang} embed={embed} />;
+  return <ChatScreen key={who.sid} sid={who.sid} lang={who.lang} embed={embed} />;
 }

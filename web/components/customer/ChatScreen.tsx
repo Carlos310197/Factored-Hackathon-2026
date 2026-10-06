@@ -1,9 +1,9 @@
 "use client";
-import { AssistantRuntimeProvider, ThreadPrimitive, useExternalStoreRuntime, type ThreadMessageLike } from "@assistant-ui/react";
+import { AssistantRuntimeProvider, ThreadPrimitive, useExternalStoreRuntime } from "@assistant-ui/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
-import { api, syncHistory } from "@/lib/chat/api";
+import { api, sessionsApi, syncHistory } from "@/lib/chat/api";
 import { createChatStore, uiLang, type ViewMessage } from "@/lib/chat/store";
 import { SessionEvent, type Lang } from "@/lib/contract";
 import { isDemoMessage, notifyParent } from "@/lib/demo/bridge";
@@ -12,10 +12,11 @@ import { newClientMessageId } from "@/lib/ids";
 import { signOut } from "@/lib/signout";
 import { useChannel } from "@/lib/realtime/useChannel";
 import { AsOfBanner } from "./AsOfBanner";
+import { EndedBanner } from "./EndedBanner";
 import { ExpiredSheet } from "./ExpiredSheet";
-import { customerText, MessageView, type MessageCustom } from "./MessageView";
+import { HistoryDrawer } from "./HistoryDrawer";
+import { customerText, MessageView, toThreadMessage } from "./MessageView";
 
-const ROLE: Record<ViewMessage["role"], ThreadMessageLike["role"]> = { customer: "user", assistant: "assistant", agent: "assistant", system: "system" };
 const line = "self-center rounded-full bg-b-fog px-3 py-1 text-center text-xs text-b-muted";
 
 export function ChatScreen({ sid, lang: sessionLang, embed }: { sid: string; lang: Lang; embed: boolean }) {
@@ -37,6 +38,16 @@ export function ChatScreen({ sid, lang: sessionLang, embed }: { sid: string; lan
   const queue = useRef<Promise<void>>(Promise.resolve());
 
   const resync = useCallback(() => void syncHistory(store, sid), [sid, store]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const leave = () => void signOut("customer").then(() => router.replace(`/login${embed ? "?next=/chat&embed=1" : ""}`));
+  const expire = () => { setHistoryOpen(false); store.getState().expire(); };
+  /** /chat is keyed by sid: after /new swaps the cookie, refreshing the page remounts the chat on the new session. */
+  const startNew = async () => {
+    const r = await sessionsApi.create();
+    if (r.kind === "ok") { setHistoryOpen(false); router.refresh(); return true; }
+    if (r.kind === "expired") expire();
+    return false;
+  };
 
   useEffect(() => {
     notifyParent({ type: "demo:session", sid });
@@ -66,6 +77,7 @@ export function ChatScreen({ sid, lang: sessionLang, embed }: { sid: string; lan
       const r = await api.send(body, clientId);
       if (r.kind === "reply") { store.getState().applyReply(clientId, r.reply); notifyParent({ type: "demo:turn-reply", turn_id: r.reply.turn_id }); resync(); }
       else if (r.kind === "expired") store.getState().expire();
+      else if (r.kind === "ended") { store.getState().fail(clientId); store.getState().end(); }  // ended elsewhere (409 session_ended)
       else if (r.kind === "error") store.getState().fail(clientId);
       else { asyncTurn.current = true; resync(); }  // 202: the reply arrives by push or history
     }).finally(() => setInFlight((n) => n - 1));
@@ -83,8 +95,7 @@ export function ChatScreen({ sid, lang: sessionLang, embed }: { sid: string; lan
   const runtime = useExternalStoreRuntime<ViewMessage>({
     messages: s.messages,
     isRunning: busy || s.running,
-    convertMessage: (m) => ({ id: m.id, role: ROLE[m.role], content: [{ type: "text", text: m.text }], createdAt: new Date(m.ts),
-      metadata: { custom: { role: m.role, text: m.text, meta: m.meta, author: m.author, ts: m.ts, status: m.status } satisfies MessageCustom } }),
+    convertMessage: toThreadMessage,
     onNew: async (m) => { send(m.content.map((p) => (p.type === "text" ? p.text : "")).join("")); },
   });
 
@@ -100,18 +111,22 @@ export function ChatScreen({ sid, lang: sessionLang, embed }: { sid: string; lan
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <main className="font-customer flex min-h-dvh justify-center bg-b-fog text-b-ink">
-        <div inert={s.expired} className="relative flex h-dvh w-full max-w-md flex-col overflow-hidden bg-b-surface sm:my-6 sm:h-[calc(100dvh-3rem)] sm:rounded-card sm:border sm:border-b-line">
+        <div inert={s.expired || historyOpen} className="relative flex h-dvh w-full max-w-md flex-col overflow-hidden bg-b-surface sm:my-6 sm:h-[calc(100dvh-3rem)] sm:rounded-card sm:border sm:border-b-line">
           {!embed && (
             <header className="relative flex shrink-0 items-center justify-between overflow-hidden bg-b-cobalt px-5 py-4 text-b-surface">
               <span aria-hidden className="absolute -right-6 -top-10 size-24 rounded-full bg-b-sun" />
               <span aria-hidden className="absolute -bottom-10 right-14 size-20 rounded-full bg-b-leaf" />
               <h1 className="relative text-lg font-extrabold tracking-tight">{d.bank}</h1>
               <span className="relative flex items-center gap-2">
+                <button type="button" aria-label={d.history} aria-haspopup="dialog" onClick={() => setHistoryOpen(true)}
+                  className="flex size-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-surface">
+                  <svg aria-hidden viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2" /></svg>
+                </button>
                 <button type="button" aria-label={`${lang.toUpperCase()}, ${d.switchLang}`} onClick={() => setManual({ lang: lang === "es" ? "pt" : "es", at: replyKey })}
                   className="min-h-11 min-w-11 rounded-full px-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-surface">
                   <span className="rounded-full bg-b-surface px-2.5 py-0.5 text-xs font-bold text-b-ink">{lang.toUpperCase()}</span>
                 </button>
-                <button type="button" onClick={() => void signOut("customer").then(() => router.replace("/login"))}
+                <button type="button" onClick={leave}
                   className="min-h-11 rounded-full bg-b-surface px-4 text-sm font-bold text-b-cobalt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-surface">{d.signOut}</button>
               </span>
             </header>
@@ -137,14 +152,15 @@ export function ChatScreen({ sid, lang: sessionLang, embed }: { sid: string; lan
             </ThreadPrimitive.Viewport>
           </ThreadPrimitive.Root>
 
-          {s.failed && (
+          {s.ended && <EndedBanner lang={lang} onNew={startNew} onSignOut={leave} />}
+          {!s.ended && s.failed && (
             <div role="alert" className="motion-safe:animate-[fade-in_220ms_ease-out] mx-3 mb-2 flex items-center justify-between gap-3 rounded-bubble bg-b-sun-tint px-4 py-2.5 text-sm">
               <span>{d.sendFailed}</span>
               <button type="button" className="min-h-11 rounded-full px-3 font-bold text-b-cobalt focus-visible:outline-2 focus-visible:outline-b-cobalt"
                 onClick={() => { const f = s.failed!; send(f.text, f.clientId); }}>{d.retry}</button>
             </div>
           )}
-          <form className="mx-3 mb-3 flex shrink-0 items-center gap-2 rounded-full bg-b-fog py-1.5 pl-4 pr-1.5 ring-b-cobalt/30 transition-shadow focus-within:ring-2"
+          {!s.ended && <form className="mx-3 mb-3 flex shrink-0 items-center gap-2 rounded-full bg-b-fog py-1.5 pl-4 pr-1.5 ring-b-cobalt/30 transition-shadow focus-within:ring-2"
             onSubmit={(e) => { e.preventDefault(); const text = draft; setDraft(""); send(text); }}>
             <input ref={input} aria-label={d.placeholder} placeholder={d.placeholder} value={draft} onChange={(e) => setDraft(e.target.value)}
               maxLength={2000} className="min-w-0 flex-1 bg-transparent py-2 text-base text-b-ink placeholder:text-b-muted focus-visible:outline-none" />
@@ -152,8 +168,10 @@ export function ChatScreen({ sid, lang: sessionLang, embed }: { sid: string; lan
               className="flex size-11 items-center justify-center rounded-full bg-b-cobalt text-b-surface transition-[transform,opacity] duration-150 active:scale-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-b-cobalt disabled:opacity-40">
               <svg aria-hidden viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
             </button>
-          </form>
+          </form>}
         </div>
+        {historyOpen && <HistoryDrawer lang={lang} ended={s.ended} onClose={() => setHistoryOpen(false)}
+          onEnded={() => { setHistoryOpen(false); store.getState().end(); }} onNew={startNew} onExpired={expire} />}
         {s.expired && <ExpiredSheet lang={lang} embed={embed} />}
       </main>
     </AssistantRuntimeProvider>
