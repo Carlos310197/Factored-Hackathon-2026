@@ -2,6 +2,9 @@ mock_provider "aws" {
   mock_data "aws_iam_policy_document" {
     defaults = { json = "{\"Version\":\"2012-10-17\",\"Statement\":[]}" }
   }
+  mock_data "aws_lb" {
+    defaults = { arn_suffix = "app/latam-bank-web/0123456789abcdef" }
+  }
   mock_data "aws_caller_identity" {
     defaults = { account_id = "762197749808" }
   }
@@ -244,5 +247,18 @@ run "alarms_notify_by_email" {
   assert {
     condition     = length(aws_budgets_budget.account) == 1 && aws_budgets_budget.account[0].limit_amount == "100"
     error_message = "with alarm_email set, a monthly account budget emails at 80 % actual / 100 % forecast"
+  }
+}
+
+run "dashboard_reads_turn_latency_and_every_alarm" {
+  command = apply
+
+  assert {
+    condition     = aws_cloudwatch_log_metric_filter.turn_duration.pattern == "[event=\"turn_end\", duration_ms]" && aws_cloudwatch_log_metric_filter.turn_duration.metric_transformation[0].value == "$duration_ms"
+    error_message = "TurnDurationMs comes from the agent's `turn_end <ms>` line"
+  }
+  assert {
+    condition     = length(jsondecode(aws_cloudwatch_dashboard.ops.dashboard_body).widgets) == 6 && strcontains(aws_cloudwatch_dashboard.ops.dashboard_body, "TurnDurationMs") && strcontains(aws_cloudwatch_dashboard.ops.dashboard_body, "app/latam-bank-web/")
+    error_message = "dashboard shows latency, failures, abuse, alarms and the web load balancer"
   }
 }

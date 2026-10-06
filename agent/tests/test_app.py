@@ -146,3 +146,20 @@ def test_runtime_is_built_once_under_concurrent_first_calls(monkeypatch):
     [t.start() for t in threads]
     [t.join() for t in threads]
     assert built == [1] and entry._runtime == "rt"
+
+
+def test_each_turn_logs_one_plain_duration_line_for_the_latency_metric():
+    """CloudWatch metric filter `[event="turn_end", duration_ms]` turns this line into TurnDurationMs (p50/p95)."""
+    import logging
+    import re
+    seen = []
+    handler = logging.Handler()
+    handler.emit = seen.append
+    entry.metrics.addHandler(handler)
+    try:
+        entry.handle({"message": "saldo"}, {"Authorization": f"Bearer {tok()}"}, make_rt())
+        entry.handle({"message": ""}, {"Authorization": f"Bearer {tok()}"}, make_rt())  # rejected: no turn, no line
+    finally:
+        entry.metrics.removeHandler(handler)
+    assert [r.levelno for r in seen] == [logging.INFO]
+    assert re.fullmatch(r"turn_end \d+", seen[0].getMessage())

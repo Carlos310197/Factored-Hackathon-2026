@@ -19,6 +19,12 @@ MESSAGE_ID_HEADER = "x-amzn-bedrock-agentcore-runtime-custom-message-id"  # the 
 MESSAGE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
 META_KEYS = ("awaiting", "options", "refs", "summary", "data_as_of")
 log = logging.getLogger(__name__)
+# One plain line per turn on stderr, parsed by a CloudWatch metric filter into TurnDurationMs (dashboard p50/p95).
+metrics = logging.getLogger("bankagent.metrics")
+if not metrics.handlers:
+    metrics.addHandler(logging.StreamHandler())
+    metrics.setLevel(logging.INFO)
+    metrics.propagate = False
 app = BedrockAgentCoreApp()
 _runtime = None
 _runtime_lock = threading.Lock()
@@ -105,8 +111,10 @@ def handle(payload: dict, headers: dict, rt) -> dict:
     except Exception:  # never leave the marker `running`: a retry would get duplicate_in_progress until the TTL
         log.exception("turn failed session=%s turn=%s", sid, turn_id)
         reply = {**_error(fallback_reply({"kind": "error"}, [], ctx.lang), ctx.lang, "turn_failed"), "turn_id": turn_id}
+    duration_ms = int((time.monotonic() - start) * 1000)
+    metrics.info("turn_end %d", duration_ms)
     store.log.append(sid, turn_id, "turn", "turn_end",
-                     {"duration_ms": int((time.monotonic() - start) * 1000), "awaiting": reply.get("awaiting", "none"),
+                     {"duration_ms": duration_ms, "awaiting": reply.get("awaiting", "none"),
                       "language": reply.get("language", ctx.lang)})
     store.messages.store_reply(sid, message_id, reply)
     return reply

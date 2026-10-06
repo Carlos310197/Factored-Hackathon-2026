@@ -259,3 +259,16 @@ def test_warm_up_calls_each_model_once_and_never_raises():
     client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
     warm_up(client, M)
     assert sorted(seen) == sorted({c.model for c in M.values() if c is not M.get("dev_writer")})
+
+
+def test_extract_strips_markdown_emphasis_but_keeps_card_masks():
+    """Live: english_gloss came back as '**Unrecognized card charge**: *I don't recognize…*' and went into the packet."""
+    import json as _json
+    body = {"language_detected": "es", "english_gloss": "**Unrecognized charge**: *I didn't buy* on card ****4242",
+            "multi_intent": False, "secondary_request_en": None,
+            "customer_statement": {"original": "No reconozco un cargo", "en": "The customer does **not** recognize it."},
+            "mentions": {k: None for k in ("merchant", "amount", "currency", "date_from", "date_to", "type_hint",
+                                           "channel_hint", "city")}}
+    ex, _ = extract(_client("stop", _json.dumps(body)), M["extract"], "No reconozco", "2026-06-17", [])
+    assert ex.english_gloss == "Unrecognized charge: I didn't buy on card ****4242"
+    assert ex.customer_statement["en"] == "The customer does not recognize it."

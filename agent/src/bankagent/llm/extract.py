@@ -1,5 +1,6 @@
 """OpenAI role 1 (extract.v2): structured facts from one customer message. Does not classify intent."""
 import json
+import re
 from dataclasses import dataclass
 
 from bankagent.llm.client import LLMCall, LLMError, call_json
@@ -58,6 +59,13 @@ _ES_PT_WORDS = frozenset("el la los las del de que por para su sus mi mis client
                          "o os do da dos das não sua seu uma em com cobrança cartão".split())
 
 
+_EMPHASIS = re.compile(r"(\*\*|\*)([^\W\d_][^*]*?)\1")  # **bold** / *italic* around words; ****4242 has no letter
+
+
+def _plain(text):
+    return _EMPHASIS.sub(r"\2", text) if isinstance(text, str) else text
+
+
 def _englishness(text: str) -> int:
     words = [w.strip(".,;:¿?¡!\"'()").lower() for w in text.split()]
     return sum(w in _EN_WORDS for w in words) - sum(w in _ES_PT_WORDS for w in words)
@@ -88,9 +96,10 @@ def extract(client, cfg: RoleConfig, message: str, as_of: str, recent: list[dict
     call = call_json(client, cfg, EXTRACT_SYSTEM, user, EXTRACT_SCHEMA)
     d = call.data
     try:
-        ex = Extraction(d["language_detected"], d["english_gloss"], bool(d["multi_intent"]),
-                        d.get("secondary_request_en"), dict(d["mentions"]),
-                        _oriented(dict(d["customer_statement"]), d["language_detected"]))
+        statement = {k: _plain(v) for k, v in dict(d["customer_statement"]).items()}
+        ex = Extraction(d["language_detected"], _plain(d["english_gloss"]), bool(d["multi_intent"]),
+                        _plain(d.get("secondary_request_en")), dict(d["mentions"]),
+                        _oriented(statement, d["language_detected"]))
     except (KeyError, TypeError) as e:
         raise LLMError("extraction schema mismatch") from e
     return ex, call
