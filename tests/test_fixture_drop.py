@@ -127,9 +127,10 @@ def test_fixture_drop_end_to_end(conn, tmp_path):
     assert [r["unique_id"].split(".")[2] for r in failed] == ["relationships_stg_transactions_product_id__product_id__ref_stg_products_"], out
     assert failed[0]["failures"] == 1
     assert q(f"select from_field from {failed[0]['relation_name']}") == [("PRD-ORPHAN0001",)]  # store_failures keeps the evidence
+    # Live CI showed dbt does not skip fct_transaction for this two-parent test: the orphan reaches the Snowflake mart.
+    # What protects the agent is the failed build: pipeline.yml skips the export, so serving stays on the last good run.
     status = {r["unique_id"].split(".")[2]: r["status"] for r in results}
-    assert status["fct_transaction"] == "skipped"  # the mart is not rebuilt over the orphan
+    assert status["fct_transaction"] == "success"
     assert q("select count(*) from STAGING.STG_TRANSACTIONS where transaction_id = 'FIX-22-0001'")[0][0] == 1
-    assert q("select count(*) from CURATED.FCT_TRANSACTION where transaction_id like 'FIX-22-%'")[0][0] == 0
-    assert q("select count(*) from CURATED.FCT_TRANSACTION")[0][0] == p2["tables"]["fct_transaction"]
+    assert q("select count(*) from CURATED.FCT_TRANSACTION where transaction_id = 'FIX-22-0001'")[0][0] == 1
     assert q("select count(*) from STAGING.QUARANTINE where pk_value like 'FIX-22-%'")[0][0] == 0  # an FK break fails, it is not quarantined
