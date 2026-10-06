@@ -241,7 +241,8 @@ def test_each_call_uses_its_roles_timeout():
 def test_compose_prompt_version_matches_the_prompt_text():
     """Decision records name the prompt version; it must be the one whose text runs (v2 adds the tú/você rule)."""
     from bankagent.llm.compose import COMPOSE_SYSTEM
-    assert "tú" in COMPOSE_SYSTEM and M["compose"].prompt_version == "compose.v3"  # v3 adds <request>
+    assert "tú" in COMPOSE_SYSTEM and M["compose"].prompt_version == "compose.v4"  # v3 <request>, v4 no totals
+    assert "never add up" in COMPOSE_SYSTEM.lower()  # live v8 summed card debt into "En total tienes …"
     assert "<request>" in COMPOSE_SYSTEM and "1.234,56 ARS" in COMPOSE_SYSTEM  # same money format as templates
 
 

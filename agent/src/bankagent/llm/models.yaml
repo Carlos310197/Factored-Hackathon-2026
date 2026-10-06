@@ -1,6 +1,6 @@
 # Per-role OpenAI models on Amazon Bedrock (spec §6). Override with LLM_EXTRACT_MODEL / LLM_COMPOSE_MODEL.
 # Using OSS models (available to all accounts) instead of commercial GPT-5.6 models (require special access).
 extract: {model: mistral.ministral-3-14b-instruct, max_tokens: 1024, prompt_version: extract.v2, timeout_s: 10}
-compose: {model: openai.gpt-oss-120b, max_tokens: 1024, prompt_version: compose.v3, timeout_s: 20, effort: low}
+compose: {model: openai.gpt-oss-120b, max_tokens: 1024, prompt_version: compose.v4, timeout_s: 20, effort: low}
 # dev_writer is offline only: it writes the resolver's dev-set messages (resolver spec 5.3). LLM_DEV_WRITER_MODEL.
 dev_writer: {model: openai.gpt-oss-120b, max_tokens: 400, prompt_version: devwriter.v1, timeout_s: 20, effort: low}
