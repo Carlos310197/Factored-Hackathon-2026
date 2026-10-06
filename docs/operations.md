@@ -79,6 +79,25 @@ So a bad agent release is undone in under 10 seconds without a rebuild, as long 
 `app` root (a new ECS task revision, ~2 minutes); that path was exercised by every deploy tonight, not rehearsed as a rollback.
 Not proven: the first conversation after a switch is cold (12 s here).
 
+## Load test, 2026-10-06
+
+`scripts/load_test.py` (stdlib only): 10 fresh customers (`demo09`–`demo18`) sign in at the same moment (each sign-in
+warms its own agent session), then each sends the same 3 messages with 8 s between them: a balance question, "¿Tengo
+algún pago rechazado?" and "Gracias". Started 02:55:11 UTC against runtime v13.
+
+| Measure | Value | Source |
+|---|---|---|
+| Turns answered | 30 / 30 (HTTP 200), 0 errors | script |
+| End-to-end latency (browser → web → agent → reply) | p50 3.2 s, p95 6.9 s, max 7.8 s | script |
+| Agent time per turn | p50 2.6 s, p95 5.7 s, max 7.1 s (n = 27 datapoints in the window) | `TurnDurationMs` |
+| Failed / slow turns | 0 / 0 | `TurnFailed`, `TurnSlow` |
+| Template fallbacks | 1 of 30 | `TemplateFallback` |
+| Login warm-ups | all succeeded (`warmup_ok`), none failed | `Requests` by `Outcome` |
+
+Reproduce (costs real Bedrock and Jev calls): `python3 scripts/load_test.py https://d21y0qq5d8ixnr.cloudfront.net --users 10`.
+Not measured: the saturation point. The first expected limit is the account's Lambda concurrency of 10, shared by the
+identity service and the realtime Lambdas.
+
 ## Reproduce
 
 ```bash
