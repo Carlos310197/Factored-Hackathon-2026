@@ -29,6 +29,7 @@ Every handler parses its input with Zod, checks the cookie's JWT (signature, exp
 | `POST /api/customer/sessions/end` | customer | Ends the current conversation; `/api/chat` then answers 409 `session_ended` |
 | `POST /api/customer/sessions/new` | customer | Ends the current one and swaps the cookie for a new session id (IdP `/auth/session/new`, same expiry) |
 | `POST /api/customer/sessions/:sid/hide` | owner customer | Takes a past conversation off the list (409 `current_session` for the current one); the record is kept |
+| `GET /api/customer/cases` | customer | The signed-in customer's 20 newest disputes (`CustomerCase`), id from the token only |
 | `POST /api/sessions/:sid/messages` | agent holding the takeover | Agent message |
 | `GET /api/handoffs?status=` | agent | Queue |
 | `GET /api/handoffs/:id` | agent | Packet |
@@ -120,6 +121,7 @@ There's one orchestrated moment: **the trace block reveal** when a turn complete
   - `useExternalStoreRuntime` over a Zustand store that merges POST replies, pushed `message` events and history, de-duplicated by `message_id`.
   - Thread, composer and message are primitives styled in world B. Chips, the summary card, receipt chips, system lines and agent messages are custom message parts.
   - No default assistant-ui theme.
+- **Mis casos / Meus casos:** a header button opens a bottom sheet (dialog; Escape, backdrop and *Cerrar* close it, focus returns to the button) listing the customer's disputes from `GET /api/customer/cases`, fetched on each open: reason, amount, short `DSP-…` id, date and a status pill (`submitted` Enviada, `pending_review` En revisión / Em análise, `resolved`, `rejected`). Empty state "No tienes casos abiertos" / "Você não tem casos abertos". Hidden in embed mode with the rest of the header.
 - **Embed mode:** `/chat?embed=1` hides the page chrome and tells the parent its `sid` and turn events through `postMessage` (origin-checked) for `/demo`.
 
 ### Agent console (`/agent`, `/agent/[handoffId]`; world C, desktop) · ui §8.2
