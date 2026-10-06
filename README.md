@@ -225,6 +225,7 @@ Spanish-speaking customers' histories. The nil slice (15 cases) is too small to 
 | Judged area | Look at |
 |---|---|
 | Rationale and docs | This README, [`reports/asis-2026-10-05.md`](reports/asis-2026-10-05.md), `context/` (specs and decisions), `context/progress-tracker.md` → Architecture Decisions |
+| Product | [`docs/before-after.md`](docs/before-after.md): today's complaint row next to a real `handoff.v1` packet from the live agent, field by field; [`docs/run-of-show.md`](docs/run-of-show.md): the 4-beat live demo script with a fallback per beat |
 | Data engineering | [`docs/data-pipeline.md`](docs/data-pipeline.md): contracts, quarantine with a 1 % gate, lineage manifest, fixture drop proof (`tests/test_fixture_drop.py`), atomic self-describing serving pointer (`tests/test_export.py`), contract parity with the agent (`tests/test_contract_parity.py`), and the live run evidence (row counts per layer, 77 pass / 3 warn / 0 error) |
 | Data analytics | [`reports/asis-2026-10-05.md`](reports/asis-2026-10-05.md) and `analysis/asis/` (synthetic-artifact detectors, every number with n) |
 | AI engineering | [`docs/policy-on-trial.md`](docs/policy-on-trial.md): one request replayed with one YAML rule changed (filed → refused, 0 writes) and argued against with persuasion (still refused); the control matrix and failure table above; live trace at `/trace/<session>`; `agent/docs/smoke-results.md` (all 8 scenarios against real Jev and Bedrock, 2026-10-05) |
