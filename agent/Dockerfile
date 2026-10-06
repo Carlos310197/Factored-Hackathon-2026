@@ -12,4 +12,5 @@ RUN uv sync --frozen --no-default-groups
 # DuckDB extensions for s3:// serving reads are installed at build time, not downloaded at runtime.
 RUN uv run --frozen --no-default-groups python -c "import duckdb; c = duckdb.connect(); c.execute('INSTALL httpfs'); c.execute('INSTALL aws')"
 EXPOSE 8080 8081
-CMD ["uv", "run", "--frozen", "--no-default-groups", "python", "-m", "bankagent.app"]
+# --no-sync: the image is already synced; without it every new microVM rebuilt and byte-compiled the package
+CMD ["uv", "run", "--no-sync", "python", "-m", "bankagent.app"]
