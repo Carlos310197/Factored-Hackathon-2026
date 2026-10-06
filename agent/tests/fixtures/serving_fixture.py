@@ -1,5 +1,4 @@
-"""SYNTHETIC serving fixture — labeled test data, NOT organizer records.
-Mirrors the pipeline serving contract: <root>/latest.json + <root>/<run_id>/<table>/data_0.parquet."""
+"""SYNTHETIC serving fixture: labeled test data, NOT organizer records."""
 import json
 
 from bankagent.data.contract import contract_hash

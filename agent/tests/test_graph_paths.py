@@ -17,7 +17,7 @@ def test_account_inquiry_es(ddb_store, serving_root):
     assert {"tool", "llm", "jev", "route"} <= set(h.log_kinds())
     assert h.jev.count("understand") == 1 and h.jev.count("verify") == 1
     sent = json.dumps(h.jev.calls[0][1])
-    assert "TRX-" not in sent and "CLI-" not in sent  # Jev sees aliases, never ids
+    assert "TRX-" not in sent and "CLI-" not in sent
     _assert_jev_never_sees_customer_or_product_ids(h)
 
 
@@ -29,8 +29,6 @@ def test_compose_gets_the_customers_request(ddb_store, serving_root):
 
 
 def test_id_guard_feedback_keeps_claim_citations(ddb_store, serving_root):
-    """Live v7: draft 1 wrote its receipt id in the text; the feedback said the id was 'not in the receipts', so
-    draft 2 blanked every claim's receipt_ids, Jev failed them all and the turn fell back to the template."""
     llm = FakeLLM(reply_text="Tu saldo (RCP-1791247560533CC9C92FC) es 1.250,40 USD")
     h = make_harness(ddb_store, serving_root, [{"intent": "account_info"}], llm=llm)
     h.turn("saldo")
@@ -79,7 +77,6 @@ EXTRACT_MODEL = "mistral.ministral-3-14b-instruct"
 
 
 def test_confirm_token_files_without_extract_or_jev(ddb_store, serving_root):
-    """The card's button sends confirm:<card_hash>; code checks equality, so no model reads the 'yes'."""
     h = make_harness(ddb_store, serving_root, [DISPUTE_NETFLIX])
     r1 = h.turn("Me cobraron dos veces Netflix, quiero disputarlo")
     card_hash = r1["summary"]["card_hash"]
@@ -106,7 +103,6 @@ def test_stale_confirm_token_does_not_file(ddb_store, serving_root):
 
 
 def _assert_jev_never_sees_customer_or_product_ids(h):
-    """Invariant (architecture-context): no Jev request carries customer_id, product_id or fraud fields."""
     assert h.jev.calls and any(c[0] == "verify" for c in h.jev.calls)
     for kind, state, questions in h.jev.calls:
         sent = json.dumps([state, questions])
@@ -193,8 +189,6 @@ def test_session_keeps_its_run_id_when_pointer_moves(ddb_store, tmp_path):
 
 
 def test_confirmation_is_bound_to_the_card_the_customer_saw(ddb_store, serving_root):
-    """'Sí' confirms exactly the card shown: if the transaction behind it changed, nothing is filed and the card is
-    shown again with the new data."""
     h = make_harness(ddb_store, serving_root, [DISPUTE_NETFLIX, {"intent": "dispute_charge", "confirmation": "confirm"}])
     r1 = h.turn("Me cobraron dos veces Netflix, quiero disputarlo")
     assert r1["awaiting"] == "confirmation" and "15.99" in r1["reply_text"]
@@ -212,7 +206,6 @@ def test_confirmation_is_bound_to_the_card_the_customer_saw(ddb_store, serving_r
 
 
 def test_llm_never_sees_customer_or_product_ids(ddb_store, serving_root):
-    """Bedrock runs in a second AWS account: compose and handoff payloads get the same redaction as Jev."""
     h = make_harness(ddb_store, serving_root, [DISPUTE_NETFLIX, {"intent": "dispute_charge", "confirmation": "confirm"}])
     h.turn("Me cobraron dos veces Netflix, quiero disputarlo")
     h.turn("sí, confirmo")

@@ -21,7 +21,7 @@ CONTRACT: dict[str, list[str]] = {
 
 
 def contract_hash(contract: dict[str, list[str]] | None = None) -> str:
-    """Same canonical hash the pipeline writes into latest.json (pipeline.export.contract_hash; parity is tested)."""
+    """Must match the pipeline's contract_hash (parity is tested)."""
     columns = CONTRACT if contract is None else contract
     canon = json.dumps({t: [c.lower() for c in cols] for t, cols in columns.items()}, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canon.encode()).hexdigest()

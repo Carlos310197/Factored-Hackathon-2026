@@ -1,4 +1,3 @@
-"""Threshold selection on dev: highest coverage with a dev wrong-action rate <= 2%."""
 from collections.abc import Callable
 from pathlib import Path
 
@@ -15,8 +14,7 @@ def grid(lo: float, hi: float, step: float = 0.01) -> list[float]:
 
 def choose(evaluate: Callable[[tuple], list[str]], points: list[tuple],
            max_wrong: float = MAX_WRONG) -> tuple[tuple, dict, list[dict]]:
-    """Returns (best point, its summary, the whole curve). Ties: better resolved_one_step, then stricter thresholds.
-    If no point meets max_wrong, the point with the lowest wrong-action rate wins (reported as infeasible)."""
+    """Ties: better resolved_one_step, then stricter thresholds. None meets max_wrong: lowest wrong-action wins."""
     curve = []
     for p in points:
         s = summarize(evaluate(p))
@@ -32,11 +30,10 @@ def choose(evaluate: Callable[[tuple], list[str]], points: list[tuple],
 
 def write_thresholds_v2(t: float, m: float, src: Path = THRESHOLDS_DIR / "thresholds.v1.yaml",
                         dst: Path = THRESHOLDS_DIR / "thresholds.v2.yaml") -> Path:
-    """thresholds.v1 with the target_transaction values tuned for P (Jev + ranker) on dev."""
     lines, in_target = [], False
     for line in src.read_text(encoding="utf-8").splitlines():
         if in_target and line.startswith((" ", "\t")):
-            continue  # the old indented min_p / min_margin lines
+            continue
         in_target = False
         if line.startswith("version:"):
             line = "version: thresholds.v2"

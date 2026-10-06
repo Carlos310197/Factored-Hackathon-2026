@@ -1,4 +1,3 @@
-"""Runtime settings from environment variables."""
 import logging
 import os
 from collections.abc import Mapping
@@ -21,8 +20,8 @@ class Settings:
     issuer: str
     audience: str
     jwks_url: str
-    resolver_artifact: str | None = None  # a resolver artifact directory; unset = Jev alone
-    thresholds_file: str | None = None  # e.g. decisions/thresholds.v2.yaml once the resolver is adopted
+    resolver_artifact: str | None = None
+    thresholds_file: str | None = None
     git_sha: str = "dev"
 
     @classmethod
@@ -45,10 +44,7 @@ class Settings:
 
 
 def load_settings(env: Mapping[str, str] = os.environ, secrets_client=None) -> Settings:
-    """Settings for the deployed runtime. When JEV_SECRET_ID is set and JEV_API_KEY isn't, the key is read from
-    Secrets Manager once. A failure leaves it empty: Jev calls then fail and the graph clarifies or hands off.
-    The container still starts, so /ping stays healthy (never a crash loop)."""
-    # A failed secret read is not retried until the container restarts (the runtime is built once).
+    """A failed Jev secret read leaves the key empty: Jev calls fail, /ping stays healthy."""
     merged = dict(env)
     secret_id = merged.get("JEV_SECRET_ID")
     if secret_id and not merged.get("JEV_API_KEY"):

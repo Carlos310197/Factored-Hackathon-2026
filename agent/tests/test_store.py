@@ -76,7 +76,6 @@ def test_codec_roundtrip_drops_nulls():
 
 
 def test_take_turn_is_an_atomic_capped_counter(ddb_store):
-    """One conditional UpdateItem per turn: parallel requests and other containers can't exceed the cap."""
     s = ddb_store.sessions
     s.ensure("S-cap", "CLI-1", "es")
     assert [s.take_turn("S-cap", 3) for _ in range(5)] == [True, True, True, False, False]

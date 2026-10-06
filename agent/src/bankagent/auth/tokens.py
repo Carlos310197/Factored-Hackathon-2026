@@ -1,4 +1,4 @@
-"""RS256 session tokens: issued by the mock IdP, verified by the agent. customer_id comes only from here."""
+"""RS256 session tokens. customer_id comes only from here."""
 import time
 
 import httpx
@@ -58,7 +58,6 @@ def verify_token(token: str, jwks: dict, issuer: str, audience: str) -> SessionC
 
 
 class JwksCache:
-    """Fetches the IdP's JWKS and caches it; refetches after ttl_s."""
 
     def __init__(self, url: str, ttl_s: int = 600, fetch=None):
         self.url, self.ttl_s = url, ttl_s

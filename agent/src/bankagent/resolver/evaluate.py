@@ -1,5 +1,3 @@
-"""Four-system evaluation: dev threshold tuning, test outcomes, slices, intervals, error sheet and the markdown
-report. Offline only."""
 import csv
 import time
 from pathlib import Path
@@ -37,7 +35,6 @@ def outcomes_jev(rows, run: dict[str, dict], t, m):
 
 
 def tune_systems(dev_rows: list[dict], scores: dict[str, Scores], dev_runs: dict[str, dict]) -> tuple[dict, dict]:
-    """Thresholds per system on dev and the curves for the report."""
     th, curves = {}, {}
     pts = [(a, b) for a in grid(0.3, 0.99) for b in grid(0.3, 0.99)]
     th["B1"], best, curves["B1"] = choose(lambda p: outcomes_b1(dev_rows, scores, *p), pts)
@@ -51,7 +48,6 @@ def tune_systems(dev_rows: list[dict], scores: dict[str, Scores], dev_runs: dict
 
 
 def evaluate(rows: list[dict], scores: dict[str, Scores], th: dict, runs: dict[str, list[dict]]) -> dict[str, list[list[str]]]:
-    """system -> one outcome list per repeat (B0 and B1 are deterministic: one repeat)."""
     out = {"B0": [outcomes_b0(rows)], "B1": [outcomes_b1(rows, scores, *th["B1"])]}
     for system in ("B2", "P"):
         if runs.get(system):
@@ -105,8 +101,7 @@ def suggest_cause(row: dict, p_outcome: str, score: Scores, ceiling: dict[str, s
 
 
 def write_error_sheet(rows, results, scores, ceiling, path: Path) -> list[dict]:
-    """Every failed P case (B1 when P was not run) with a suggested cause; cause_confirmed is filled by hand and kept
-    when the sheet is regenerated."""
+    """Failed cases with a suggested cause; the hand-filled cause_confirmed is kept when the sheet is regenerated."""
     system = "P" if "P" in results else "B1"
     confirmed = {}
     if path.exists():

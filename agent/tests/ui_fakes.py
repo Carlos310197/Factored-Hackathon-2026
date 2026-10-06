@@ -1,4 +1,3 @@
-"""In-memory stand-ins for SessionRepo / MessageLog / DecisionLog used by entrypoint tests."""
 from types import SimpleNamespace
 
 

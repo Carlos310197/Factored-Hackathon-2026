@@ -1,5 +1,4 @@
-# Transaction-resolver simulator. These rates are ASSUMPTIONS about how customers describe a
-# transaction, not measurements. The real-text dev and test sets show any mismatch.
+# These rates are assumptions about how customers describe a transaction, not measurements.
 version: simulate.v1
 hard_share: 0.50            # target drawn from hard candidates when the history has any
 not_in_list: 0.10           # target removed from the candidates: no correct pick

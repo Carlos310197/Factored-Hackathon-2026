@@ -8,10 +8,9 @@ TABLE_SPECS = {
     "decision_records": {"keys": [("session_id", "S", "HASH"), ("sk", "S", "RANGE")], "gsis": [], "ttl": "ttl"},
     # by_customer: the customer's own conversation list (newest first); the BFF writes ended_at / hidden on the item
     "sessions": {"keys": [("session_id", "S", "HASH")],
-                 "gsis": [("by_customer", [("customer_id", "S", "HASH"), ("created_at", "S", "RANGE")])], "ttl": "ttl"},  # 90 days
+                 "gsis": [("by_customer", [("customer_id", "S", "HASH"), ("created_at", "S", "RANGE")])], "ttl": "ttl"},
     "conversation_messages": {"keys": [("session_id", "S", "HASH"), ("sk", "S", "RANGE")], "gsis": [], "ttl": "ttl"},
 }
-# Tables whose changes are pushed to the UI by the realtime publisher
 STREAM_TABLES = ("handoffs", "decision_records", "conversation_messages")
 STREAM_SPEC = {"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"}
 

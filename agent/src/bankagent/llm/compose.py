@@ -1,4 +1,3 @@
-"""OpenAI role 2 (compose.v4): the reply, written only from receipts, plus the claims it makes (for Jev to verify)."""
 import json
 from dataclasses import dataclass
 
@@ -68,7 +67,7 @@ def compose(client, cfg: RoleConfig, goal: dict, receipts: list[dict], language:
 
 def open_questions(client, cfg: RoleConfig, request_en: str, reason_codes: list[str],
                    receipts: list[dict]) -> tuple[list[str], LLMCall]:
-    # Fraud signals stay in the bank (redaction rule): the staff packet keeps fraud_flag/fraud_score_high, Bedrock doesn't.
+    # Fraud signals stay in the bank: Bedrock never gets them.
     reason_codes = [c for c in reason_codes if not c.startswith("fraud")]
     user = (f"<request>{request_en}</request>\n<reason_codes>{json.dumps(reason_codes)}</reason_codes>\n"
             f"<receipts>{json.dumps(redact(receipts), ensure_ascii=False, default=str)}</receipts>")

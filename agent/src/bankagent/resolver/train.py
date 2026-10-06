@@ -1,7 +1,4 @@
-"""Offline training and model selection. Never imported by the agent at runtime.
-Both families are pointwise binary classifiers over candidate rows. Hyperparameters are chosen on SIMULATED
-validation cases; the small real-text dev set is kept for the final choice
-between the two family finalists and for calibration (finalize.py)."""
+"""Offline only: never imported by the agent at runtime."""
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,7 +24,6 @@ class Finalist:
 
 
 def build_matrix(cases: list[dict]) -> tuple[np.ndarray, np.ndarray]:
-    """One row per candidate; label 1 for the described transaction (all 0 in not_in_list cases)."""
     xs, ys = [], []
     for c in cases:
         xs.append(case_features(c["mentions"], c["candidates"]))
@@ -53,8 +49,6 @@ def fit_logreg(X: np.ndarray, y: np.ndarray, C: float, seed: int, out_dir: Path,
 
 
 def fit_lightgbm(X: np.ndarray, y: np.ndarray, params: dict, seed: int, out_dir: Path, metadata: dict) -> Resolver:
-    """Pointwise binary LightGBM: same objective as the logistic regression, so its log-odds feed the same
-    'none of these' softmax."""
     import lightgbm as lgb
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -74,8 +68,6 @@ def _save(spec: dict, out_dir: Path, X: np.ndarray) -> Resolver:
 
 
 def case_metrics(resolver: Resolver, cases: list[dict], mentions_key: str = "mentions") -> dict:
-    """top-1 accuracy (all / hard / easy), not_in_list AUC of best_raw_fit, and expected calibration error.
-    mentions_key='extraction' reads real extract output (dev and test sets)."""
     from sklearn.metrics import roc_auc_score
 
     hits, conf, present, fit = {"all": [], "hard": [], "easy": []}, [], [], []
@@ -112,7 +104,6 @@ def _key(m: dict) -> tuple:
 
 def search(train_cases: list[dict], val_cases: list[dict], out_dir: Path, tracker, seed: int, metadata: dict,
            logreg_grid: list[dict] = LOGREG_GRID, lgbm_grid: list[dict] = LGBM_GRID) -> dict[str, Finalist]:
-    """Fit every grid point, score it on simulated validation cases, log it, keep the best of each family."""
     X, y = build_matrix(train_cases)
     best: dict[str, Finalist] = {}
     runs = [("logreg", p) for p in logreg_grid] + [("lightgbm", p) for p in lgbm_grid]

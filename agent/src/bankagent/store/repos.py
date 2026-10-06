@@ -60,7 +60,6 @@ class HandoffRepo:
 
 
 class DecisionLog:
-    """The execution record: one item per step, keyed session → turn#seq, 90-day TTL."""
     TTL_DAYS = 90
 
     def __init__(self, table, clock=time.time):
@@ -78,7 +77,7 @@ class DecisionLog:
             "kind": kind, "ts": datetime.fromtimestamp(now, timezone.utc).isoformat(), "payload": payload,
             "versions": versions or {}, "latency_ms": latency_ms, "ttl": int(now) + self.TTL_DAYS * 86400}
         if trace_id:
-            item["trace_id"] = trace_id  # links the audit record to its trace
+            item["trace_id"] = trace_id
         self.t.put_item(Item=to_dynamo(item))
 
     def list(self, session_id: str) -> list[dict]:
@@ -121,8 +120,7 @@ class SessionRepo:
         return (self.get(session_id) or {}).get("control", "agent")
 
     def take_turn(self, session_id: str, limit: int) -> bool:
-        """Count one turn if the session is under `limit`. One conditional UpdateItem, so parallel requests and other
-        containers cannot exceed the cap, and a turn counts before the model runs (a failing turn still counts)."""
+        """One conditional UpdateItem: parallel requests cannot exceed the cap; a failing turn still counts."""
         try:
             self.t.update_item(Key={"session_id": session_id}, UpdateExpression="ADD turns :one",
                                ConditionExpression="attribute_not_exists(turns) OR turns < :limit",
@@ -135,7 +133,6 @@ class SessionRepo:
 
 
 class MessageLog:
-    """The conversation transcript plus idempotency markers (`~idem#<message_id>`, kind=idem)."""
     TTL_DAYS = 90
     IDEM = "~idem#"
 

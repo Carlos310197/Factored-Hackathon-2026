@@ -1,5 +1,4 @@
-"""Jev (TypeSafe) decision client: typed answers, one bounded retry, strict response validation.
-A missing or malformed answer is an error, never an approval."""
+"""A missing or malformed Jev answer is an error, never an approval."""
 import hashlib
 import json
 import time
@@ -83,7 +82,7 @@ def validate_answers(questions: dict, body: dict) -> dict[str, ChoiceAnswer | No
 class JevClient:
     def __init__(self, api_key: str, url: str = "https://api.typesafe.ai/v1/systemone", model: str = "jev-1.13.0",
                  timeout: float = 3.0, transport: httpx.BaseTransport | None = None):
-        self.api_key = api_key  # empty (secret unreadable): built anyway, decide() raises JevError so the graph clarifies
+        self.api_key = api_key  # empty key: built anyway, decide() raises JevError so the graph clarifies
         self.url, self.model = url, model
         self._http = httpx.Client(timeout=timeout, transport=transport,
                                   headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})

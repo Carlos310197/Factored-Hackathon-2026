@@ -1,5 +1,3 @@
-"""Write infra/terraform/data/tables.json from TABLE_SPECS (the single source for the table shapes).
-Run: cd agent && uv run python scripts/export_table_specs.py"""
 import json
 from pathlib import Path
 

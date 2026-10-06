@@ -1,5 +1,3 @@
-"""Write config/demo_users.yaml (labeled test identities) from a serving directory.
-uv run python scripts/pick_demo_users.py [--serving .serving]"""
 import argparse
 from pathlib import Path
 

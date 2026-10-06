@@ -1,5 +1,4 @@
-"""Live smoke test for Jev over TypeSafe's direct route. Sends ONE synthetic request (no dataset records).
-Run only with the owner's approval:  uv run python scripts/smoke_jev.py"""
+"""Live smoke test: one synthetic Jev request, no dataset records."""
 import json
 import os
 from pathlib import Path

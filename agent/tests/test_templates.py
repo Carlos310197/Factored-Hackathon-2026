@@ -15,7 +15,6 @@ def test_fmt_money():
 
 
 def test_txn_option_is_the_customers_language_not_the_jev_description():
-    """Clarification chips showed `2026-05-06 · Taxi Seguro · 41223.86 ARS · Purchase · Approved · Web · Buenos Aires`."""
     txn = {"merchant_name": "Taxi Seguro", "process_date": "2026-05-06", "amount": 41223.86, "currency": "ARS",
            "transaction_type": "Purchase", "transaction_status": "Approved", "channel": "Web"}
     assert txn_option(txn, "es") == "Taxi Seguro · 2026-05-06 · 41.223,86 ARS · Aprobada"
@@ -73,7 +72,7 @@ def test_fallback_translates_product_and_transaction_status():
     pt = fallback_reply({"kind": "answer"}, [products, txn], "pt")
     assert "(Ativa)" in pt and "Recusada" in pt
     unknown = {**products, "data": [{**products["data"][0], "product_status": "Frozen"}]}
-    assert "(Frozen)" in fallback_reply({"kind": "answer"}, [unknown], "es")  # unknown values pass through
+    assert "(Frozen)" in fallback_reply({"kind": "answer"}, [unknown], "es")
 
 
 def test_portuguese_copy_has_no_spanish():

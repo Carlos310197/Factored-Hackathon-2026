@@ -1,11 +1,4 @@
-"""Exhibit: put the dispute policy on trial (judge round two, Part E).
-
-REPLAYED EVIDENCE, NOT A LIVE RUN: the real graph, policy and write tools run against the labeled synthetic serving
-fixture; extraction and Jev answers are scripted (the same in every trial). One request is replayed with the policy
-as shipped and with ONE YAML rule changed, then argued against with persuasive wording. Replies are the deterministic
-templates (the reply model is switched off) so the printed copy is exactly what the code says.
-Run `uv run pytest tests/test_policy_on_trial.py -s` to print the exhibit.
-"""
+"""Replayed evidence, not a live run: extraction and Jev answers are scripted. Run with -s to print the exhibit."""
 import copy
 
 import pytest
@@ -100,7 +93,6 @@ def test_trial_3_persuasion_cannot_grant_permission(ddb_store, serving_root, wri
 
 
 def test_refusal_text_states_the_policy_window_not_a_hardcoded_one():
-    """The out_of_window note said '60 días' whatever the YAML said: policy and customer copy must agree."""
     from bankagent.llm.templates import fallback_reply
     goal = {"kind": "answer", "note": "out_of_window", "window_days": 5}
     assert "5 días" in fallback_reply(goal, [], "es") and "60" not in fallback_reply(goal, [], "es")

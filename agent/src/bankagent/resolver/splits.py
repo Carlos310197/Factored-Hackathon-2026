@@ -1,5 +1,4 @@
-"""Leakage-safe splits and the hard-slice rule. Customers and anchor dates are disjoint across
-train / dev / test. The hard slice is a deterministic rule on the history and target, computed before any model runs."""
+"""Customers and anchor dates are disjoint across train / dev / test."""
 import hashlib
 from datetime import date
 
@@ -26,7 +25,6 @@ def _comparable_amounts(a: dict, b: dict) -> tuple[float, float] | None:
 
 
 def case_slice(candidates: list[dict], target_id: str | None) -> str:
-    """'nil' when the target is not among the candidates, else 'hard' or 'easy'."""
     target = next((t for t in candidates if t["transaction_id"] == target_id), None)
     if target is None:
         return "nil"

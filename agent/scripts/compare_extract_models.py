@@ -1,8 +1,4 @@
-"""Compare `extract` models on the resolver test messages (LIVE: Bedrock; owner-approved runs only).
-For each row: did extract return valid JSON, how long did it take, and are the extracted mentions consistent with the
-known target (merchant substring, amount within 1%, date inside the range)?  Usage:
-  AWS_PROFILE=... uv run python scripts/compare_extract_models.py <model-id> [--out file.json]
-"""
+"""Compare extract models on the resolver test messages. Calls Bedrock."""
 import argparse
 import dataclasses
 import json

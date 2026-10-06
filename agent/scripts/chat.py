@@ -1,5 +1,3 @@
-"""Terminal chat against the local stack: log in through the mock IdP, then talk to the agent's /invocations.
-uv run python scripts/chat.py --user demo01 --password demo-01 --otp 123456"""
 import argparse
 
 import httpx

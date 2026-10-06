@@ -20,7 +20,7 @@ def mentions(**kw) -> dict:
 
 
 def write_logreg_artifact(path, temperature: float = 1.0, selfcheck: bool = True) -> None:
-    """A hand-set logistic-regression artifact: amount and date evidence dominate. Labeled test artifact."""
+    """Hand-set logistic-regression artifact. Labeled test artifact."""
     import json
 
     import numpy as np

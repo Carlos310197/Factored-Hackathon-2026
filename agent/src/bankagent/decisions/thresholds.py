@@ -1,4 +1,3 @@
-"""Versioned decision thresholds."""
 from dataclasses import dataclass
 from pathlib import Path
 import yaml
@@ -25,14 +24,6 @@ class Thresholds:
 
 
 def load_thresholds(path: Path | None = None) -> Thresholds:
-    """Load thresholds from YAML file.
-    
-    Args:
-        path: Optional path to thresholds YAML. Defaults to thresholds.v1.yaml in same directory.
-    
-    Returns:
-        Thresholds dataclass with all threshold values
-    """
     if path is None:
         path = Path(__file__).parent / "thresholds.v1.yaml"
     

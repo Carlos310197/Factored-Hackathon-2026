@@ -22,7 +22,7 @@ QSETS = {"B2": load_question_set("understand.v1"), "P": load_question_set("under
 
 
 class ScriptedJev:
-    """Follows the match scores when present (P), else answers c1 (B2). Fails on every `fail_every`-th call."""
+    """Follows the match scores when present, else answers c1. Fails on every `fail_every`-th call."""
 
     def __init__(self, fail_every: int = 0):
         self.calls, self.fail_every = [], fail_every

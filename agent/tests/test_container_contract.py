@@ -1,5 +1,4 @@
-"""Container contract for `docker compose up` (dynamodb + init-tables + identity + agent).
-None of these requests reaches Jev or Bedrock: they stop at auth and message validation."""
+"""None of these requests reaches Jev or Bedrock: they stop at auth and message validation."""
 import httpx
 import pytest
 

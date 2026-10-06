@@ -1,5 +1,3 @@
-"""Create the agent's DynamoDB tables (idempotent).
-Local:  DYNAMODB_ENDPOINT=http://localhost:8000 uv run python scripts/create_tables.py"""
 import os
 
 import boto3

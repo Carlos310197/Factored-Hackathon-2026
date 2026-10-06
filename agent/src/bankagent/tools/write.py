@@ -1,5 +1,4 @@
-"""Write tools: dispute intake (policy re-evaluated inside the tool) and handoff creation.
-Every write is read back; an unknown write outcome is resolved by reading, never by blind retry."""
+"""Every write is read back; an unknown write outcome is resolved by reading, never by blind retry."""
 import hashlib
 import json
 from dataclasses import asdict

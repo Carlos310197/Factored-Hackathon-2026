@@ -1,4 +1,3 @@
-"""Time-sortable identifiers for disputes, handoffs, receipts and turns."""
 import secrets
 import time
 

@@ -1,4 +1,3 @@
-"""Read-only access to the pipeline's serving set (latest.json → run folder of parquet) via in-process DuckDB."""
 import json
 import re
 import threading
@@ -58,14 +57,12 @@ class ServingData:
         try:
             p = json.loads(self._read_text(f"{self.base}/latest.json"))
             pointer = Pointer(p["run_id"], date.fromisoformat(p["max_process_date"]), p.get("exported_at", ""))
-        except Exception as e:  # any read/parse failure means the serving set is unusable
+        except Exception as e:
             raise ServingError(f"cannot read serving pointer: {e}") from e
-        # A pointer must name its columns, and they must be ours: otherwise the parquet would be misread. Only a local
-        # dev build made before the hash existed may omit it.
+        # A pointer must name our columns or the parquet would be misread; only old local dev builds omit them.
         legacy_dev = "contract_hash" not in p and str(p.get("source", "")).startswith("local_build")
         if not legacy_dev and p.get("contract_hash") != contract_hash():
             raise ServingError(f"serving contract mismatch for run {pointer.run_id}")
-        # The pipeline moves the pointer daily; an old export means it stopped (CloudWatch alarm StalePointer).
         try:
             age = datetime.now(timezone.utc) - datetime.fromisoformat(pointer.exported_at.replace("Z", "+00:00"))
             if age > STALE_AFTER:

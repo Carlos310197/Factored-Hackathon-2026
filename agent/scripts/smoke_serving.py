@@ -1,6 +1,3 @@
-"""Measure per-turn read latency (list_transactions + get_accounts) against SERVING_URI (local dir or s3://).
-Reads only our own serving set. Run only with the owner's approval when SERVING_URI is s3://.
-SERVING_URI=s3://<bucket>/serving uv run python scripts/smoke_serving.py --customers 10"""
 import argparse
 import json
 import os

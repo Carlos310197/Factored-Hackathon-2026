@@ -1,7 +1,4 @@
-"""Graph nodes implementing the agent workflow.
-Each node is a function that takes (state, config) and returns a partial state update.
-Identity comes from config['configurable']['ctx'], verified on every turn.
-"""
+"""Identity comes from config['configurable']['ctx'], verified on every turn."""
 import hashlib
 import json
 import logging
@@ -48,17 +45,14 @@ from bankagent.tools.write import AlreadyDisputed, HandoffFailed, PolicyRejected
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer("bankagent")
 
-# Routes that should NOT reset intent/target/reason from the routing decision
 CARRY_ROUTES = ("file_dispute", "confirm")
 
 
 def _ctx(config: RunnableConfig) -> SessionContext:
-    """Extract verified session context from config."""
     return config["configurable"]["ctx"]
 
 
 def _answers(result) -> dict:
-    """Convert Jev answers to decision record format."""
     return {
         q: ({"label": a.label, "probabilities": a.probabilities} if isinstance(a, ChoiceAnswer) else {"p": a.p})
         for q, a in result.answers.items()
@@ -66,7 +60,6 @@ def _answers(result) -> dict:
 
 
 def _refs(receipts: list[dict]) -> list[str]:
-    """Extract dispute_id and handoff_id from receipts for the reply."""
     out = []
     for r in receipts:
         data = r.get("data")
@@ -80,23 +73,19 @@ def _refs(receipts: list[dict]) -> list[str]:
     return list(dict.fromkeys(x for x in out if x))
 
 
-
 def _card_hash(txn: dict, reason: str | None) -> str:
-    """Hash of the structured confirmation card (merchant, date, amount, currency, reason)."""
     card = json.dumps(confirmation_payload(txn, reason), sort_keys=True, default=str)
     return hashlib.sha256(card.encode()).hexdigest()
 
 class Nodes:
-    """Graph node implementations."""
     
     def __init__(self, deps: Deps):
         self.d = deps
     
-    # ---- Helpers --------------------------------------------------------------------
     
     def _log(self, state: AgentState, config: RunnableConfig, node: str, kind: str,
              payload: dict, versions: dict | None = None, latency_ms: int | None = None) -> None:
-        """Log a decision record (best-effort, never breaks the turn)."""
+        """Best-effort: never breaks the turn."""
         ctx = _ctx(config)
         try:
             self.d.store.log.append(ctx.session_id, state["turn_id"], node, kind, payload, versions, latency_ms)
@@ -104,26 +93,23 @@ class Nodes:
             logger.exception("decision record write failed")
     
     def _as_of(self, state: AgentState):
-        """Parse as_of date from state."""
         from datetime import date
         return date.fromisoformat(state["as_of"])
     
     def _over_budget(self, config: RunnableConfig) -> bool:
-        """Check if turn budget is exhausted."""
         return self.d.clock() > config["configurable"].get("deadline", float("inf"))
     
     def _offer(self, state: AgentState) -> bool:
-        """Check if goal offers human handoff."""
         return bool((state.get("goal") or {}).get("offer_human"))
     
     def _resolve(self, state, config, candidates: list[dict], ex) -> dict[str, float] | None:
-        """Resolver scores as evidence for Jev. Any failure: no scores, Jev alone."""
+        """Resolver scores for Jev. Any failure: no scores."""
         if self.d.resolver is None or self.d.understand_qs_scored is None or ex is None or not candidates:
             return None
         start = self.d.clock()
         try:
             s = self.d.resolver.score(candidates, ex.mentions)
-        except Exception as e:  # the resolver never blocks a turn
+        except Exception as e:
             self._log(state, config, "understand", "error", {"role": "resolver", "error": str(e)})
             return None
         self._log(state, config, "understand", "model",
@@ -133,7 +119,6 @@ class Nodes:
         return s.probs
 
     def _decision_refs(self, u, qs: str) -> list[dict]:
-        """Build decision references for handoff packet."""
         if u is None:
             return []
         th = self.d.thresholds.version
@@ -144,7 +129,6 @@ class Nodes:
         return refs
     
     def _already_disputed(self, state: AgentState, existing: dict) -> dict:
-        """Handle case where transaction was already disputed."""
         row = {k: existing.get(k) for k in ("dispute_id", "transaction_id", "status", "route", "reason", "created_at")}
         rec = {"receipt_id": new_id("RCP"), "source": "disputes", "as_of": state["as_of"], "data": [row]}
         ids = state["allowed_ids"] + ([row["dispute_id"]] if row["dispute_id"] else [])
@@ -155,10 +139,8 @@ class Nodes:
             "goal": {"kind": "answer", "note": "already_disputed", "offer_human": self._offer(state)}
         }
     
-    # ---- Nodes ----------------------------------------------------------------------
     
     def load_context(self, state: AgentState, config: RunnableConfig) -> dict:
-        """Load customer data from serving. Keep the run_id from previous turns."""
         with tracer.start_as_current_span("load_context"):
             ctx = _ctx(config)
             base = {
@@ -179,10 +161,9 @@ class Nodes:
             }
             
             error = None
-            for _ in range(2):  # One retry
+            for _ in range(2):
                 try:
                     if state.get("run_id"):
-                        # Keep the run_id from previous turns
                         run_id, as_of = state["run_id"], state["as_of"]
                     else:
                         pointer = self.d.read.serving.pointer()
@@ -218,7 +199,6 @@ class Nodes:
             }
     
     def understand(self, state: AgentState, config: RunnableConfig) -> dict:
-        """Extract facts and classify intent with Jev."""
         with tracer.start_as_current_span("understand"):
             ctx, msg, ex = _ctx(config), state["message"], None
             
@@ -230,7 +210,6 @@ class Nodes:
                 return {"route": {"next": "file_dispute" if matched else "confirm"}, "awaiting": "none",
                         "reasons": [], "goal": {}, "queued_offer": None, "pending": {}}
             
-            # Extract
             try:
                 ex, call = extract(self.d.llm_client, self.d.models["extract"], msg, state["as_of"],
                                   state.get("recent") or [])
@@ -240,15 +219,12 @@ class Nodes:
             except LLMError as e:
                 self._log(state, config, "understand", "error", {"role": "extract", "error": str(e)})
             
-            # Determine language
             language = ex.language_detected if ex and ex.language_detected in ("es", "pt") else ctx.lang
             
-            # Handle multi-intent
             queue = list(state.get("queue") or [])
             if ex and ex.multi_intent and ex.secondary_request_en:
                 queue.append(ex.secondary_request_en)
             
-            # Build Jev state
             facts = {
                 "awaiting": state["awaiting"],
                 "clarification": state.get("clarification"),
@@ -273,7 +249,6 @@ class Nodes:
                 scores=scores
             )
             
-            # Jev understand
             u = None
             try:
                 res = self.d.jev.decide(jev_state, questions)
@@ -288,7 +263,6 @@ class Nodes:
             except JevError as e:
                 self._log(state, config, "understand", "error", {"role": "jev", "error": str(e)})
             
-            # Route
             route = decide(u, self.d.thresholds, state["awaiting"],
                           Counters(**state["counters"]), state.get("pending") or {})
             
@@ -325,7 +299,6 @@ class Nodes:
             return out
     
     def answer_inquiry(self, state: AgentState, config: RunnableConfig) -> dict:
-        """Answer account/transaction/dispute inquiries."""
         with tracer.start_as_current_span("answer_inquiry"):
             ctx, run_id, as_of, intent = _ctx(config), state["run_id"], self._as_of(state), state["intent"]
             note = None
@@ -341,7 +314,7 @@ class Nodes:
                     except NotDeclined:
                         results = [self.d.read.get_transaction(ctx, run_id, as_of, state["target_txn_id"])]
                         note = "not_declined"
-                else:  # dispute_status
+                else:
                     results = [
                         self.d.write.list_disputes(ctx, as_of),
                         self.d.read.list_complaints(ctx, run_id, as_of)
@@ -374,7 +347,6 @@ class Nodes:
             }
     
     def resolve_transaction(self, state: AgentState, config: RunnableConfig) -> dict:
-        """Load transaction for dispute."""
         with tracer.start_as_current_span("resolve_transaction"):
             ctx = _ctx(config)
             try:
@@ -397,7 +369,6 @@ class Nodes:
             }
     
     def check_eligibility(self, state: AgentState, config: RunnableConfig) -> dict:
-        """Evaluate dispute policy."""
         with tracer.start_as_current_span("check_eligibility"):
             txn, reason = state["txn"], state["dispute_reason"]
             existing = self.d.store.disputes.get(txn["transaction_id"])
@@ -443,14 +414,12 @@ class Nodes:
             }
     
     def confirm(self, state: AgentState, config: RunnableConfig) -> dict:
-        """Set awaiting=confirmation."""
         goal = {"kind": "ask_confirmation", "fixed_block": state["confirmation_summary"]}
         if self._offer(state):
             goal["offer_human"] = True
         return {"goal": goal, "awaiting": "confirmation"}
     
     def file_dispute(self, state: AgentState, config: RunnableConfig) -> dict:
-        """File the dispute."""
         with tracer.start_as_current_span("file_dispute"):
             ctx, as_of, lang = _ctx(config), self._as_of(state), state["language"]
             
@@ -495,7 +464,6 @@ class Nodes:
             }
     
     def verify(self, state: AgentState, config: RunnableConfig) -> dict:
-        """Verify dispute was written correctly."""
         with tracer.start_as_current_span("verify"):
             res = self.d.write.verify_dispute(_ctx(config), state["filed"], self._as_of(state))
             
@@ -521,7 +489,6 @@ class Nodes:
             return {**upd, "goal": goal, "route": {"next": "reply"}}
     
     def clarify(self, state: AgentState, config: RunnableConfig) -> dict:
-        """Set awaiting=clarification."""
         goal, lang = dict(state["goal"]), state["language"] if state["language"] in INTENT_LABELS else "es"
         topic, options = goal.get("topic"), goal.get("options") or []
         
@@ -539,7 +506,6 @@ class Nodes:
         return {"goal": goal, "awaiting": "clarification", "clarification": {"topic": topic, "options": display}}
     
     def handoff(self, state: AgentState, config: RunnableConfig) -> dict:
-        """Create handoff packet for human agent."""
         with tracer.start_as_current_span("handoff"):
             ctx, lang = _ctx(config), state["language"]
             codes = list(dict.fromkeys(state.get("reasons") or ["customer_request"]))
@@ -597,7 +563,6 @@ class Nodes:
             }
     
     def reply(self, state: AgentState, config: RunnableConfig) -> dict:
-        """Compose and verify reply."""
         with tracer.start_as_current_span("reply"):
             lang, receipts = state["language"], state.get("receipts") or []
             goal = dict(state.get("goal") or {"kind": "error"})
@@ -618,7 +583,7 @@ class Nodes:
             if text is None:
                 text = fallback_reply(goal, receipts, lang)
                 self._log(state, config, "reply", "template", {"goal": goal.get("kind")})
-                logger.warning("reply fell back to template", extra={"goal": goal.get("kind")})  # CloudWatch alarm
+                logger.warning("reply fell back to template", extra={"goal": goal.get("kind")})
             
             if goal.get("fixed_block"):
                 text = f"{text}\n\n{goal['fixed_block']}"
@@ -633,21 +598,21 @@ class Nodes:
             }
             if reply["awaiting"] == "confirmation" and state.get("txn"):
                 reply["summary"] = {**confirmation_payload(state["txn"], state.get("dispute_reason")),
-                                    "card_hash": state.get("card_hash")}  # the button sends confirm:<card_hash>
+                                    "card_hash": state.get("card_hash")}
             
             recent = ((state.get("recent") or []) + [{"customer": state["message"], "assistant": text}])[-2:]
             
             return {"reply": reply, "recent": recent, "queue": queue, "queued_offer": offered, "goal": goal}
     
     def _compose_verified(self, state, config, goal, receipts, lang) -> str | None:
-        """Compose reply and verify claims. Returns None if verification fails."""
+        """Returns None if verification fails."""
         allowed, feedback = set(state.get("allowed_ids") or []), None
         
-        for draft in range(2):  # First draft + one regeneration
+        for draft in range(2):
             if draft and self._over_budget(config):  # no time left for a regeneration: the template answers
                 self._log(state, config, "reply", "error", {"error": "turn budget exceeded before regeneration"})
                 return None
-            # The BFF stops waiting at 25 s: a compose that starts late only gets what is left of the turn budget.
+            # The BFF stops waiting at 25 s: a late compose only gets what is left of the turn budget.
             left = config["configurable"].get("deadline", float("inf")) - self.d.clock()
             cfg = self.d.models["compose"]
             cfg = replace(cfg, timeout_s=max(1.0, min(cfg.timeout_s, left)))
@@ -665,7 +630,7 @@ class Nodes:
             leaked = unknown_ids(composed.reply_text, allowed)
             if leaked:
                 self._log(state, config, "reply", "guard", {"unknown_ids": sorted(leaked)})
-                # Say where: "not in the receipts" made the model also blank its claims' receipt_ids (Jev then fails all)
+                # Name where the id appeared: "not in the receipts" makes the model blank every claim's receipt_ids.
                 feedback = [f"reply_text must not contain these identifiers: {sorted(leaked)}. Remove them from "
                             "reply_text only; keep citing receipt_ids in claims."]
                 continue
@@ -695,6 +660,5 @@ class Nodes:
         return None
     
     def await_customer(self, state: AgentState, config: RunnableConfig) -> dict:
-        """Pause graph and wait for customer input (LangGraph interrupt)."""
         resumed = interrupt(state["reply"])
         return {"message": resumed["message"], "turn_id": resumed["turn_id"]}

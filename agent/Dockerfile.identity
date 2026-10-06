@@ -1,5 +1,4 @@
-# Lambda container image for the mock IdP (deployment spec §3). Only the IdP's dependencies are installed,
-# pinned by uv.lock; the agent's heavy dependencies (LangGraph, DuckDB, Anthropic) are left out.
+# Only the IdP's dependencies, pinned by uv.lock.
 FROM public.ecr.aws/lambda/python:3.12-arm64
 COPY --from=ghcr.io/astral-sh/uv:0.8 /uv /bin/uv
 COPY pyproject.toml uv.lock /build/

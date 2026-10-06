@@ -1,4 +1,3 @@
-"""Build verify_reply requests for Jev and parse responses."""
 from dataclasses import dataclass
 
 from bankagent.decisions.jev import JevResult
@@ -7,19 +6,17 @@ from bankagent.decisions.thresholds import Thresholds
 
 @dataclass
 class VerifyOutcome:
-    """Result of verify_reply check."""
     ok: bool
     failed_claims: list[int]
     promises_unverified: bool
 
 
-# Third parties (Jev, and Bedrock in a second AWS account) never get customer or product ids, or fraud signals.
-# Claims are about transactions, amounts, statuses and dispute/complaint/handoff ids, which stay.
+# Third parties (Jev, Bedrock) never get customer or product ids, or fraud signals.
 REDACTED_FIELDS = frozenset({"customer_id", "product_id", "is_fraud", "fraud_score"})
 
 
 def _drop_fraud_triggers(detail: str) -> str:
-    # Policy rule details list their triggers ("unauthorized_reason,fraud_flag,fraud_score_high"): fraud ones stay here.
+    # fraud triggers stay in the bank
     return ",".join(t for t in detail.split(",") if not t.startswith("fraud"))
 
 
@@ -38,28 +35,14 @@ def build_verify_request(
     claims: list[dict],
     reply_text: str,
 ) -> tuple[dict, dict]:
-    """Build the state and questions for a verify_reply request.
-    
-    Args:
-        qset: verify_reply.v1 question set
-        receipts: list of receipt dicts
-        claims: list of claim dicts with claim_en and receipt_ids
-        reply_text: the reply text to verify
-    
-    Returns:
-        (state, questions) tuple
-    """
-    # Build state
     state = {
         "receipts": [redact(r) for r in receipts],
         "claims": claims,
         "reply_text": reply_text,
     }
     
-    # Build questions
     questions = {}
     
-    # Add claim_supported_<i> questions
     for i, claim in enumerate(claims):
         instructions = qset["claim_instructions"].format(i=i)
         questions[f"claim_supported_{i}"] = {
@@ -68,7 +51,6 @@ def build_verify_request(
             "criteria": qset["claim_criteria"],
         }
     
-    # Add promises_unverified_action question
     questions["promises_unverified_action"] = {
         "type": "noul",
         "instructions": qset["promise"]["instructions"],
@@ -79,10 +61,8 @@ def build_verify_request(
 
 
 def parse_verify(result: JevResult, th: Thresholds) -> VerifyOutcome:
-    """Parse a Jev verify result into a VerifyOutcome."""
     answers = result.answers
     
-    # Check which claims failed
     failed_claims = []
     for key, answer in answers.items():
         if key.startswith("claim_supported_"):
@@ -90,7 +70,6 @@ def parse_verify(result: JevResult, th: Thresholds) -> VerifyOutcome:
             if answer.p < th.claim_supported:
                 failed_claims.append(idx)
     
-    # Check if promises are unverified
     promises_unverified = False
     if "promises_unverified_action" in answers:
         promises_unverified = answers["promises_unverified_action"].p >= th.promises_unverified_action

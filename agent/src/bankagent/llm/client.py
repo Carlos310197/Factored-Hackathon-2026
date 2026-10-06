@@ -1,4 +1,4 @@
-"""OpenAI on Bedrock Mantle, JSON-only calls. OpenAI has no tools here: input text in, schema-valid JSON out."""
+"""JSON-only calls: the model gets no tools, only text in and schema-valid JSON out."""
 import json
 import os
 import time
@@ -28,8 +28,7 @@ class LLMCall:
 
 
 def _bedrock_session():
-    """Credentials that sign Bedrock calls. With BEDROCK_ROLE_ARN set, every call runs as that role (in another
-    account, so its model access, quotas and bill apply); unset, this account's own credentials."""
+    """With BEDROCK_ROLE_ARN set every call runs as that role (another account); unset, this account's credentials."""
     import boto3
 
     role = os.environ.get("BEDROCK_ROLE_ARN")
@@ -43,33 +42,27 @@ def _bedrock_session():
 
 
 def _generate_bedrock_token(region: str = "us-east-1", session=None) -> str:
-    """Generate a SigV4-signed token for Bedrock Mantle API using AWS credentials."""
     from botocore.auth import SigV4Auth
     from botocore.awsrequest import AWSRequest
     
     credentials = (session or _bedrock_session()).get_credentials()
     frozen = credentials.get_frozen_credentials()
     
-    # Create the request to sign
     service = "bedrock-mantle"
     host = f"bedrock-mantle.{region}.api.aws"
     url = f"https://{host}/v1/chat/completions"
     
     request = AWSRequest(method="POST", url=url, headers={"host": host})
     
-    # Sign the request
     auth = SigV4Auth(frozen, service, region)
     auth.add_auth(request)
     
-    # Extract the Authorization header as the token
     auth_header = request.headers.get("Authorization", "")
     return auth_header
 
 
 class RefreshingClient:
-    """Mantle bearer tokens are minted from the runtime role's session credentials, which expire (about 1 h), so a
-    token minted once per container goes stale mid-demo. Re-mint before `max_age_s`, and on demand when the endpoint
-    rejects the token (`call_json` calls `refresh()` once)."""
+    """Mantle tokens expire with the session credentials: re-mint before max_age_s and on rejection."""
 
     def __init__(self, factory, max_age_s: float = 1800, clock=time.monotonic):
         self._factory, self._max_age, self._clock = factory, max_age_s, clock
@@ -86,18 +79,15 @@ class RefreshingClient:
 
 
 def make_bedrock_client(region: str = "us-east-1"):
-    """An OpenAI client for the Bedrock Mantle endpoint whose token is re-minted before it expires."""
     return RefreshingClient(lambda: _mantle_client(region))
 
 
 def _mantle_client(region: str):
-    """Create an OpenAI client configured for Bedrock Mantle endpoint."""
     base_url = os.environ.get("OPENAI_BASE_URL", f"https://bedrock-mantle.{region}.api.aws/v1")
     
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         session = _bedrock_session()
-        # Try to import the token generator, fall back to SigV4 signing
         try:
             from aws_bedrock_token_generator import provide_token
             api_key = provide_token(region=region, aws_credentials_provider=SimpleNamespace(load=session.get_credentials))
@@ -142,7 +132,6 @@ def call_json(client, cfg: RoleConfig, system: str, user: str, schema: dict) -> 
     except openai.AuthenticationError as e:
         raise LLMError(f"Auth error: {e}") from e
 
-    # Check if choices exist
     if not resp.choices:
         raise LLMError(f"No choices in response. Raw response: {resp}")
 
@@ -153,23 +142,19 @@ def call_json(client, cfg: RoleConfig, system: str, user: str, schema: dict) -> 
     if not text:
         raise LLMError(f"Empty message content. Finish reason: {resp.choices[0].finish_reason}")
 
-    # Strip markdown code block wrappers if present (common with OSS models)
     text = text.strip()
     if text.startswith("```json"):
-        text = text[7:]  # Remove ```json prefix
+        text = text[7:]
     elif text.startswith("```"):
-        text = text[3:]  # Remove ``` prefix
+        text = text[3:]
     if text.endswith("```"):
-        text = text[:-3]  # Remove ``` suffix
+        text = text[:-3]
     text = text.strip()
 
-    # Extract JSON object using brace counting to find complete JSON
-    # OSS models often add text before/after, or have nested structures
     text = text.strip()
 
     def _unique(pairs):
-        # A duplicated key means the model split or rewrote a value mid-object; the silent last-wins
-        # drop produced replies missing their first clause. Malformed output is an error, never a reply.
+        # A duplicated key means the model rewrote a value mid-object: malformed output is an error, never a reply.
         obj = {}
         for k, v in pairs:
             if k in obj:
@@ -182,12 +167,10 @@ def call_json(client, cfg: RoleConfig, system: str, user: str, schema: dict) -> 
 
     first_brace = text.find("{")
 
-    # Try to find complete JSON by counting braces
     for start_idx in range(len(text)):
         if text[start_idx] != '{':
             continue
         
-        # Count braces to find matching end
         brace_count = 0
         for end_idx in range(start_idx, len(text)):
             if text[end_idx] == '{':
@@ -195,26 +178,20 @@ def call_json(client, cfg: RoleConfig, system: str, user: str, schema: dict) -> 
             elif text[end_idx] == '}':
                 brace_count -= 1
                 if brace_count == 0:
-                    # Found complete JSON object
                     candidate = text[start_idx:end_idx + 1]
                     try:
                         data = _load(candidate)
                     except (TypeError, ValueError):
-                        # Not valid JSON, continue searching
                         continue
                     if start_idx != first_brace and set(text[first_brace:start_idx]) - set("{ \t\r\n"):
-                        # The output started an object that never parsed and a later fragment did:
-                        # a decoder restart. Never reply from a salvaged fragment. (A bare doubled opener, '{ {', drops no content.)
+                        # An unparsed object then a parsed fragment is a decoder restart: never reply from it.
                         raise LLMError(f"ambiguous JSON output: {text[:200]}")
-                    # Successfully parsed!
                     text = candidate
                     break
         else:
-            # No matching } found for this {, try next
             continue
-        break  # Successfully parsed, exit outer loop
+        break
     else:
-        # No valid JSON found, try original extraction
         start_idx = text.find("{")
         end_idx = text.rfind("}")
         if start_idx >= 0 and end_idx > start_idx:
@@ -233,8 +210,7 @@ def call_json(client, cfg: RoleConfig, system: str, user: str, schema: dict) -> 
 
 
 def warm_up(client, models: dict) -> None:
-    """One tiny call per live role's model at container start: the first call through the cross-account Bedrock role
-    is slow (TLS, token, cold model) and would otherwise eat a customer's turn budget. Errors are logged, never raised."""
+    """Warm each live role's model at start so the slow first call doesn't eat a turn. Never raises."""
     import logging
     log = logging.getLogger(__name__)
     for role in ("extract", "compose"):

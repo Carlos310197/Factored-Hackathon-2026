@@ -1,4 +1,3 @@
-"""MLflow tracking for resolver training runs. Local store under agent/mlruns/ (gitignored)."""
 from pathlib import Path
 
 

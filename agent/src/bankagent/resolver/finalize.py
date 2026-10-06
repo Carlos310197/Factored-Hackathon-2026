@@ -1,5 +1,3 @@
-"""Final model choice on the real-text dev set, temperature calibration, promotion into the package, and the model
-card. Ties within 2 points of hard-slice top-1 go to logistic regression."""
 import json
 import shutil
 from pathlib import Path
@@ -15,7 +13,6 @@ T_BOUNDS = (0.05, 20.0)
 
 
 def _groups(resolver: Resolver, rows: list[dict]) -> list[tuple[np.ndarray, int]]:
-    """(logits, index of the right answer) per dev row; not_in_list rows point at the 'none' slot (index n)."""
     out = []
     for r in rows:
         ids = [t["transaction_id"] for t in r["candidates"]]
@@ -25,7 +22,6 @@ def _groups(resolver: Resolver, rows: list[dict]) -> list[tuple[np.ndarray, int]
 
 
 def fit_temperature(resolver: Resolver, rows: list[dict]) -> float:
-    """Minimize the negative log-likelihood of the 'none of these' softmax on every dev row."""
     from scipy.optimize import minimize_scalar
 
     groups = _groups(resolver, rows)

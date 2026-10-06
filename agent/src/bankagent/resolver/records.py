@@ -1,4 +1,3 @@
-"""Shared helpers for resolver dataset files: public transaction fields, the country proxy, JSONL I/O."""
 import json
 from collections import Counter
 from pathlib import Path

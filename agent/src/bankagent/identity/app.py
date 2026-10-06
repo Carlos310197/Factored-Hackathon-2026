@@ -1,4 +1,3 @@
-"""Mock OIDC identity service. Issues RS256 JWTs for demo users."""
 import os
 import secrets
 import time
@@ -40,13 +39,10 @@ def create_app(users: dict[str, DemoUser], private_pem: str, public_pem: str, ki
                scopes: tuple[str, ...] = ("inquiry:read", "dispute:create"), ttl_s: int = 900, clock=time.time,
                staff_audience: str = "bankagent-staff", realtime_audience: str = "realtime",
                demo_mode: bool = False) -> FastAPI:
-    """Create the FastAPI identity service app."""
     app = FastAPI(title="Mock OIDC Identity Service")
 
-    # Login tickets are short-lived signed tokens, so login and OTP can land on different Lambda containers. A ticket's
-    # audience is TICKET_AUDIENCE, never accepted as an access token. Single use is per container (spent set): across
-    # containers a ticket can be retried until it expires (TICKET_TTL_S). Only valid tickets are remembered, and only
-    # until they expire, so the map stays bounded by the login rate.
+    # Tickets are signed so login and OTP can land on different containers. Single use is per container only;
+    # only valid tickets are remembered, and only until they expire.
     spent: dict[str, int] = {}
     app.state.spent_tickets = spent
 
@@ -129,8 +125,7 @@ def create_app(users: dict[str, DemoUser], private_pem: str, public_pem: str, ki
 
     @app.post("/auth/session/new", response_model=TokenResponse)
     def new_session(authorization: str | None = Header(default=None)) -> TokenResponse:
-        """A fresh conversation for a signed-in customer: same customer, scopes and expiry, new session id. Only a
-        valid customer access token is accepted, and the login's lifetime is never extended."""
+        """Only a valid customer access token is accepted; the login's lifetime is never extended."""
         if not authorization or not authorization.lower().startswith("bearer "):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="bearer token required")
         try:  # expiry is checked against the injected clock, not wall time
@@ -172,8 +167,6 @@ def create_app(users: dict[str, DemoUser], private_pem: str, public_pem: str, ki
 
 
 def create_app_from_env(env=None) -> FastAPI:
-    """Build the IdP from the environment: DEMO_USERS (the labeled test identities file), IDP_ISSUER,
-    IDP_AUDIENCE and IDP_KID. This is what `python -m bankagent.identity.app` (the container) runs."""
     e = os.environ if env is None else env
     private_pem, public_pem = generate_keypair()
     return create_app(users=load_users(e.get("DEMO_USERS", "config/demo_users.yaml")),

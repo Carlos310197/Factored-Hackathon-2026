@@ -1,7 +1,3 @@
-"""Transaction-resolver inference. Loads a JSON artifact and scores one customer's
-candidates. Both model families are pointwise: logit z_i = log-odds that candidate i is the one described. The
-probabilities are a softmax over [z_1/T, ..., z_n/T, 0]: the extra 0 is a 'none of these' option, so a poor lone
-candidate gets a low probability instead of 1.0. Logistic regression needs only numpy; LightGBM is imported lazily."""
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -67,11 +63,10 @@ class Resolver:
             return r
         except ResolverUnavailable:
             raise
-        except Exception as e:  # missing file, bad JSON, missing keys, unreadable model file
+        except Exception as e:
             raise ResolverUnavailable(f"cannot load resolver artifact: {e}") from e
 
     def raw(self, X: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        """(uncalibrated log-odds per row, per-feature contributions in log-odds)."""
         if self.kind == "logreg":
             z = (X - self.mean) / self.scale
             contrib = z * self.coef

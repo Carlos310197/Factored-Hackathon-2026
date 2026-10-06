@@ -1,7 +1,4 @@
-"""Build the LangGraph workflow.
-The graph is a state machine where code decides edges via state['route']['next'].
-No LLM ever chooses a graph edge.
-"""
+"""Code decides every edge via state['route']['next']; no LLM ever chooses a graph edge."""
 from langgraph.graph import END, StateGraph
 
 from bankagent.graph.deps import Deps
@@ -10,12 +7,10 @@ from bankagent.graph.state import AgentState
 
 
 def build_graph(deps: Deps, checkpointer):
-    """Build the agent workflow graph."""
     nodes = Nodes(deps)
     
     builder = StateGraph(AgentState)
     
-    # Add nodes
     builder.add_node("load_context", nodes.load_context)
     builder.add_node("understand", nodes.understand)
     builder.add_node("answer_inquiry", nodes.answer_inquiry)
@@ -29,10 +24,8 @@ def build_graph(deps: Deps, checkpointer):
     builder.add_node("reply", nodes.reply)
     builder.add_node("await_customer", nodes.await_customer)
     
-    # Entry point
     builder.set_entry_point("load_context")
     
-    # Edges from load_context
     builder.add_conditional_edges(
         "load_context",
         lambda state: state["route"]["next"],
@@ -42,7 +35,6 @@ def build_graph(deps: Deps, checkpointer):
         }
     )
     
-    # Edges from understand
     builder.add_conditional_edges(
         "understand",
         lambda state: state["route"]["next"],
@@ -57,7 +49,6 @@ def build_graph(deps: Deps, checkpointer):
         }
     )
     
-    # Edges from answer_inquiry
     builder.add_conditional_edges(
         "answer_inquiry",
         lambda state: state["route"]["next"],
@@ -67,7 +58,6 @@ def build_graph(deps: Deps, checkpointer):
         }
     )
     
-    # Edges from resolve_transaction
     builder.add_conditional_edges(
         "resolve_transaction",
         lambda state: state["route"]["next"],
@@ -77,7 +67,6 @@ def build_graph(deps: Deps, checkpointer):
         }
     )
     
-    # Edges from check_eligibility
     builder.add_conditional_edges(
         "check_eligibility",
         lambda state: state["route"]["next"],
@@ -89,10 +78,8 @@ def build_graph(deps: Deps, checkpointer):
         }
     )
     
-    # Edges from confirm - always goes to reply
     builder.add_edge("confirm", "reply")
     
-    # Edges from file_dispute
     builder.add_conditional_edges(
         "file_dispute",
         lambda state: state["route"]["next"],
@@ -104,7 +91,6 @@ def build_graph(deps: Deps, checkpointer):
         }
     )
     
-    # Edges from verify
     builder.add_conditional_edges(
         "verify",
         lambda state: state["route"]["next"],
@@ -114,13 +100,10 @@ def build_graph(deps: Deps, checkpointer):
         }
     )
     
-    # Edges from clarify - always goes to reply
     builder.add_edge("clarify", "reply")
     
-    # Edges from handoff - always goes to reply
     builder.add_edge("handoff", "reply")
     
-    # Edges from reply - check if we need to await customer
     def route_after_reply(state: AgentState) -> str:
         if state.get("awaiting") in ("clarification", "confirmation"):
             return "await"
@@ -135,7 +118,6 @@ def build_graph(deps: Deps, checkpointer):
         }
     )
     
-    # After await_customer, go back to load_context for next turn
     builder.add_edge("await_customer", "load_context")
     
     return builder.compile(checkpointer=checkpointer)

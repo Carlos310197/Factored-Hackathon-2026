@@ -1,5 +1,3 @@
-"""Sample (customer, anchor date) cases from a serving run: the customer's transactions in the 60 days up to the
-anchor, newest first, shaped exactly like ReadTools.list_transactions returns them."""
 import random
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -23,7 +21,6 @@ class History:
 
 
 class TransactionSource:
-    """fct_transaction of one pinned serving run (a local directory built by scripts/build_local_serving.py)."""
 
     def __init__(self, serving_dir: str | Path):
         self.base = str(serving_dir).rstrip("/")
@@ -36,7 +33,6 @@ class TransactionSource:
         return [c for c in self._customers if customer_split(c) == split]
 
     def windows(self, pairs: list[tuple[str, str]]) -> list[list[dict]]:
-        """Candidates for each (customer_id, anchor ISO date) pair, newest first."""
         if not pairs:
             return []
         self.con.execute("create or replace temp table pairs (case_no integer, customer_id varchar, anchor date)")
@@ -57,7 +53,6 @@ def _random_day(rng: random.Random, lo: date, hi: date) -> date:
 
 
 def sample_histories(source: TransactionSource, split: str, n: int, seed: int, min_candidates: int = 2) -> list[History]:
-    """n cases with at least min_candidates transactions in the window, deterministic for a given seed."""
     rng = random.Random(f"{seed}:{split}")
     customers, (lo, hi) = source.customers(split), ANCHORS[split]
     if not customers:
