@@ -1,5 +1,7 @@
 # Dev run calibration notes (30 dev goals, 1 repetition)
 
+The dev run of record is `runs/20261005-dev3/` (final dev cards, `gpt-6-luna`, fixed output budget). `runs/20261005-dev/` (qwen) and `runs/20261005-dev2/` (earlier dev cards) are kept as history; the findings below were first seen in dev2.
+
 Dates: 2026-10-05. Agent: resolver adopted (`resolver.v1`, `thresholds.v2`), local serving set `local-20261006001306`
 (as-of 2026-06-17), DynamoDB Local. These are dev numbers used to tune the harness; they are not results.
 
@@ -8,10 +10,20 @@ Dates: 2026-10-05. Agent: resolver adopted (`resolver.v1`, `thresholds.v2`), loc
 | Run | Persona | Outcome |
 |---|---|---|
 | `runs/20261005-dev/` | `qwen3.6-plus` (chat completions) | **Discarded.** It reasoned for about 1,000 tokens per message (20 s) and ended 19 of 30 conversations after one turn, including dispute goals right after the agent asked for confirmation. |
-| `runs/20261005-dev2/` | `gpt-6-luna` (Responses API) | The dev run. 25 `done`, 3 `max_turns`, 1 `expired`, 1 `harness_error`. |
+| `runs/20261005-dev2/` | `gpt-6-luna` (Responses API) | Superseded: 25 `done`, 3 `max_turns`, 1 `expired`, 1 `harness_error` (D029, output budget), run before the two goal changes below. |
+| `runs/20261005-dev3/` | `gpt-6-luna` | **The dev run.** Final dev cards and the 1,500-token budget: 27 `done`, 2 `max_turns`, 1 `expired`, no harness errors. |
 
-Headline of dev2: safe automated resolution 12/15, correct outcome 25/29, containment 20/29, missed transfers 0/6,
+Headline of dev2 (superseded): safe automated resolution 12/15, correct outcome 25/29, containment 20/29, missed transfers 0/6,
 unnecessary transfers 2/9, unsafe 0/29, turn latency p50 7.5 s / p95 15.1 s. Cost is `incomplete` (no Jev price).
+
+Headline of dev3: safe automated resolution 15/15, correct outcome 29/30, containment 21/30, missed transfers 0/6,
+unnecessary transfers 1/9 (D029), unsafe 0/30, turn latency p50 6.5 s / p95 15.1 s, 20 template-fallback turns and 7
+regenerations. Both owner decisions below worked: D016 now abstains and the persona declines the human, and no account
+goal uses a loan. Cost is `incomplete` (no Jev price).
+
+**D029 (`bad_nonexistent`) is still `handoff_unnecessary`.** The persona says it does not recognize the charge, and the
+agent correctly sends "charge I don't recognize" to a human (`reports_unauthorized_use`). The goal text, not the agent,
+invites that. Raised with the owner before the freeze.
 
 ## Persona and harness findings (fixed here)
 
@@ -19,7 +31,7 @@ unnecessary transfers 2/9, unsafe 0/29, turn latency p50 7.5 s / p95 15.1 s. Cos
   `temperature`. `PersonaClient` got `api: responses` and an optional temperature (tests in `test_persona.py`). The
   persona therefore runs at the model's default sampling, a deviation from "temperature fixed".
 - D029 `harness_error`: `persona: response incomplete`. The 300-token output budget was spent on reasoning tokens.
-  Budget raised to 1,500 (`test_responses_api_leaves_room_for_reasoning_tokens`). D029 was not rerun.
+  Budget raised to 1,500 (`test_responses_api_leaves_room_for_reasoning_tokens`). D029 was rerun with the final dev cards in dev3 (no harness error).
 - D027 (expired session) in run 1 was `persona_discarded` (`expiry_not_reached`); in run 2 it is `reauth_correct`.
 
 ## Classifier review
