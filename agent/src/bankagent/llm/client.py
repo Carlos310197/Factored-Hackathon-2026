@@ -228,3 +228,17 @@ def call_json(client, cfg: RoleConfig, system: str, user: str, schema: dict) -> 
         "output_tokens": resp.usage.completion_tokens if resp.usage else 0,
     }
     return LLMCall(data, cfg.model, cfg.prompt_version, usage, int((time.monotonic() - start) * 1000))
+
+
+def warm_up(client, models: dict) -> None:
+    """One tiny call per live role's model at container start: the first call through the cross-account Bedrock role
+    is slow (TLS, token, cold model) and would otherwise eat a customer's turn budget. Errors are logged, never raised."""
+    import logging
+    log = logging.getLogger(__name__)
+    for role in ("extract", "compose"):
+        cfg = models[role]
+        try:
+            client.chat.completions.create(model=cfg.model, max_tokens=1, timeout=30,
+                                           messages=[{"role": "user", "content": "ok"}])
+        except Exception as e:  # noqa: BLE001 - warm-up must never stop the runtime
+            log.warning("model warm-up failed", extra={"role": role, "error": type(e).__name__})

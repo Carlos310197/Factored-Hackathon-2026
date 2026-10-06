@@ -200,3 +200,18 @@ def test_compose_prompt_version_matches_the_prompt_text():
     """Decision records name the prompt version; it must be the one whose text runs (v2 adds the tú/você rule)."""
     from bankagent.llm.compose import COMPOSE_SYSTEM
     assert "tú" in COMPOSE_SYSTEM and M["compose"].prompt_version == "compose.v2"
+
+
+def test_warm_up_calls_each_model_once_and_never_raises():
+    """A fresh container's first compose through the cross-account role took ~13 s and timed out; warm both models."""
+    from bankagent.llm.client import warm_up
+    seen = []
+
+    def create(**kw):
+        seen.append(kw["model"])
+        if kw["model"] == M["compose"].model:
+            raise RuntimeError("cold endpoint")  # a failure is logged, never raised
+        return SimpleNamespace(choices=[])
+    client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+    warm_up(client, M)
+    assert sorted(seen) == sorted({c.model for c in M.values() if c is not M.get("dev_writer")})
