@@ -425,9 +425,12 @@ class Nodes:
             if result.redirect == "already_disputed" and existing:
                 return {**upd, **self._already_disputed(state, existing)}
             
+            goal = {"kind": "answer", "note": result.redirect, "offer_human": self._offer(state)}
+            if result.redirect == "out_of_window":  # the customer copy states the policy's window, not a constant
+                goal["window_days"] = self.d.policy.cfg["window_days"]
             return {
                 **upd,
-                "goal": {"kind": "answer", "note": result.redirect, "offer_human": self._offer(state)},
+                "goal": goal,
                 "route": {"next": "reply"}
             }
     

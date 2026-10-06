@@ -490,6 +490,12 @@ Added in the plan's Phase C (they continue the same numbering):
 
 **Spec adjustment 9 (customer composer, unit 70):** the composer is a plain controlled `<form>`/`<input>`, not `ComposerPrimitive`, a deliberate deviation from §8.1's "composer is a primitive": `/demo` prefill (`demo:prefill`) needs a controlled input. Thread and message stay assistant-ui primitives.
 
+### 2026-10-06: Policy-on-trial exhibit
+
+- `agent/tests/test_policy_on_trial.py` + `docs/policy-on-trial.md` (linked from the README evidence map): one dispute request replayed through the real graph, policy and write tool with scripted, identical Jev answers. Shipped policy → filed (1 `create_dispute`); `window_days: 60 → 5` (the only change) → refused on `within_window`, 0 writes; persuasive wording plus most-favorable Jev answers → still refused, 0 writes. Labeled as replayed evidence.
+- Bug found by the trial: the `out_of_window` customer note hardcoded "60 días". `check_eligibility` now puts `window_days` from the policy in the goal and the template formats it.
+- `make_harness(policy=...)` takes a policy for such replays.
+
 ### 2026-10-06: Reply fixes (balance answers, chip labels, statement swap, local money)
 
 Root causes of the open issue below, from the two turns' decision records:
