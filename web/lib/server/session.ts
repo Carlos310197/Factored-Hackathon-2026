@@ -3,16 +3,14 @@ import { cookies } from "next/headers";
 import type { NextRequest, NextResponse } from "next/server";
 import { AuthFailure, verifier, type CustomerSession, type StaffSession } from "./jwt";
 
-// SECURITY: this accepts forged unsigned cookies. E2E_MOCK must NEVER be set in any deployment (the demo
-// deployment runs with DEMO_MODE=1, so DEMO_MODE alone must not enable it). Local Playwright webServer only.
-// Fargate always sets ECS_CONTAINER_METADATA_URI_V4, so the forged path is also refused on any ECS task.
+// SECURITY: accepts forged unsigned cookies. E2E_MOCK must never be set in any deployment (DEMO_MODE alone must not enable it).
+// Fargate always sets ECS_CONTAINER_METADATA_URI_V4, so the forged path is refused on any ECS task.
 const e2e = () => process.env.E2E_MOCK === "1" && process.env.DEMO_MODE === "1" && !process.env.ECS_CONTAINER_METADATA_URI_V4;
 function e2eCustomer(tok: string): CustomerSession | null {
   if (!e2e() || !tok.startsWith("e2e.customer.")) return null;
   const [, , sub, sid, lang] = tok.split(".");
   return { token: tok, sub, sid, lang: lang === "pt" ? "pt" : "es", scopes: ["dispute:create", "inquiry:read"], exp: Math.floor(Date.now() / 1000) + 900 };
 }
-/** E2E only: a new conversation is a new forged token with a fresh sid (the real path asks the IdP). */
 export function e2eNewSession(who: CustomerSession): { access_token: string; expires_in: number; lang: "es" | "pt"; sid: string } | null {
   if (!e2e() || !who.token.startsWith("e2e.customer.")) return null;
   const sid = `S-e2e${Date.now().toString(36)}`;
@@ -49,7 +47,6 @@ export async function staffFromCookies(): Promise<StaffSession | null> {
   return tok ? e2eStaff(tok) ?? safe(() => verifier().staff(tok)) : null;
 }
 
-/** Secure cookies need HTTPS; the plain-HTTP ECS deployment sets COOKIE_SECURE=0. Default: secure in production. */
 const cookieSecure = () => (process.env.COOKIE_SECURE ?? (process.env.NODE_ENV === "production" ? "1" : "0")) === "1";
 
 export function setSessionCookie(res: NextResponse, name: string, token: string, maxAge: number) {

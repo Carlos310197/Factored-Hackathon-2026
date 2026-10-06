@@ -8,7 +8,6 @@ const hanken = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "600", "700"
 
 export const metadata: Metadata = { title: "LATAM Bank · demo", description: "Synthetic data · labeled test identities" };
 
-/** Customer pages speak the customer's language; staff pages are English. */
 async function pageLang(): Promise<string> {
   const c = await customerFromCookies();
   if (c) return c.lang;

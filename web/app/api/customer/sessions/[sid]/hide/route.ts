@@ -6,7 +6,6 @@ import { hideSession } from "@/lib/server/sessions";
 
 type Ctx = { params: Promise<{ sid: string }> };
 
-/** Takes a past conversation off the customer's list; the record itself is retained. */
 export async function POST(req: NextRequest, { params }: Ctx) {
   const who = await customerFrom(req);
   if (!who) return fail("session_expired", "Sign in again", 401);
@@ -15,7 +14,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   try {
     await hideSession(sid, who.sub);
   } catch (e) {
-    if (e instanceof NotFoundError) return fail("not_found", "Not found", 404); // same answer for someone else's
+    if (e instanceof NotFoundError) return fail("not_found", "Not found", 404);  // same answer for someone else's session
     throw e;
   }
   return ok({ hidden: true });

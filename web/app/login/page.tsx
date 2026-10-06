@@ -4,7 +4,6 @@ import { safeNext } from "@/lib/safe-next";
 import { demoMode } from "@/lib/server/env";
 import { idp } from "@/lib/server/idp";
 
-/** Demo identities rendered into the page so the form is filled on first paint. A cold IdP gets 1.5 s, then the form fetches them itself. */
 async function demoCustomers() {
   if (!demoMode()) return null;
   const users = idp.demoUsers().then((us) => us.filter((u) => u.role === "customer"), () => null);

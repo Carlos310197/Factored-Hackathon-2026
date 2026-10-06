@@ -12,7 +12,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   const [customer, staff] = [await customerFrom(req), await staffFrom(req)];
   if (!customer && !staff) return fail("unauthorized", "Sign-in required", 401);
   const session = await getSession(sid);
-  const ownerOk = customer && session && session.customer_id === customer.sub; // past conversations too (read-only)
+  const ownerOk = customer && session && session.customer_id === customer.sub;  // a customer may read only their own sessions
   if (!session || (!ownerOk && !staff)) return fail("not_found", "Not found", 404);  // same answer as a missing session
   const q = z.string().max(100).optional().safeParse(req.nextUrl.searchParams.get("after") ?? undefined);
   if (!q.success) return fail("bad_request", "Invalid cursor", 400);

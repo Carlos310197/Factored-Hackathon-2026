@@ -6,16 +6,14 @@ import type { TraceTurn } from "@/lib/trace/viewModel";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-/** One line of numbers about the conversation behind a case: how the assistant did, and how fast a person picked it up. */
 export function CaseStats({ packet }: { packet: HandoffPacket }) {
   const sid = packet.session_id;
-  // tagged with the session it was fetched for, so the previous case's numbers never show
   const [trace, setTrace] = useState<{ sid: string; turns: TraceTurn[] } | null>(null);
   useEffect(() => {
     let live = true;
     fetch(`/api/trace/${encodeURIComponent(sid)}`, { cache: "no-store" })
       .then(async (r) => { const d = r.ok ? (await r.json()).data : null; if (live && Array.isArray(d)) setTrace({ sid, turns: d }); })
-      .catch(() => {}); // no trace: the turn numbers stay out
+      .catch(() => {});
     return () => { live = false; };
   }, [sid, packet.status]);
 

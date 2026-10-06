@@ -3,7 +3,7 @@ import { fail, ok } from "@/lib/server/http";
 import { customerFrom } from "@/lib/server/session";
 import { listCustomerSessions } from "@/lib/server/sessions";
 
-/** The signed-in customer's conversations, newest first. The customer id comes only from the token. */
+/** The customer id comes only from the token. */
 export async function GET(req: NextRequest) {
   const who = await customerFrom(req);
   if (!who) return fail("session_expired", "Sign in again", 401);

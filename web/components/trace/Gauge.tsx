@@ -1,6 +1,5 @@
 import type { TraceBar } from "@/lib/trace/viewModel";
 
-/** One 0-1 bar: grey below threshold, the signal's own colour above. Colour comes from the bar (lib/trace/signals.ts). */
 export function Gauge({ bar, compact = false, reveal = false, index = 0 }: { bar: TraceBar; compact?: boolean; reveal?: boolean; index?: number }) {
   const pct = Math.round(bar.value * 100);
   const th = bar.threshold !== null ? `, threshold ${bar.threshold.toFixed(2)}` : "";

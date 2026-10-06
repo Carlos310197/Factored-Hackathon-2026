@@ -24,22 +24,22 @@ export function TraceList({ sid, mode, refreshKey = 0, running = false, onTurnCo
       if (current.current !== sid) return; // stale: another case is open now
       if (!r.ok) { setState((s) => (s === "ready" ? s : "error")); return; }
       const data = (await r.json()).data as TraceTurn[];
-      if (current.current !== sid) return; // the body can arrive after a case switch too
+      if (current.current !== sid) return;
       setTurns(data);
       setState("ready");
       // a resync after a missed turn_complete: the live turn is finished once its turn_end duration exists
       if (!reveal) setLive((l) => (l && data.find((t) => t.turnId === l.turnId)?.durationMs != null ? null : l));
       if (reveal && data[0]) { setRevealed(data[0].turnId); setAnnounce(`Turn ${data.length}: route ${data[0].route.next}`); }
-    } catch { if (current.current === sid) setState((s) => (s === "ready" ? s : "error")); }  // keep what is shown; the next event or resync retries
+    } catch { if (current.current === sid) setState((s) => (s === "ready" ? s : "error")); }
   }, [sid]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setTurns([]); setRevealed(null); setLive(null); setState("loading"); void load(false); }, [load]); // reset per sid
+  useEffect(() => { setTurns([]); setRevealed(null); setLive(null); setState("loading"); void load(false); }, [load]);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (refreshKey > 0) { setLive(null); void load(true); } }, [refreshKey, load]);
   useEffect(() => {
     if (!revealed) return;
-    const t = setTimeout(() => setRevealed(null), 1500); // the reveal is one-shot
+    const t = setTimeout(() => setRevealed(null), 1500);
     return () => clearTimeout(t);
   }, [revealed]);
   useChannel(`/trace/${sid}`, (p) => {

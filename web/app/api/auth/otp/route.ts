@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const t = await idp.otp(body.login_ticket, body.otp, body.short_ttl ?? false);
     const res = ok({ lang: t.lang, expires_in: t.expires_in });
     setSessionCookie(res, CUSTOMER_COOKIE, t.access_token, t.expires_in);
-    after(async () => {  // start this conversation's agent microVM while the customer reads the chat
+    after(async () => {  // after the response: the login must not wait for the agent warm-up
       const who = await verifier().customer(t.access_token).catch(() => null);
       if (who) await warmAgent({ token: t.access_token, sid: who.sid });
     });

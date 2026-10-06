@@ -14,7 +14,6 @@ export async function getSession(sid: string): Promise<SessionItem | null> {
   return (r.Item as SessionItem | undefined) ?? null;
 }
 
-/** The customer's first message in a conversation, cut to a list-row preview. */
 async function preview(sid: string): Promise<string | null> {
   const r = await doc().send(new QueryCommand({
     TableName: tableName("conversation_messages"), KeyConditionExpression: "session_id = :s",
@@ -26,7 +25,6 @@ async function preview(sid: string): Promise<string | null> {
   return text ? text.slice(0, PREVIEW_CHARS) : null;
 }
 
-/** The customer's conversations, newest first, hidden ones left out (sessions.by_customer). */
 export async function listCustomerSessions(customerId: string): Promise<SessionSummary[]> {
   const r = await doc().send(new QueryCommand({
     TableName: tableName("sessions"), IndexName: "by_customer", KeyConditionExpression: "customer_id = :c",
@@ -37,8 +35,7 @@ export async function listCustomerSessions(customerId: string): Promise<SessionS
     ended: !!i.ended_at, preview: await preview(i.session_id) })));
 }
 
-/** Ends a conversation the customer owns. A conversation with no turns has no item yet (the agent creates it on the
- * first turn), so this creates it with the agent's fields. Returns who held it, so a human can be told. */
+/** A conversation with no turns has no item yet (the agent creates it on the first turn), so this creates it. */
 export async function endSession(sid: string, customerId: string, lang: "es" | "pt"): Promise<{ control: string }> {
   const now = isoMicro();
   try {
@@ -59,7 +56,7 @@ export async function endSession(sid: string, customerId: string, lang: "es" | "
   }
 }
 
-/** Takes a conversation off the customer's list. The record is kept (bank conversations are retained). */
+/** The record is kept: bank conversations are retained. */
 export async function hideSession(sid: string, customerId: string): Promise<void> {
   try {
     await doc().send(new UpdateCommand({

@@ -18,7 +18,7 @@ describe("UI polish", () => {
     s.getState().sendOptimistic("cm-1", "saldo");
     s.getState().applyReply("cm-1", { reply_text: "ok", language: "es", awaiting: "none", options: [], refs: [], data_as_of: null, turn_id: "TRN-1" });
     expect(s.getState().messages.find((m) => m.id === "cm-1")?.status).toBe("sent");
-    expect(s.getState().cursor).toBeNull();  // the optimistic row still never becomes the history cursor
+    expect(s.getState().cursor).toBeNull();
   });
   it("the as-of banner keeps its row before the date is known (no layout jump)", () => {
     const { container } = render(<AsOfBanner date={null} lang="es" />);

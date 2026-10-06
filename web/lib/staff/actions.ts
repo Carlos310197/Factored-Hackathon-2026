@@ -2,12 +2,12 @@ import type { HandoffStatus } from "@/lib/contract";
 
 export type CaseAction = "claim" | "takeover" | "return" | "resolve";
 
-/** Lifecycle rules: buttons that are not allowed are hidden, not disabled. */
+/** Disallowed buttons are hidden, not disabled. */
 export function allowedActions(p: { status: HandoffStatus; claimed_by?: string | null }, me: string): CaseAction[] {
   if (p.status === "open") return ["claim"];
   if (p.claimed_by !== me || p.status === "resolved") return [];
   if (p.status === "in_takeover") return ["return", "resolve"];
-  return ["takeover", "resolve"]; // claimed | returned
+  return ["takeover", "resolve"];
 }
 
 export const REASON_TEXT: Record<string, string> = {

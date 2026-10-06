@@ -19,7 +19,7 @@ export function ConversationTab({ sid, lang, control, me }: { sid: string; lang:
   const [error, setError] = useState<string | null>(null);
   const holding = control === `human:${me.sub}`;
   const list = useRef<HTMLOListElement>(null);
-  useEffect(() => {  // stick to the bottom unless the agent scrolled up to read
+  useEffect(() => {
     const el = list.current;
     if (el && el.scrollHeight - el.scrollTop - el.clientHeight < 120) el.scrollTop = el.scrollHeight;
   }, [messages.length]);

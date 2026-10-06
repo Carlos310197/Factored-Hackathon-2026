@@ -1,5 +1,3 @@
-// Run only against the deployed API. Node 22 has a global WebSocket.
-// Usage: npx tsx scripts/probe-subscribe.ts <httpDomain> <realtimeDomain> <realtimeToken> <channel>
 const [httpDomain, realtimeDomain, token, channel] = process.argv.slice(2);
 const b64url = (o: object) => Buffer.from(JSON.stringify(o)).toString("base64url");
 const auth = { host: httpDomain, Authorization: token };

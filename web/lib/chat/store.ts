@@ -2,7 +2,6 @@ import { createStore } from "zustand/vanilla";
 import type { Stage } from "@/lib/trace/stages";
 import type { Awaiting, ChatMessage, ChatReply, Lang, SessionEvent } from "@/lib/contract";
 
-/** "sent": the turn answered, the stored copy has not arrived yet (still never the history cursor). */
 export type ViewMessage = ChatMessage & { status?: "sending" | "sent" | "provisional" };
 const sent = (ms: ViewMessage[], id: string) => ms.map((m) => (m.id === id && m.status === "sending" ? { ...m, status: "sent" as const } : m));
 export interface ChatState {
@@ -30,9 +29,9 @@ function upsert(current: ViewMessage[], incoming: ChatMessage[]): ViewMessage[] 
   const byId = new Map(current.map((m) => [m.id, m]));
   for (const m of incoming) {
     const prov = m.role === "assistant" && m.turn_id ? byId.get(`reply:${m.turn_id}`) : undefined;
-    const language = m.meta?.language ?? prov?.meta?.language;  // stored copies may lack it; keep the POST's
+    const language = m.meta?.language ?? prov?.meta?.language;
     byId.set(m.id, { ...m, ...(language && { meta: { ...m.meta, language } }), status: undefined });
-    if (prov) byId.delete(`reply:${m.turn_id}`);  // drop the provisional POST copy
+    if (prov) byId.delete(`reply:${m.turn_id}`);
   }
   return [...byId.values()].sort((a, b) => (a.cursor < b.cursor ? -1 : a.cursor > b.cursor ? 1 : 0));
 }
@@ -49,7 +48,6 @@ function settle(before: ViewMessage[], after: ViewMessage[], pending: string[], 
   return ends ? [] : pending;
 }
 
-/** UI chrome language: the latest assistant reply that carries one, else the session language. */
 export function uiLang(messages: ChatMessage[], fallback: Lang): Lang {
   return messages.findLast((m) => m.role === "assistant" && m.meta?.language)?.meta?.language ?? fallback;
 }

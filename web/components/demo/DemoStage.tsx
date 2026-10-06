@@ -46,14 +46,13 @@ export function DemoStage({ me }: { me: { sub: string; name: string } }) {
       }
       if (m.type === "demo:session") {
         setSid(m.sid);
-        const sc = scenarioRef.current; // a fresh scenario conversation: put its first message in the composer
+        const sc = scenarioRef.current;
         if (sc && sc.step === 0 && !sc.primed) { scenarioRef.current = { ...sc, primed: true }; setScenario(scenarioRef.current); prefill(sc.s.steps[0]); }
       }
       if (m.type === "demo:realtime") setSteps((s) => ({ ...s, realtime: true }));
       if (m.type === "demo:turn-start") { setRunning(true); sentText.current = m.text; }
       if (m.type === "demo:turn-reply") {
         setRunning(false); setRefreshKey((k) => k + 1); setSteps((s) => ({ ...s, firstTurn: true }));
-        // only the scripted message moves the script on; an off-script message leaves the step alone
         setScenario((sc) => (sc && sentText.current?.trim() === sc.s.steps[sc.step] ? { ...sc, step: sc.step + 1 } : sc));
       }
     };

@@ -1,9 +1,8 @@
 export type AuthSteps = { otp: boolean; token: boolean; realtime: boolean; firstTurn: boolean };
 export type Claims = { sub: string; sid: string; lang: string; scopes: string[]; exp: number };
 
-const SCOPE_ORDER = ["inquiry:read", "dispute:create"]; // read first, then what changes things
+const SCOPE_ORDER = ["inquiry:read", "dispute:create"];
 
-/** claimsAt: epoch ms when the claims were read; "expires in" counts from then. */
 export function SignInPanel({ steps, claims, claimsAt }: { steps: AuthSteps; claims: Claims | null; claimsAt: number }) {
   const mins = claims ? Math.max(0, Math.round((claims.exp * 1000 - claimsAt) / 60_000)) : null;
   const items: [keyof AuthSteps, string, React.ReactNode][] = [

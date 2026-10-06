@@ -23,7 +23,6 @@ const line = "self-center rounded-full bg-b-fog px-3 py-1 text-center text-xs te
 export function ChatScreen({ sid, lang: sessionLang, embed }: { sid: string; lang: Lang; embed: boolean }) {
   const [store] = useState(createChatStore);
   const s = useStore(store);
-  // The chrome follows the latest reply's language; the badge overrides it until the next reply.
   const lastReply = s.messages.findLast((m) => m.role === "assistant");
   const replyKey = lastReply?.turn_id ?? lastReply?.id;
   const [manual, setManual] = useState<{ lang: Lang; at?: string } | null>(null);
@@ -42,7 +41,7 @@ export function ChatScreen({ sid, lang: sessionLang, embed }: { sid: string; lan
   const [historyOpen, setHistoryOpen] = useState(false);
   const leave = () => void signOut("customer").then(() => router.replace(`/login${embed ? "?next=/chat&embed=1" : ""}`));
   const expire = () => { setHistoryOpen(false); store.getState().expire(); };
-  /** /chat is keyed by sid: after /new swaps the cookie, refreshing the page remounts the chat on the new session. */
+  /** /chat is keyed by sid: after /new swaps the cookie, refreshing remounts the chat on the new session. */
   const startNew = async () => {
     const r = await sessionsApi.create();
     if (r.kind === "ok") { setHistoryOpen(false); router.refresh(); return true; }
@@ -65,9 +64,8 @@ export function ChatScreen({ sid, lang: sessionLang, embed }: { sid: string; lan
     store.getState().applyEvent(ev.data);
   }, { as: "customer", onResync: resync });
 
-  useEffect(() => { if (status === "live") notifyParent({ type: "demo:realtime" }); }, [status]); // the subscribe-only token is in use
+  useEffect(() => { if (status === "live") notifyParent({ type: "demo:realtime" }); }, [status]);
 
-  /** The composer never locks: each message shows at once and its turn runs after the previous one (ordered queue). */
   const send = useCallback((text: string, clientId = newClientMessageId()) => {
     const body = text.trim();
     if (!body) return;
@@ -78,13 +76,13 @@ export function ChatScreen({ sid, lang: sessionLang, embed }: { sid: string; lan
       const r = await api.send(body, clientId);
       if (r.kind === "reply") { store.getState().applyReply(clientId, r.reply); notifyParent({ type: "demo:turn-reply", turn_id: r.reply.turn_id }); resync(); }
       else if (r.kind === "expired") store.getState().expire();
-      else if (r.kind === "ended") { store.getState().fail(clientId); store.getState().end(); }  // ended elsewhere (409 session_ended)
+      else if (r.kind === "ended") { store.getState().fail(clientId); store.getState().end(); }
       else if (r.kind === "error") store.getState().fail(clientId);
-      else { asyncTurn.current = true; resync(); }  // 202: the reply arrives by push or history
+      else { asyncTurn.current = true; resync(); }
     }).finally(() => setInFlight((n) => n - 1));
   }, [store, resync, lang]);
 
-  useEffect(() => {  // 202 path: the turn ended when running cleared by a pushed reply or error line
+  useEffect(() => {
     if (s.running || !asyncTurn.current) return;
     asyncTurn.current = false;
     notifyParent({ type: "demo:turn-reply", turn_id: [...s.messages].reverse().find((m) => m.role === "assistant")?.turn_id ?? null });
@@ -100,7 +98,7 @@ export function ChatScreen({ sid, lang: sessionLang, embed }: { sid: string; lan
     onNew: async (m) => { send(m.content.map((p) => (p.type === "text" ? p.text : "")).join("")); },
   });
 
-  // Hand-off lines are judged against what came after the latest assistant message (a session can hand off twice).
+  // A session can hand off twice: judge hand-off lines only against what came after the latest assistant message.
   const lastAsst = s.messages.findLastIndex((m) => m.role === "assistant");
   const controlMsgs = s.messages.filter((m) => m.role === "system" && m.meta?.control);
   const lastControl = controlMsgs.at(-1)?.meta?.control;

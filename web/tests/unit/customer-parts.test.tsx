@@ -89,7 +89,7 @@ describe("ChatScreen", () => {
     expect(screen.getByText(/^Información al 17/)).toBeInTheDocument();
     await userEvent.click(chip);
     await waitFor(() => expect(f.mock.calls.some(([u, i]: unknown[]) => u === "/api/chat" && String((i as RequestInit | undefined)?.body).includes("Reclamar un cargo"))).toBe(true));
-    expect(screen.getByText("Reclamar un cargo", { selector: "p" })).toBeInTheDocument();  // in the transcript
+    expect(screen.getByText("Reclamar un cargo", { selector: "p" })).toBeInTheDocument();
   });
 
   it("the confirm button posts confirm:<card_hash> and the bubble shows the friendly label", async () => {
@@ -116,7 +116,7 @@ describe("ChatScreen", () => {
     render(<ChatScreen sid="s1" lang="es" embed={true} />);
     expect(await screen.findByText("Ana, del equipo de LATAM Bank, se unió")).toBeInTheDocument();
     expect(screen.getByText("No pudimos procesar tu mensaje")).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "LATAM Bank" })).not.toBeInTheDocument();  // embed hides chrome
+    expect(screen.queryByRole("heading", { name: "LATAM Bank" })).not.toBeInTheDocument();
   });
 
   it("a 202 keeps the typing indicator until the reply arrives, then clears it", async () => {
@@ -124,7 +124,7 @@ describe("ChatScreen", () => {
     let clientId = "";
     vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
       if (String(url).includes("/messages")) return Response.json({ data: history });
-      clientId = JSON.parse(String(init?.body)).client_message_id;  // the server stores the question under this id
+      clientId = JSON.parse(String(init?.body)).client_message_id;
       return new Response(null, { status: 202 });
     }));
     render(<ChatScreen sid="s1" lang="es" embed={false} />);

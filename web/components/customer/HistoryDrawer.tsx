@@ -12,7 +12,6 @@ const primary = `${pill} bg-b-cobalt text-b-surface`;
 const quiet = `${pill} border-[1.5px] border-b-line bg-b-surface text-b-ink`;
 const tag = "rounded-full px-2 py-0.5 text-[11px] font-bold";
 
-/** A past conversation, read-only: the same message rendering as the chat, with no composer and no live chips/cards. */
 function Transcript({ messages, lang }: { messages: ChatMessage[]; lang: Lang }) {
   const runtime = useExternalStoreRuntime<ChatMessage>({ messages, isRunning: false, convertMessage: toThreadMessage, onNew: async () => {} });
   return (
@@ -26,19 +25,17 @@ function Transcript({ messages, lang }: { messages: ChatMessage[]; lang: Lang })
   );
 }
 
-/** "Conversaciones": the customer's own conversations. Past ones open read-only and can be hidden (never deleted);
- *  the current one can be ended, or ended and replaced by a new one. */
 export function HistoryDrawer({ lang, ended, onClose, onEnded, onNew, onExpired }: {
   lang: Lang; ended: boolean; onClose: () => void; onEnded: () => void; onNew: () => Promise<boolean>; onExpired: () => void;
 }) {
   const d = t(lang);
   const [list, setList] = useState<SessionSummary[] | null>(null);
   const [viewing, setViewing] = useState<{ s: SessionSummary; messages: ChatMessage[] | null } | null>(null);
-  const [confirm, setConfirm] = useState<string | null>(null);  // a session id to hide, or "end"
+  const [confirm, setConfirm] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const closeBtn = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {  // focus moves in, and back to whatever opened the drawer when it closes
+  useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
     closeBtn.current?.focus();
     return () => opener?.focus();
@@ -52,7 +49,7 @@ export function HistoryDrawer({ lang, ended, onClose, onEnded, onNew, onExpired 
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
-  useEffect(() => {  // loaded once per opening; the parent's callback may change identity on every render
+  useEffect(() => {  // once per opening; the parent's callback may change identity on every render
     let live = true;
     void sessionsApi.list().then((r) => {
       if (!live) return;

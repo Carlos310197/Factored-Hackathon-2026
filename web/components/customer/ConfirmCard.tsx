@@ -9,7 +9,6 @@ export function ConfirmCard({ summary, lang, disabled, onConfirm, onChange }:
   const d = t(lang);
   const titleId = useId();
   const reason = summary.reason_code ? (d.reasons as Record<string, string>)[summary.reason_code] ?? summary.reason_code : null;
-  // Amount and currency can be null (Decision #1 dropped last4); a missing value drops its row instead of showing a dash.
   const rows: [string, string | null][] = [
     [d.merchant, summary.merchant || null],
     [d.date, summary.date ? fmtDate(summary.date, lang) : null],

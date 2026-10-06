@@ -14,7 +14,6 @@ const Body = z.object({
 
 type ChatLog = { sid: string | null; client_message_id: string | null; turn_id: string | null };
 
-/** One JSON line per call (CloudWatch, web log group): joins the agent's `request …` line and decision records by id. */
 export async function POST(req: NextRequest) {
   const log: ChatLog = { sid: null, client_message_id: null, turn_id: null };
   const start = Date.now();
@@ -46,7 +45,7 @@ async function handle(req: NextRequest, log: ChatLog) {
   }
 
   const call = () => invokeAgent({ token: who.token, sid: who.sid, message: body.message, clientMessageId: body.client_message_id, lang: who.lang });
-  if (env().CHAT_ASYNC === "1") {  // async fallback: reply arrives on /session/<sid>
+  if (env().CHAT_ASYNC === "1") {
     after(async () => {
       try { await call(); } catch (e) {
         console.error("async turn failed", e);
