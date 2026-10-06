@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 test-results/
 playwright-report/
+
+# Playwright storage state holds live session cookies
+.state.json
