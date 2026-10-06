@@ -10,6 +10,7 @@ import { SCENARIOS } from "@/lib/demo/scenarios";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock("@/components/trace/TraceList", () => ({ TraceList: () => null }));
 vi.mock("@/components/demo/HandoffTicker", () => ({ HandoffTicker: () => null }));
+vi.mock("@/components/demo/HandoffPanel", () => ({ HandoffPanel: (p: { sid: string | null }) => <p>{`handoff panel ${p.sid}`}</p> }));
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe("SCENARIOS", () => {
@@ -66,7 +67,7 @@ describe("DemoStage", () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string) => url.includes("demo-users")
       ? { ok: true, json: async () => ({ data: [{ username: "ana.mx", lang: "es", scenarios: ["clarify", "dispute_filed"] }] }) }
       : { ok: true, json: async () => ({ data: { sub: "C", sid: "S1", lang: "es", scopes: ["inquiry:read"], exp: 0 } }) }));
-    render(<DemoStage />);
+    render(<DemoStage me={{ sub: "agent.ana", name: "Ana R." }} />);
   }
   const open = async (name: RegExp) => {
     await userEvent.click(screen.getByRole("button", { name: /3 · Scenarios/ }));
@@ -105,5 +106,13 @@ describe("DemoStage", () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false })));
     fromPhone({ type: "demo:auth", step: "token_issued" });
     expect(await screen.findByRole("alert")).toHaveTextContent(/claims/);
+  });
+
+  it("act 4 puts the human-agent view for the phone's session next to the phone", async () => {
+    setup();
+    fromPhone({ type: "demo:session", sid: "S1" });
+    await userEvent.click(screen.getByRole("button", { name: /4 · Handoff/ }));
+    expect(screen.getByText("handoff panel S1")).toBeInTheDocument();
+    expect(screen.getByTitle("Customer's phone")).toBeInTheDocument();
   });
 });

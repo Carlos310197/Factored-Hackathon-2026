@@ -5,16 +5,17 @@ import { isDemoMessage } from "@/lib/demo/bridge";
 import { SCENARIOS, type Scenario } from "@/lib/demo/scenarios";
 import { StaffSignOut } from "../staff/StaffSignOut";
 import { TraceList } from "../trace/TraceList";
+import { HandoffPanel } from "./HandoffPanel";
 import { HandoffTicker } from "./HandoffTicker";
 import { PhoneFrame } from "./PhoneFrame";
 import { ScenarioRail } from "./ScenarioRail";
 import { SignInPanel, type AuthSteps, type Claims } from "./SignInPanel";
 
-type Act = 1 | 2 | 3;
-const ACTS: [Act, string][] = [[1, "Sign in"], [2, "Live conversation"], [3, "Scenarios"]];
+type Act = 1 | 2 | 3 | 4;
+const ACTS: [Act, string][] = [[1, "Sign in"], [2, "Live conversation"], [3, "Scenarios"], [4, "Handoff"]];
 const NO_STEPS: AuthSteps = { otp: false, token: false, realtime: false, firstTurn: false };
 
-export function DemoStage() {
+export function DemoStage({ me }: { me: { sub: string; name: string } }) {
   const phone = useRef<HTMLIFrameElement>(null);
   const [act, setAct] = useState<Act>(1);
   const [src, setSrc] = useState("/login?next=/chat&embed=1");
@@ -92,7 +93,8 @@ export function DemoStage() {
         )}
         <PhoneFrame ref={phone} src={src} />
         <div className="min-w-0">
-          {act === 1 ? <SignInPanel steps={steps} claims={claims} claimsAt={claimsAt} /> : (
+          {act === 1 ? <SignInPanel steps={steps} claims={claims} claimsAt={claimsAt} />
+            : act === 4 ? <HandoffPanel sid={sid} me={me} refreshKey={refreshKey} /> : (
             <>
               <h2 className="text-lg font-bold mb-3">Decision trace</h2>
               {sid ? <TraceList sid={sid} mode="demo" refreshKey={refreshKey} running={running} />

@@ -166,7 +166,7 @@ One **turn block** per turn: the customer quote plus English line, then the turn
 
 ## Demo stage (`/demo`; staff sign-in; world C canvas, projector width ≥ 1280px) · ui §9
 
-A stepper at the top: **1 Sign in → 2 Live conversation → 3 Scenarios**. The phone is the real `/chat?embed=1` inside a `b-ink` device frame; the customer and staff cookies coexist.
+A stepper at the top: **1 Sign in → 2 Live conversation → 3 Scenarios → 4 Handoff**. The phone is the real `/chat?embed=1` inside a `b-ink` device frame; the customer and staff cookies coexist.
 
 ### Act 1: Sign in (once) · ui §9.1
 
@@ -200,6 +200,15 @@ A presenter rail on the left:
 - **Each chip starts a fresh conversation** with the demo identity tagged for it (§4.9). It puts the first scripted message into the phone's composer; the presenter presses send. Multi-turn scripts show the next message as the next chip.
 - **Expired token:** the chip signs in with a 30-second token and prompts the presenter to wait, then send.
 - **Handoff ticker** (from `/queue`): "HND-… arrived · critical" with *Open in console ↗*, for the takeover part of the demo.
+
+### Act 4: Handoff (added 2026-10-05, not in ui §9)
+
+The phone stays on the left; the right panel is the human-agent side of the same conversation (`components/demo/HandoffPanel.tsx`): one line with the as-is report's evidence medians for disputes (37.0 h first response, 15.5 d to resolve, 69.8 % still open), then the real console (`ConsoleWithTabs` with `caseOnly`: no queue, no top bar) on the newest handoff whose `session_id` is the phone's session, so Take over / Resolve and the composer work as in `/agent`. Until one exists it says so.
+
+### Console stats (`/agent`, added 2026-10-05)
+
+- Queue filter chips carry counts ("Open 3", "Mine 1"; `Console` loads all four filters at once), and the queue header shows the oldest open case's age.
+- `CaseStats` under the case header: turns, mean reply time, template fallbacks (from `/api/trace/:sid`) and how long after the handoff the case was claimed (or how long it has waited).
 
 ## Accessibility and language · ui §11
 

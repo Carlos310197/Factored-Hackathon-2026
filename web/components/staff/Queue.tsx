@@ -5,11 +5,12 @@ import { fmtAge } from "@/lib/format";
 import { PRIORITY_WORD, reasonText } from "@/lib/staff/actions";
 
 export type QueueFilter = "open" | "mine" | "in_takeover" | "resolved";
-const FILTERS: [QueueFilter, string][] = [["open", "Open"], ["mine", "Mine"], ["in_takeover", "In takeover"], ["resolved", "Resolved"]];
+export const FILTERS: [QueueFilter, string][] = [["open", "Open"], ["mine", "Mine"], ["in_takeover", "In takeover"], ["resolved", "Resolved"]];
 const MARK = { critical: "bg-c-alert", high: "bg-c-warn", medium: "bg-c-below" } as const;
 
-export function Queue({ rows, filter, onFilter, selected, onSelect, fresh, me }: { rows: HandoffRow[]; filter: QueueFilter;
-  onFilter: (f: QueueFilter) => void; selected?: string; onSelect: (id: string) => void; fresh: Set<string>; me: string }) {
+export function Queue({ rows, filter, onFilter, selected, onSelect, fresh, me, counts, oldestOpen }: { rows: HandoffRow[]; filter: QueueFilter;
+  onFilter: (f: QueueFilter) => void; selected?: string; onSelect: (id: string) => void; fresh: Set<string>; me: string;
+  counts?: Record<QueueFilter, number>; oldestOpen?: string }) {
   const list = useRef<HTMLUListElement>(null);
   const label = FILTERS.find(([f]) => f === filter)?.[1];
   const move = (id: string) => {
@@ -20,13 +21,13 @@ export function Queue({ rows, filter, onFilter, selected, onSelect, fresh, me }:
     <aside className="bg-c-panel border-r border-c-line flex flex-col min-h-0" aria-label="Case queue">
       <div className="flex items-baseline justify-between px-4 pt-3.5 pb-2">
         <h2 className="text-[11px] font-bold uppercase tracking-wider text-c-muted">Queue</h2>
-        <span className="text-xs text-c-muted tabular-nums">{rows.length} {rows.length === 1 ? "case" : "cases"}</span>
+        <span className="text-xs text-c-muted tabular-nums">{oldestOpen ? `oldest open ${fmtAge(oldestOpen)}` : `${rows.length} ${rows.length === 1 ? "case" : "cases"}`}</span>
       </div>
       <div role="group" aria-label="Queue filter" className="flex flex-wrap gap-1 px-3 pb-3 border-b border-c-line">
         {FILTERS.map(([f, name]) => (
           <button key={f} aria-pressed={filter === f} onClick={() => onFilter(f)}
             className={`rounded-control px-2.5 py-1 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-c-signal ${
-              filter === f ? "bg-c-ink text-c-panel" : "bg-c-track text-c-ink hover:bg-c-line"}`}>{name}</button>
+              filter === f ? "bg-c-ink text-c-panel" : "bg-c-track text-c-ink hover:bg-c-line"}`}>{counts ? `${name} ${counts[f]}` : name}</button>
         ))}
       </div>
       {rows.length === 0 ? (
