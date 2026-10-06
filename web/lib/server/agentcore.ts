@@ -39,3 +39,17 @@ export async function invokeAgent(a: { token: string; sid: string; message: stri
     throw new AgentError("upstream", `bad reply: ${String(e).slice(0, 200)}`);
   }
 }
+
+/** Login-time warm-up: AgentCore starts a microVM per runtime session, so without this a conversation's first turn
+ *  pays ~11 s of container start. Fire-and-forget from the OTP route; never throws (failure = a cold first turn). */
+export async function warmAgent(a: { token: string; sid: string }): Promise<void> {
+  try {
+    const res = await fetch(env().AGENTCORE_INVOKE_URL, {
+      method: "POST", cache: "no-store", signal: AbortSignal.timeout(30_000),
+      headers: { "content-type": "application/json", authorization: `Bearer ${a.token}`,
+        "x-amzn-bedrock-agentcore-runtime-session-id": runtimeSessionId(a.sid) },
+      body: JSON.stringify({ warmup: true }),
+    });
+    await res.body?.cancel().catch(() => {});
+  } catch { /* cold first turn */ }
+}

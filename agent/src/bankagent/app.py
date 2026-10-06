@@ -3,7 +3,9 @@ AgentCore's CUSTOM_JWT authorizer checks the token first and forwards Authorizat
 this code re-verifies it anyway. customer_id comes only from the token, never from the payload."""
 import logging
 import re
+import threading
 import time
+from datetime import date
 
 from bedrock_agentcore import BedrockAgentCoreApp, RequestContext
 
@@ -19,6 +21,7 @@ META_KEYS = ("awaiting", "options", "refs", "summary", "data_as_of")
 log = logging.getLogger(__name__)
 app = BedrockAgentCoreApp()
 _runtime = None
+_runtime_lock = threading.Lock()
 
 
 def _error(text: str, lang: str, error: str) -> dict:
@@ -45,12 +48,29 @@ def _message_id(payload: dict, headers: dict) -> str:
     return raw if isinstance(raw, str) and MESSAGE_ID_RE.match(raw) else new_id("MSG")
 
 
+def warm(token: str, rt) -> dict:
+    """Login-time warm-up of this runtime session's microVM (the BFF calls it after the OTP): runtime built, models
+    warming, JWKS cached, and one read of the caller's own accounts so DuckDB and the serving set are hot.
+    No turn, no session row, no message: it only reads, and a failure is just a cold first turn."""
+    try:
+        ctx = verify_token(token, rt.jwks.get(), rt.settings.issuer, rt.settings.audience)
+        read = rt.service.deps.read
+        pointer = read.serving.pointer()
+        read.get_accounts(ctx, pointer.run_id, date.fromisoformat(str(pointer.max_process_date)[:10]))
+        return {"warm": True}
+    except Exception:
+        log.warning("warm-up failed", exc_info=True)
+        return {"warm": False}
+
+
 def handle(payload: dict, headers: dict, rt) -> dict:
     payload = payload if isinstance(payload, dict) else {}
     lang = payload.get("lang") if payload.get("lang") in ("es", "pt") else "es"
     token = _bearer(headers)  # header only: no token in the payload
     if not isinstance(token, str) or not token:
         return _error(auth_message("auth_required", lang), lang, "auth_required")
+    if payload.get("warmup") is True:
+        return warm(token, rt)
     try:
         jwks = rt.jwks.get()
     except Exception:
@@ -94,9 +114,10 @@ def handle(payload: dict, headers: dict, rt) -> dict:
 
 def runtime():
     global _runtime
-    if _runtime is None:
-        from bankagent.runtime import build_runtime
-        _runtime = build_runtime(load_settings())
+    with _runtime_lock:  # the login warm-up and the first message can arrive together: build once
+        if _runtime is None:
+            from bankagent.runtime import build_runtime
+            _runtime = build_runtime(load_settings())
     return _runtime
 
 

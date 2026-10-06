@@ -8,6 +8,13 @@ vi.mock("@/lib/server/idp", async (orig) => ({ ...(await orig<typeof import("@/l
 const session = vi.hoisted(() => ({ customerFrom: vi.fn(), staffFrom: vi.fn() }));
 vi.mock("@/lib/server/session", async (orig) => ({ ...(await orig<typeof import("@/lib/server/session")>()), ...session }));
 
+const agent = vi.hoisted(() => ({ warmAgent: vi.fn() }));
+vi.mock("@/lib/server/agentcore", async (orig) => ({ ...(await orig<typeof import("@/lib/server/agentcore")>()), ...agent }));
+const jwt = vi.hoisted(() => ({ customer: vi.fn() }));
+vi.mock("@/lib/server/jwt", async (orig) => ({ ...(await orig<typeof import("@/lib/server/jwt")>()), verifier: () => jwt }));
+const afterFns = vi.hoisted(() => [] as (() => unknown)[]);
+vi.mock("next/server", async (orig) => ({ ...(await orig<typeof import("next/server")>()), after: (fn: () => unknown) => { afterFns.push(fn); } }));
+
 const req = (url: string, body?: unknown, headers: Record<string, string> = {}) =>
   new NextRequest(`http://localhost${url}`, { method: body ? "POST" : "GET", body: body ? JSON.stringify(body) : undefined,
     headers: { "content-type": "application/json", ...headers } });
@@ -25,6 +32,25 @@ describe("/api/auth/otp", () => {
     expect(c?.httpOnly).toBe(true);
     expect(c?.maxAge).toBe(900);
     expect(await res.json()).toEqual({ data: { lang: "es", expires_in: 900 } });
+  });
+  it("warms the conversation's agent session after responding", async () => {
+    afterFns.length = 0;
+    idp.otp.mockResolvedValue({ access_token: "tok", expires_in: 900, lang: "es" });
+    jwt.customer.mockResolvedValue({ token: "tok", sub: "demo01", sid: "S-9", lang: "es", scopes: [], exp: 1 });
+    const { POST } = await import("@/app/api/auth/otp/route");
+    await POST(req("/api/auth/otp", { login_ticket: "t", otp: "123456" }));
+    expect(agent.warmAgent).not.toHaveBeenCalled();  // never delays the login response
+    await Promise.all(afterFns.map((fn) => fn()));
+    expect(agent.warmAgent).toHaveBeenCalledWith({ token: "tok", sid: "S-9" });
+  });
+  it("skips the warm-up when the token does not verify, and still logs in", async () => {
+    afterFns.length = 0;
+    idp.otp.mockResolvedValue({ access_token: "tok", expires_in: 900, lang: "es" });
+    jwt.customer.mockRejectedValue(new Error("bad"));
+    const { POST } = await import("@/app/api/auth/otp/route");
+    expect((await POST(req("/api/auth/otp", { login_ticket: "t", otp: "123456" }))).status).toBe(200);
+    await Promise.all(afterFns.map((fn) => fn()));
+    expect(agent.warmAgent).not.toHaveBeenCalled();
   });
   it("rejects a malformed body with 400 and a wrong code with 401", async () => {
     const { POST } = await import("@/app/api/auth/otp/route");

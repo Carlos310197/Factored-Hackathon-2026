@@ -91,3 +91,58 @@ def test_build_runtime_wires_real_components(serving_root, monkeypatch):
         rt = build_runtime(settings)
         assert rt.jwks.url == "http://idp.test/jwks.json" and rt.service.graph is not None
         assert rt.service.deps.models["compose"].model == "openai.gpt-oss-120b"
+
+
+class _WarmRead:
+    def __init__(self):
+        self.calls = []
+        self.serving = SimpleNamespace(pointer=lambda: SimpleNamespace(run_id="R1", max_process_date="2026-06-17"))
+
+    def get_accounts(self, ctx, run_id, as_of):
+        self.calls.append((ctx.customer_id, run_id, str(as_of)))
+
+
+def _warm_rt(jwks_get=lambda: JWKS):
+    rt = make_rt(jwks_get)
+    rt.service.deps.read = _WarmRead()
+    return rt
+
+
+def test_warmup_reads_the_callers_own_data_and_runs_no_turn():
+    """AgentCore starts a microVM per runtime session: the BFF warms it at login so turn 1 isn't ~16 s."""
+    rt = _warm_rt()
+    r = entry.handle({"warmup": True}, {"Authorization": f"Bearer {tok()}"}, rt)
+    assert r == {"warm": True}
+    assert rt.service.deps.read.calls == [(C1, "R1", "2026-06-17")]
+    assert rt.service.calls == [] and rt.service.deps.store.sessions.items == {}
+
+
+def test_warmup_needs_a_valid_token_and_never_raises():
+    rt = _warm_rt()
+    assert entry.handle({"warmup": True}, {}, rt)["error"] == "auth_required"
+
+    def down():
+        raise RuntimeError("jwks unreachable")
+    assert entry.handle({"warmup": True}, {"Authorization": f"Bearer {tok()}"}, _warm_rt(down))["warm"] is False
+    broken = _warm_rt()
+    broken.service.deps.read.serving = SimpleNamespace(pointer=lambda: (_ for _ in ()).throw(RuntimeError("s3")))
+    assert entry.handle({"warmup": True}, {"Authorization": f"Bearer {tok()}"}, broken) == {"warm": False}
+    assert rt.service.deps.read.calls == []
+
+
+def test_runtime_is_built_once_under_concurrent_first_calls(monkeypatch):
+    """The warm-up and the first message can land together: build the runtime once, not twice."""
+    import threading
+    built = []
+
+    def slow_build(_settings):
+        built.append(1)
+        time.sleep(0.05)
+        return "rt"
+    monkeypatch.setattr(entry, "_runtime", None)
+    monkeypatch.setattr("bankagent.runtime.build_runtime", slow_build)
+    monkeypatch.setattr(entry, "load_settings", lambda: None)
+    threads = [threading.Thread(target=entry.runtime) for _ in range(4)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    assert built == [1] and entry._runtime == "rt"
